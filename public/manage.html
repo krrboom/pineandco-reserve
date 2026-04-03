@@ -45,7 +45,7 @@
 <div id="login"><input type="password" id="pin" placeholder="PIN" maxlength="4" onkeydown="if(event.key==='Enter')doLogin()"/><button onclick="doLogin()">ENTER</button></div>
 <div id="dash" style="display:none">
 <div class="sb"><label>담당 직원:</label><select id="stSel"></select></div>
-<div class="vt"><button class="vb sel" id="tC" onclick="sv('cal')">📅 Calendar</button><button class="vb" id="tD" onclick="sv('day')">📋 Day View</button></div>
+<div class="vt"><button class="vb sel" id="tC" onclick="sv('cal')">📅 Calendar</button><button class="vb" id="tD" onclick="sv('day')">📋 Day View</button><button class="vb" id="tS" onclick="sv('set')">⚙️ Settings</button></div>
 <div id="vCal"><div class="cn"><button onclick="sm(-1)">&larr;</button><div class="ml" id="mL"></div><button onclick="sm(1)">&rarr;</button></div><div class="cg" id="cG"></div></div>
 <div id="vDay" style="display:none">
 <div class="dh"><button onclick="sv('cal')">&larr; Calendar</button><div class="dt" id="dT"></div><div></div></div>
@@ -59,7 +59,32 @@
 <div class="row"><select id="aZn"><option value="bar">Bar</option><option value="table">Table</option><option value="highTable">High Table</option><option value="room">Room</option></select><input type="text" id="aSt" placeholder="Seats (B1,B2/T1/ROOM)"/></div>
 <textarea id="aNt" placeholder="특이사항 / Notes" rows="2"></textarea>
 <button class="asb" onclick="sadd()">ADD RESERVATION</button>
-</div></div></div></div>
+</div></div>
+<!-- SETTINGS VIEW -->
+<div id="vSet" style="display:none">
+<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:16px;margin-bottom:12px;">
+<h2 style="font-family:Cinzel,serif;font-size:14px;color:var(--gold);font-weight:400;margin-bottom:12px;">직원 관리 / Staff Management 🔒</h2>
+<div id="adminLock">
+<div style="font-size:12px;color:var(--mu);margin-bottom:8px;">관리자 비밀번호를 입력하세요:</div>
+<div style="display:flex;gap:8px;">
+<input type="password" id="adminPin" placeholder="Admin PIN" maxlength="4" style="flex:1;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:8px 10px;font-size:14px;text-align:center;letter-spacing:.2em;color:var(--tx);outline:none;"/>
+<button onclick="unlockAdmin()" style="padding:8px 16px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-size:12px;cursor:pointer;">확인</button>
+</div>
+</div>
+<div id="adminArea" style="display:none;">
+<div id="staffList"></div>
+<div style="display:flex;gap:8px;margin-top:10px;">
+<input type="text" id="newStaffName" placeholder="새 직원 이름" style="flex:1;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--tx);outline:none;"/>
+<button onclick="addStaff()" style="padding:8px 16px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-size:12px;cursor:pointer;">추가</button>
+</div>
+</div>
+</div>
+<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:16px;margin-bottom:12px;">
+<h2 style="font-family:Cinzel,serif;font-size:14px;color:var(--gold);font-weight:400;margin-bottom:12px;">이벤트 / 대관 관리</h2>
+<p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:10px;">📅 Calendar 탭에서 날짜 위에 마우스를 올리면 우측 상단에 <strong style="color:var(--red);">E</strong> 버튼이 나타납니다.<br>클릭하면 이벤트명을 입력할 수 있고, 해당 날짜의 예약이 차단됩니다.<br>다시 클릭하면 이벤트가 해제됩니다.</p>
+<div id="eventList"></div>
+</div>
+</div></div></div>
 <div class="toast" id="toast"></div>
 <script>
 var pin='',cD='',cT='',cY,cM,aR=[],av={},evts={},exId=null;
@@ -78,9 +103,9 @@ var n=kst();cY=n.getFullYear();cM=n.getMonth();cD=ktd();
 document.getElementById('login').style.display='none';document.getElementById('dash').style.display='block';
 lc();
 }
-function sv(v){document.getElementById('vCal').style.display=v==='cal'?'block':'none';document.getElementById('vDay').style.display=v==='day'?'block':'none';
-document.getElementById('tC').className='vb'+(v==='cal'?' sel':'');document.getElementById('tD').className='vb'+(v==='day'?' sel':'');
-if(v==='cal')lc();if(v==='day')ld();}
+function sv(v){document.getElementById('vCal').style.display=v==='cal'?'block':'none';document.getElementById('vDay').style.display=v==='day'?'block':'none';document.getElementById('vSet').style.display=v==='set'?'block':'none';
+document.getElementById('tC').className='vb'+(v==='cal'?' sel':'');document.getElementById('tD').className='vb'+(v==='day'?' sel':'');document.getElementById('tS').className='vb'+(v==='set'?' sel':'');
+if(v==='cal')lc();if(v==='day')ld();if(v==='set')loadSettings();}
 function sm(n){cM+=n;if(cM>11){cM=0;cY++;}if(cM<0){cM=11;cY--;}lc();}
 
 async function lc(){
@@ -210,4 +235,72 @@ var r=await fetch('/api/staff/reserve',{method:'POST',headers:{'Content-Type':'a
 if(r.ok){fl('추가 완료!');document.getElementById('aF').classList.remove('open');
 ['aN','aPh','aIg','aEm','aSt','aNt'].forEach(function(id){document.getElementById(id).value='';});cD=d.date;cT=d.time;ld();}
 else fl(r.error||'Error');}
+
+// ── Settings: Staff Management ──
+var allStaff=[],adminPin='';
+async function loadSettings(){
+allStaff=await fetch('/api/staff-names').then(function(r){return r.json();}).catch(function(){return [];});
+evts=await fetch('/api/events').then(function(r){return r.json();}).catch(function(){return {};});
+if(adminPin)renderStaffList();
+renderEventList();
+}
+
+function unlockAdmin(){
+adminPin=document.getElementById('adminPin').value;
+if(adminPin.length!==4){fl('4자리 PIN을 입력하세요');return;}
+document.getElementById('adminLock').style.display='none';
+document.getElementById('adminArea').style.display='block';
+renderStaffList();
+}
+
+function renderStaffList(){
+var el=document.getElementById('staffList');
+if(!allStaff.length){el.innerHTML='<div style="color:var(--mu);font-size:12px;padding:8px 0;">등록된 직원이 없습니다.</div>';return;}
+var h='';allStaff.forEach(function(n){
+h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--brd);border-radius:6px;margin-bottom:4px;background:var(--bg);">';
+h+='<span style="font-size:13px;font-weight:500;">'+n+'</span>';
+h+='<button onclick="removeStaff(\''+n+'\')" style="background:none;border:none;color:var(--red);font-size:14px;cursor:pointer;padding:2px 6px;" title="삭제">✕</button>';
+h+='</div>';
+});el.innerHTML=h;
+}
+
+async function addStaff(){
+var name=document.getElementById('newStaffName').value.trim();
+if(!name){fl('직원 이름을 입력하세요');return;}
+var r=await fetch('/api/staff-names',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:adminPin,name:name})}).then(function(r){return r.json();});
+if(r.ok){allStaff=r.staffNames;renderStaffList();refreshStaffSelect();document.getElementById('newStaffName').value='';fl(name+' 추가 완료!');}
+else{if(r.error==='Admin PIN required')fl('관리자 비밀번호가 틀렸습니다.');else fl(r.error||'Error');}
+}
+
+async function removeStaff(name){
+if(!confirm(name+' 직원을 삭제할까요?'))return;
+var r=await fetch('/api/staff-names/'+encodeURIComponent(name),{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:adminPin})}).then(function(r){return r.json();});
+if(r.ok){allStaff=r.staffNames;renderStaffList();refreshStaffSelect();fl(name+' 삭제 완료');}
+else{if(r.error==='Admin PIN required')fl('관리자 비밀번호가 틀렸습니다.');else fl(r.error||'Error');}
+}
+
+function refreshStaffSelect(){
+var sel=document.getElementById('stSel');var cur=sel.value;
+sel.innerHTML=allStaff.map(function(n){return '<option>'+n+'</option>';}).join('');
+if(allStaff.includes(cur))sel.value=cur;
+}
+
+function renderEventList(){
+var el=document.getElementById('eventList');
+var keys=Object.keys(evts).sort();
+if(!keys.length){el.innerHTML='<div style="color:var(--mu);font-size:12px;">현재 등록된 이벤트가 없습니다.</div>';return;}
+var h='';keys.forEach(function(d){
+h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--brd);border-radius:6px;margin-bottom:4px;background:var(--bg);">';
+h+='<span style="font-size:13px;"><strong style="color:var(--red);">'+d+'</strong> — '+evts[d]+'</span>';
+h+='<button onclick="removeEvent(\''+d+'\')" style="background:none;border:none;color:var(--red);font-size:14px;cursor:pointer;padding:2px 6px;">✕</button>';
+h+='</div>';
+});el.innerHTML=h;
+}
+
+async function removeEvent(d){
+if(!confirm(d+' 이벤트를 해제할까요?'))return;
+await fetch('/api/events/'+d,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin,label:''})});
+evts=await fetch('/api/events').then(function(r){return r.json();}).catch(function(){return {};});
+renderEventList();fl('이벤트 해제: '+d);
+}
 </script></body></html>

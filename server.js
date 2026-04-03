@@ -5,6 +5,7 @@ const path = require('path');
 const CONFIG = {
   PORT: process.env.PORT || 3001,
   STAFF_PIN: process.env.STAFF_PIN || '1234',
+  ADMIN_PIN: process.env.ADMIN_PIN || '0000',
   BUSINESS_PHONE: process.env.BUSINESS_PHONE || '02-XXX-XXXX',
   PUBLIC_URL: process.env.PUBLIC_URL || 'http://localhost:3001',
   BUSINESS_HOURS: '19:00 - 02:00',
@@ -33,21 +34,22 @@ const CONFIG = {
   LATE_BAR_MAX: 4,
   LATE_TABLE_MAX: 2,
 };
-const STAFF_NAMES = ['DuUi','Manager','Staff1','Staff2'];
-
+const STAFF_FILE = path.join(__dirname, 'staff.json');
 const DATA_FILE = path.join(__dirname, 'reservations.json');
 const EVENTS_FILE = path.join(__dirname, 'events.json');
-let reservations = [], events = {};
+let reservations = [], events = {}, staffNames = ['DuUi','Manager'];
 let lockPromise = Promise.resolve();
 function withLock(fn) { lockPromise = lockPromise.then(fn).catch(e => { console.error(e); throw e; }); return lockPromise; }
 
 function loadData() {
   try { if (fs.existsSync(DATA_FILE)) reservations = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch(e) { reservations = []; }
   try { if (fs.existsSync(EVENTS_FILE)) events = JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf8')); } catch(e) { events = {}; }
-  console.log(`Loaded ${reservations.length} reservations, ${Object.keys(events).length} events`);
+  try { if (fs.existsSync(STAFF_FILE)) staffNames = JSON.parse(fs.readFileSync(STAFF_FILE, 'utf8')); } catch(e) {}
+  console.log(`Loaded ${reservations.length} reservations, ${Object.keys(events).length} events, ${staffNames.length} staff`);
 }
 function saveRes() { try { fs.writeFileSync(DATA_FILE, JSON.stringify(reservations, null, 2)); } catch(e) { console.error(e); } }
 function saveEvents() { try { fs.writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2)); } catch(e) { console.error(e); } }
+function saveStaff() { try { fs.writeFileSync(STAFF_FILE, JSON.stringify(staffNames, null, 2)); } catch(e) { console.error(e); } }
 loadData();
 
 const app = express();
@@ -177,7 +179,25 @@ app.post('/api/reserve', async (req, res) => {
 });
 
 // ── Staff routes ──
-app.get('/api/staff-names', (req, res) => res.json(STAFF_NAMES));
+app.get('/api/staff-names', (req, res) => res.json(staffNames));
+app.post('/api/staff-names', (req, res) => {
+  const { pin, name } = req.body;
+  if (pin !== CONFIG.ADMIN_PIN) return res.status(403).json({ error: 'Admin PIN required' });
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Name required' });
+  const n = name.trim();
+  if (staffNames.includes(n)) return res.status(400).json({ error: 'Already exists' });
+  staffNames.push(n);
+  saveStaff();
+  res.json({ ok: true, staffNames });
+});
+app.delete('/api/staff-names/:name', (req, res) => {
+  const { pin } = req.body || {};
+  if (pin !== CONFIG.ADMIN_PIN) return res.status(403).json({ error: 'Admin PIN required' });
+  const n = decodeURIComponent(req.params.name);
+  staffNames = staffNames.filter(s => s !== n);
+  saveStaff();
+  res.json({ ok: true, staffNames });
+});
 app.get('/api/month/:year/:month', (req, res) => {
   const prefix = `${req.params.year}-${String(req.params.month).padStart(2,'0')}`;
   const counts = {};
