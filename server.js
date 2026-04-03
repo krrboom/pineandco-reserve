@@ -11,6 +11,9 @@ const CONFIG = {
   ALIGO_KEY: process.env.ALIGO_KEY || '',
   ALIGO_USER_ID: process.env.ALIGO_USER_ID || '',
   ALIGO_SENDER: process.env.ALIGO_SENDER || '',
+  TWILIO_SID: process.env.TWILIO_SID || '',
+  TWILIO_AUTH: process.env.TWILIO_AUTH || '',
+  TWILIO_FROM: process.env.TWILIO_FROM || '',
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   RESEND_FROM: process.env.RESEND_FROM || 'Pine & Co <noreply@pineandco.shop>',
   SEATS: {
@@ -217,11 +220,40 @@ app.get('/api/stats/noshow', (req, res) => {
   res.json({ total:t, noshows:n, rate:(t?Math.round(n/t*100):0)+'%' });
 });
 
-// ── SMS ──
+// ── SMS routing: Korean numbers → Aligo, International → Twilio ──
+function isKoreanNumber(phone) {
+  const cleaned = phone.replace(/[^0-9+]/g, '');
+  return cleaned.startsWith('010') || cleaned.startsWith('011') || cleaned.startsWith('+82') || cleaned.startsWith('82');
+}
+
 function sendSMS(to, msg) {
-  if (!CONFIG.ALIGO_KEY) { console.log('📱 [SIM] '+to+'\n'+msg+'\n'); return; }
-  const p = new URLSearchParams({ key:CONFIG.ALIGO_KEY, user_id:CONFIG.ALIGO_USER_ID, sender:CONFIG.ALIGO_SENDER, receiver:to.replace(/[^0-9+]/g,''), msg, msg_type:'LMS' });
-  fetch('https://apis.aligo.in/send/',{method:'POST',body:p}).then(r=>r.json()).then(d=>console.log('SMS:',d)).catch(e=>console.error(e));
+  const cleaned = to.replace(/[^0-9+]/g, '');
+  if (!cleaned) return;
+
+  if (isKoreanNumber(cleaned)) {
+    sendAligoSMS(cleaned, msg);
+  } else {
+    sendTwilioSMS(cleaned, msg);
+  }
+}
+
+function sendAligoSMS(to, msg) {
+  if (!CONFIG.ALIGO_KEY) { console.log('📱 [ALIGO SIM] '+to+'\n'+msg+'\n'); return; }
+  const p = new URLSearchParams({ key:CONFIG.ALIGO_KEY, user_id:CONFIG.ALIGO_USER_ID, sender:CONFIG.ALIGO_SENDER, receiver:to.replace(/[^0-9]/g,''), msg, msg_type:'LMS' });
+  fetch('https://apis.aligo.in/send/',{method:'POST',body:p}).then(r=>r.json()).then(d=>console.log('Aligo:',d)).catch(e=>console.error('Aligo error:',e));
+}
+
+function sendTwilioSMS(to, msg) {
+  if (!CONFIG.TWILIO_SID || !CONFIG.TWILIO_AUTH) { console.log('📱 [TWILIO SIM] '+to+'\n'+msg+'\n'); return; }
+  let dest = to;
+  if (!dest.startsWith('+')) dest = '+' + dest;
+  const auth = Buffer.from(CONFIG.TWILIO_SID + ':' + CONFIG.TWILIO_AUTH).toString('base64');
+  const body = new URLSearchParams({ From: CONFIG.TWILIO_FROM, To: dest, Body: msg });
+  fetch('https://api.twilio.com/2010-04-01/Accounts/' + CONFIG.TWILIO_SID + '/Messages.json', {
+    method: 'POST',
+    headers: { 'Authorization': 'Basic ' + auth, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body,
+  }).then(r => r.json()).then(d => console.log('Twilio:', d.sid || d.message)).catch(e => console.error('Twilio error:', e));
 }
 
 // ── Email (Resend API) ──
