@@ -1,0 +1,12 @@
+{
+  "name": "pineandco-reserve",
+  "version": "2.0.0",
+  "description": "Pine & Co Seoul Reservation System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

@@ -1,0 +1,213 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pine &amp; Co — Staff</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--ink:#2a1a0e;--cream:#f5f0e6;--gold:#b8935a;--bg:#f0ebe0;--card:#fff;--brd:rgba(42,26,14,.1);--tx:#3d2e1f;--mu:#8a7560;--grn:#4a7c59;--red:#a33;--blu:#3a6ea5;}
+*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;}
+.w{max-width:900px;margin:0 auto;padding:16px;}.hd{text-align:center;margin-bottom:16px;}.hd h1{font-family:Cinzel,serif;font-size:16px;letter-spacing:.15em;color:var(--gold);font-weight:400;}
+#login{text-align:center;padding:100px 20px;}#login input{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:14px;color:var(--tx);font-size:18px;text-align:center;width:160px;letter-spacing:.3em;outline:none;}
+#login button{display:block;margin:12px auto 0;padding:12px 32px;border:none;border-radius:8px;background:var(--gold);color:#fff;font-family:Cinzel,serif;font-size:12px;cursor:pointer;}
+.sb{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:8px 12px;background:var(--card);border:1px solid var(--brd);border-radius:8px;}
+.sb label{font-size:12px;color:var(--mu);}.sb select{border:1px solid var(--brd);border-radius:4px;padding:4px 8px;font-size:13px;background:var(--bg);}
+.vt{display:flex;gap:4px;margin-bottom:12px;}.vb{flex:1;padding:10px;border:1px solid var(--brd);border-radius:8px;background:var(--card);color:var(--mu);font-size:13px;cursor:pointer;text-align:center;}.vb.sel{border-color:var(--gold);color:var(--gold);font-weight:500;}
+.cn{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px;}.cn button{background:var(--card);border:1px solid var(--brd);border-radius:6px;width:36px;height:36px;font-size:16px;cursor:pointer;color:var(--tx);}
+.cn .ml{font-family:Cinzel,serif;font-size:15px;color:var(--gold);min-width:140px;text-align:center;}
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}.chd{text-align:center;font-size:11px;color:var(--mu);padding:6px 0;font-weight:500;}
+.cc{background:var(--card);border:1px solid var(--brd);border-radius:6px;min-height:60px;padding:4px;cursor:pointer;transition:all .15s;position:relative;}
+.cc:hover{border-color:var(--gold);}.cc.td{border-color:var(--gold);background:rgba(184,147,90,.06);}.cc.om{opacity:.3;pointer-events:none;}
+.cc .dn{font-size:13px;font-weight:500;}.cc .dn.sun{color:var(--red);}.cc .dn.sat{color:var(--blu);}
+.cc .rc{font-size:11px;color:var(--gold);font-weight:500;}.cc .ev{font-size:9px;color:var(--red);font-weight:500;}
+.cc .evbtn{position:absolute;top:2px;right:2px;width:18px;height:18px;border:none;border-radius:3px;font-size:8px;cursor:pointer;background:rgba(0,0,0,.06);color:var(--mu);line-height:18px;text-align:center;opacity:0;transition:opacity .2s;}
+.cc:hover .evbtn{opacity:1;}.cc .evbtn:hover{background:var(--red);color:#fff;}
+.dh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}.dh .dt{font-family:Cinzel,serif;font-size:15px;color:var(--gold);}
+.dh button{background:var(--card);border:1px solid var(--brd);border-radius:6px;padding:8px 16px;font-size:12px;cursor:pointer;color:var(--tx);}
+.tt{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}.tb{padding:8px 16px;border:1px solid var(--brd);border-radius:6px;background:var(--card);color:var(--tx);font-size:13px;cursor:pointer;}.tb.sel{border-color:var(--gold);background:rgba(184,147,90,.1);color:var(--gold);font-weight:500;}
+.tb .ct{font-size:10px;color:var(--mu);display:block;}
+.fw{background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:12px;margin-bottom:16px;overflow-x:auto;}.fw svg{font-family:'Noto Sans KR',sans-serif;}
+.rc2{background:var(--card);border:1px solid var(--brd);border-radius:8px;margin-bottom:8px;overflow:hidden;}
+.rt{padding:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}.rt:hover{background:rgba(184,147,90,.03);}
+.ri .nm{font-weight:500;color:var(--ink);font-size:14px;}.ri .mt{font-size:12px;color:var(--mu);margin-top:2px;}
+.st{display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;margin-left:4px;}.so{background:#e3f0e8;color:var(--grn);}.si{background:#fce4ec;color:#c2185b;}.se{background:#e3f2fd;color:#1565c0;}.ss{background:#fff3e0;color:#e65100;}
+.ra{display:flex;gap:4px;}.ra button{padding:6px 10px;border:none;border-radius:4px;font-size:11px;cursor:pointer;}.bs{background:var(--grn);color:#fff;}.bn{background:var(--red);color:#fff;}.bd{background:rgba(0,0,0,.06);color:var(--mu);}
+.rd{display:none;padding:0 12px 12px;border-top:1px solid var(--brd);}.rd.open{display:block;}
+.dr{display:flex;gap:8px;margin-bottom:6px;font-size:12px;align-items:flex-start;}.dr label{color:var(--mu);min-width:65px;padding-top:4px;}
+.dr span,.dr select,.dr textarea{flex:1;color:var(--tx);}.dr textarea{border:1px solid var(--brd);border-radius:4px;padding:6px;font-size:12px;resize:vertical;min-height:36px;font-family:'Noto Sans KR',sans-serif;background:var(--bg);}
+.dr select{border:1px solid var(--brd);border-radius:4px;padding:4px 6px;font-size:12px;background:var(--bg);}
+.ml2{font-size:11px;color:var(--mu);margin-top:6px;line-height:1.6;}
+.at{display:block;width:100%;padding:12px;border:1px dashed rgba(42,26,14,.15);border-radius:8px;background:var(--card);color:var(--mu);font-size:12px;cursor:pointer;margin-bottom:12px;}
+.af{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:16px;display:none;margin-bottom:16px;}.af.open{display:block;}
+.af input,.af select,.af textarea{width:100%;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:10px;color:var(--tx);font-size:13px;margin-bottom:8px;outline:none;font-family:'Noto Sans KR',sans-serif;}
+.af .row{display:flex;gap:8px;}.af .row>*{flex:1;}
+.asb{width:100%;padding:12px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-family:Cinzel,serif;font-size:12px;letter-spacing:.1em;cursor:pointer;margin-top:4px;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);border-radius:8px;font-size:12px;padding:10px 20px;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none;}.toast.show{opacity:1;}
+</style></head><body>
+<div class="w"><div class="hd"><h1>PINE &amp; CO — RESERVATIONS</h1></div>
+<div id="login"><input type="password" id="pin" placeholder="PIN" maxlength="4" onkeydown="if(event.key==='Enter')doLogin()"/><button onclick="doLogin()">ENTER</button></div>
+<div id="dash" style="display:none">
+<div class="sb"><label>담당 직원:</label><select id="stSel"></select></div>
+<div class="vt"><button class="vb sel" id="tC" onclick="sv('cal')">📅 Calendar</button><button class="vb" id="tD" onclick="sv('day')">📋 Day View</button></div>
+<div id="vCal"><div class="cn"><button onclick="sm(-1)">&larr;</button><div class="ml" id="mL"></div><button onclick="sm(1)">&rarr;</button></div><div class="cg" id="cG"></div></div>
+<div id="vDay" style="display:none">
+<div class="dh"><button onclick="sv('cal')">&larr; Calendar</button><div class="dt" id="dT"></div><div></div></div>
+<div class="tt" id="tT"></div><div class="fw" id="fW"></div><div id="rL"></div>
+<button class="at" onclick="document.getElementById('aF').classList.toggle('open')">+ STAFF ADD RESERVATION</button>
+<div class="af" id="aF">
+<div class="row"><input type="date" id="aD"/><select id="aTm"><option value="19:00">19:00</option><option value="20:00">20:00</option><option value="21:00">21:00</option><option value="23:00">23:00</option></select></div>
+<div class="row"><input type="text" id="aN" placeholder="Guest name"/><input type="tel" id="aPh" placeholder="Phone"/></div>
+<div class="row"><input type="text" id="aIg" placeholder="Instagram @"/><input type="email" id="aEm" placeholder="Email"/></div>
+<div class="row"><select id="aSz"></select><select id="aSrc"><option value="staff">직원 직접</option><option value="email">Email</option><option value="instagram">Instagram</option><option value="phone">전화</option></select></div>
+<div class="row"><select id="aZn"><option value="bar">Bar</option><option value="table">Table</option><option value="highTable">High Table</option><option value="room">Room</option></select><input type="text" id="aSt" placeholder="Seats (B1,B2/T1/ROOM)"/></div>
+<textarea id="aNt" placeholder="특이사항 / Notes" rows="2"></textarea>
+<button class="asb" onclick="sadd()">ADD RESERVATION</button>
+</div></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+var pin='',cD='',cT='',cY,cM,aR=[],av={},evts={},exId=null;
+var DK=['일','월','화','수','목','금','토'],MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function kst(){return new Date(Date.now()+9*3600000);}function ktd(){return kst().toISOString().slice(0,10);}
+function fl(m){var t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(function(){t.className='toast';},3000);}
+function gs(){return document.getElementById('stSel').value||'Staff';}
+
+async function doLogin(){
+pin=document.getElementById('pin').value;if(pin.length!==4){fl('4자리 PIN');return;}
+var sn=await fetch('/api/staff-names').then(function(r){return r.json();}).catch(function(){return ['Staff'];});
+document.getElementById('stSel').innerHTML=sn.map(function(n){return '<option>'+n+'</option>';}).join('');
+var as=document.getElementById('aSz');as.innerHTML='';for(var i=1;i<=10;i++)as.innerHTML+='<option value="'+i+'">'+i+'명</option>';
+evts=await fetch('/api/events').then(function(r){return r.json();}).catch(function(){return {};});
+var n=kst();cY=n.getFullYear();cM=n.getMonth();cD=ktd();
+document.getElementById('login').style.display='none';document.getElementById('dash').style.display='block';
+lc();
+}
+function sv(v){document.getElementById('vCal').style.display=v==='cal'?'block':'none';document.getElementById('vDay').style.display=v==='day'?'block':'none';
+document.getElementById('tC').className='vb'+(v==='cal'?' sel':'');document.getElementById('tD').className='vb'+(v==='day'?' sel':'');
+if(v==='cal')lc();if(v==='day')ld();}
+function sm(n){cM+=n;if(cM>11){cM=0;cY++;}if(cM<0){cM=11;cY--;}lc();}
+
+async function lc(){
+document.getElementById('mL').textContent=MN[cM]+' '+cY;
+var cts=await fetch('/api/month/'+cY+'/'+String(cM+1)).then(function(r){return r.json();}).catch(function(){return {};});
+evts=await fetch('/api/events').then(function(r){return r.json();}).catch(function(){return {};});
+var td=ktd(),first=new Date(cY,cM,1),sd=first.getDay(),dim=new Date(cY,cM+1,0).getDate(),pd=new Date(cY,cM,0).getDate();
+var h='';['일','월','화','수','목','금','토'].forEach(function(d){h+='<div class="chd">'+d+'</div>';});
+for(var i=sd-1;i>=0;i--)h+='<div class="cc om"><div class="dn">'+(pd-i)+'</div></div>';
+for(var d=1;d<=dim;d++){
+var iso=cY+'-'+String(cM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+var dow=new Date(cY,cM,d).getDay(),it=iso===td,cnt=cts[iso]||0,ev=evts[iso];
+h+='<div class="cc'+(it?' td':'')+'" onclick="od(\''+iso+'\')">';
+h+='<div class="dn'+(dow===0?' sun':'')+(dow===6?' sat':'')+'">'+d+'</div>';
+if(ev)h+='<div class="ev">EVENT</div>';
+else if(cnt>0)h+='<div class="rc">'+cnt+'팀</div>';
+h+='<button class="evbtn" onclick="event.stopPropagation();te(\''+iso+'\')">'+(ev?'✕':'E')+'</button>';
+h+='</div>';}
+var tc=sd+dim,rem=tc%7===0?0:7-tc%7;for(var i=1;i<=rem;i++)h+='<div class="cc om"><div class="dn">'+i+'</div></div>';
+document.getElementById('cG').innerHTML=h;
+}
+
+async function te(iso){
+var cur=evts[iso];var label=cur?'':prompt('이벤트명 (빈칸이면 취소):','EVENT');
+if(label===null)return;
+await fetch('/api/events/'+iso,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin,label:label||''})});
+evts=await fetch('/api/events').then(function(r){return r.json();}).catch(function(){return {};});
+lc();fl(label?'EVENT 설정':'EVENT 해제');
+}
+
+function od(iso){cD=iso;cT='';sv('day');}
+
+async function ld(){
+var d=new Date(cD+'T12:00:00');document.getElementById('dT').textContent=cD+' ('+DK[d.getDay()]+')';document.getElementById('aD').value=cD;
+av=await fetch('/api/availability/'+cD).then(function(r){return r.json();}).catch(function(){return {};});
+if(av.blocked){document.getElementById('fW').innerHTML='<div style="text-align:center;padding:40px;color:var(--red)">EVENT DAY — '+av.event+'</div>';document.getElementById('rL').innerHTML='';document.getElementById('tT').innerHTML='';return;}
+aR=await fetch('/api/reservations/'+cD).then(function(r){return r.json();}).catch(function(){return [];});
+var slots=Object.keys(av);if(!cT||!slots.includes(cT))cT=slots[0]||'19:00';
+rtb(slots);rf();rl();
+}
+
+function rtb(slots){var h='';slots.forEach(function(s){var c=aR.filter(function(r){return r.time===s&&r.status!=='cancelled';}).length;
+h+='<button class="tb'+(cT===s?' sel':'')+'" onclick="pt(\''+s+'\')">'+s+'<span class="ct">'+c+'팀</span></button>';});
+document.getElementById('tT').innerHTML=h;}
+function pt(t){cT=t;rf();rl();rtb(Object.keys(av));}
+
+function rf(){
+var el=document.getElementById('fW');var res=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';});
+var oc={};res.forEach(function(r){if(r.seats)r.seats.forEach(function(s){oc[s]=r;});});
+function bs(cx,cy,id){var r=oc[id];var f=r?'rgba(184,147,90,.35)':'rgba(184,147,90,.06)';var sk=r?'#b8935a':'rgba(184,147,90,.25)';
+var s='<g style="cursor:'+(r?'pointer':'default')+'" '+(r?'onclick="td(\''+r.id+'\')"':'')+'><circle cx="'+cx+'" cy="'+cy+'" r="16" fill="'+f+'" stroke="'+sk+'" stroke-width="'+(r?1.5:1)+'"/>';
+if(r){s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="9" font-weight="500">'+r.name.slice(0,4)+'</text>';
+s+='<text x="'+cx+'" y="'+(cy+7)+'" text-anchor="middle" fill="#8a7560" font-size="8">'+r.partySize+'명</text>';}return s+'</g>';}
+function zs(x,y,w,h,id){var r=oc[id];var f=r?'rgba(184,147,90,.3)':'rgba(184,147,90,.04)';var sk=r?'#b8935a':'rgba(184,147,90,.2)';
+var s='<g style="cursor:'+(r?'pointer':'default')+'" '+(r?'onclick="td(\''+r.id+'\')"':'')+'><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="'+f+'" stroke="'+sk+'" stroke-width="'+(r?1.5:1)+'"/>';
+if(r){s+='<text x="'+(x+w/2)+'" y="'+(y+h/2-8)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+r.name.slice(0,5)+'</text>';
+s+='<text x="'+(x+w/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+r.time+' · '+r.partySize+'명</text>';}return s+'</g>';}
+function es(cx,cy,rx,ry,id){var r=oc[id];var f=r?'rgba(184,147,90,.3)':'rgba(184,147,90,.04)';var sk=r?'#b8935a':'rgba(184,147,90,.2)';
+var s='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="'+f+'" stroke="'+sk+'" stroke-width="'+(r?1.5:1)+'" style="cursor:'+(r?'pointer':'default')+'" '+(r?'onclick="td(\''+r.id+'\')"':'')+'/>';
+if(r){s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+r.name.slice(0,5)+'</text>';
+s+='<text x="'+cx+'" y="'+(cy+8)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+r.partySize+'명</text>';}return s;}
+var v='<svg width="100%" viewBox="0 0 660 500">';
+v+='<rect x="155" y="15" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
+v+='<rect x="370" y="15" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
+v+='<text x="232" y="32" text-anchor="middle" fill="#8a7560" font-size="10" font-family="Cinzel,serif">Back bar</text>';
+v+='<text x="447" y="32" text-anchor="middle" fill="#8a7560" font-size="10" font-family="Cinzel,serif">Back bar</text>';
+var bl=[178,232,286,395,449,503];for(var i=0;i<6;i++)v+='<text x="'+bl[i]+'" y="55" text-anchor="middle" fill="#b8935a" font-size="9">B'+(i+1)+'</text>';
+v+=bs(178,76,'B1');v+=bs(232,76,'B2');v+=bs(286,76,'B3');v+=bs(395,76,'B4');v+=bs(449,76,'B5');v+=bs(503,76,'B6');
+v+='<path d="M215 125 L215 310 Q215 335 240 335 L440 335 Q465 335 465 310 L465 125" fill="none" stroke="rgba(184,147,90,.3)" stroke-width="2"/>';
+v+='<text x="340" y="240" text-anchor="middle" fill="#c9a96e" font-size="11" font-family="Cinzel,serif" opacity=".35">Bartender</text>';
+v+='<text x="170" y="158" text-anchor="end" fill="#b8935a" font-size="9">B7</text>';v+='<text x="170" y="218" text-anchor="end" fill="#b8935a" font-size="9">B8</text>';v+='<text x="170" y="288" text-anchor="end" fill="#b8935a" font-size="9">B9</text>';
+v+=bs(193,155,'B7');v+=bs(193,215,'B8');v+=bs(193,285,'B9');
+v+='<text x="290" y="378" text-anchor="middle" fill="#b8935a" font-size="9">B10</text>';v+='<text x="390" y="378" text-anchor="middle" fill="#b8935a" font-size="9">B11</text>';
+v+=bs(290,355,'B10');v+=bs(390,355,'B11');
+v+='<text x="510" y="288" text-anchor="start" fill="#b8935a" font-size="9">B12</text>';v+='<text x="510" y="218" text-anchor="start" fill="#b8935a" font-size="9">B13</text>';v+='<text x="510" y="158" text-anchor="start" fill="#b8935a" font-size="9">B14</text>';
+v+=bs(487,285,'B12');v+=bs(487,215,'B13');v+=bs(487,155,'B14');
+v+='<text x="14" y="72" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T1 (5p)</text>';v+='<text x="14" y="142" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T2 (5p)</text>';
+v+='<text x="14" y="217" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T3 (5p)</text>';v+='<text x="14" y="292" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T4 (5p)</text>';
+v+=zs(18,78,90,48,'T1');v+=zs(18,148,90,48,'T2');v+=zs(18,223,90,48,'T3');v+=zs(18,298,90,48,'T4');
+v+='<text x="14" y="385" fill="#b8935a" font-size="9" font-family="Cinzel,serif">Room (10p/300K)</text>';
+v+='<rect x="10" y="390" width="125" height="90" rx="8" fill="none" stroke="rgba(184,147,90,.15)" stroke-dasharray="4 3"/>';
+v+=zs(18,398,110,74,'ROOM');
+v+='<text x="245" y="408" text-anchor="middle" fill="#b8935a" font-size="9" font-family="Cinzel,serif">H1 (2p)</text>';
+v+='<text x="520" y="418" text-anchor="middle" fill="#b8935a" font-size="9" font-family="Cinzel,serif">H2 (2p)</text>';
+v+=es(245,440,50,28,'H1');v+=es(520,450,50,28,'H2');
+v+='</svg>';el.innerHTML=v;}
+
+function td(id){exId=exId===id?null:id;rl();}
+function rl(){
+var el=document.getElementById('rL');var res=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';}).sort(function(a,b){return a.createdAt<b.createdAt?-1:1;});
+if(!res.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:20px">No reservations</div>';return;}
+var sl={online:'Online',instagram:'Instagram',email:'Email',staff:'직원',phone:'전화'},sc={online:'so',instagram:'si',email:'se',staff:'ss',phone:'ss'},zn={bar:'Bar',table:'Table',highTable:'High Table',room:'Room'};
+var h='';res.forEach(function(r){var ex=exId===r.id;
+h+='<div class="rc2"><div class="rt" onclick="td(\''+r.id+'\')">';
+h+='<div class="ri"><div class="nm">'+r.name+' · '+r.partySize+'명 · '+(zn[r.zone]||r.zone)+' ('+(r.seats||[]).join(',')+')</div>';
+h+='<div class="mt">'+r.time+'<span class="st '+(sc[r.source]||'ss')+'">'+(sl[r.source]||r.source)+'</span>';if(r.notes)h+=' · 📝';h+='</div></div>';
+h+='<div class="ra">';if(r.status==='confirmed'){h+='<button class="bs" onclick="event.stopPropagation();us(\''+r.id+'\',\'seated\')">SEATED</button>';
+h+='<button class="bn" onclick="event.stopPropagation();us(\''+r.id+'\',\'noshow\')">NO SHOW</button>';}
+h+='<button class="bd" onclick="event.stopPropagation();dr(\''+r.id+'\')">✕</button></div></div>';
+h+='<div class="rd'+(ex?' open':'')+'">';
+h+='<div class="dr"><label>전화</label><span>'+(r.phone||'-')+'</span></div>';
+h+='<div class="dr"><label>Instagram</label><span>'+(r.instagram||'-')+'</span></div>';
+h+='<div class="dr"><label>Email</label><span>'+(r.email||'-')+'</span></div>';
+h+='<div class="dr"><label>예약경로</label><select onchange="sf(\''+r.id+'\',\'source\',this.value)">';
+['online','instagram','email','staff','phone'].forEach(function(s){h+='<option value="'+s+'"'+(r.source===s?' selected':'')+'>'+(sl[s])+'</option>';});
+h+='</select></div>';
+h+='<div class="dr"><label>특이사항</label><textarea onblur="sf(\''+r.id+'\',\'notes\',this.value)">'+(r.notes||'')+'</textarea></div>';
+h+='<div class="dr"><label>상태</label><span style="font-weight:500">'+r.status+'</span></div>';
+if(r.modLog&&r.modLog.length){h+='<div class="ml2"><strong>수정 이력:</strong><br>';r.modLog.forEach(function(m){h+=m.at.slice(0,16).replace('T',' ')+' — '+m.by+': '+m.action+'<br>';});h+='</div>';}
+h+='</div></div>';});el.innerHTML=h;}
+
+async function sf(id,f,v){var b={staffName:gs()};b[f]=v;
+await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+aR=await fetch('/api/reservations/'+cD).then(function(r){return r.json();}).catch(function(){return [];});rl();}
+async function us(id,st){await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st,staffName:gs()})});ld();}
+async function dr(id){if(!confirm('Delete?'))return;await fetch('/api/reservations/'+id,{method:'DELETE'});ld();}
+
+async function sadd(){
+var d={pin:pin,name:document.getElementById('aN').value.trim(),phone:document.getElementById('aPh').value.trim(),
+instagram:document.getElementById('aIg').value.trim(),email:document.getElementById('aEm').value.trim(),
+partySize:parseInt(document.getElementById('aSz').value),date:document.getElementById('aD').value,
+time:document.getElementById('aTm').value,zone:document.getElementById('aZn').value,
+seats:document.getElementById('aSt').value.split(',').map(function(s){return s.trim();}).filter(Boolean),
+source:document.getElementById('aSrc').value,notes:document.getElementById('aNt').value.trim(),staffName:gs()};
+if(!d.name){fl('이름');return;}if(!d.date){fl('날짜');return;}
+var r=await fetch('/api/staff/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(function(r){return r.json();});
+if(r.ok){fl('추가 완료!');document.getElementById('aF').classList.remove('open');
+['aN','aPh','aIg','aEm','aSt','aNt'].forEach(function(id){document.getElementById(id).value='';});cD=d.date;cT=d.time;ld();}
+else fl(r.error||'Error');}
+</script></body></html>
