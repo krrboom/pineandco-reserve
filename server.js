@@ -1,725 +1,368 @@
 const express = require('express');
-const fs      = require('fs');
-const path    = require('path');
-const https   = require('https');
-const qs      = require('querystring');
+const fs = require('fs');
+const path = require('path');
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║                      ⚙️  CONFIG                              ║
-// ╚══════════════════════════════════════════════════════════════╝
 const CONFIG = {
-  BUSINESS_NAME  : "PINE&CO",
-  BUSINESS_EMOJI : "🌲",
-  BUSINESS_PHONE : "010-6817-0406",
-  STAFF_PIN      : "1234",
-  PORT           : process.env.PORT || 3000,
-
-  PUBLIC_URL     : "https://pineandco-waiting.onrender.com",
-
-  // ── Aligo (Korean numbers: SMS + KakaoTalk) ──────────────────
-  ALIGO_KEY      : "rh3n2s1roxzkir7k40s2uud6t56n80uk",
-  ALIGO_USER_ID  : "pineandcoseoul",
-  ALIGO_SENDER   : "01068170406",
-
-  // ── KakaoTalk Alimtalk ───────────────────────────────────────
-  KAKAO_SENDER_KEY : "0fb72a35d7e535142a1863909dddd879687eabb8",
-  TPL_JOIN   : "YOUR_TPL_CODE_JOIN",
-  TPL_CALL   : "YOUR_TPL_CODE_CALL",
-  TPL_CANCEL : "YOUR_TPL_CODE_CANCEL",
-
-  // ── Twilio (International numbers) ───────────────────────────
-  TWILIO_SID     : "AC4240cb85035b38453f598974ae9d3e91",
-  TWILIO_TOKEN   : "00cc76d8377aa69e18237efd37f4c076",
-  TWILIO_FROM    : "+12602548266",
-
-  AUTO_CANCEL_MIN : 5,
-
-  // ── Resend (Email notifications) ────────────────────────────
-  RESEND_KEY     : "re_Y9vDdV8F_JQCZVN7V19GWb5xH9tdhVSUb",
-  EMAIL_FROM     : "Pine & Co Seoul <waiting@pineandco.shop>",
+  PORT: process.env.PORT || 3001,
+  STAFF_PIN: process.env.STAFF_PIN || '1234',
+  ADMIN_PIN: process.env.ADMIN_PIN || '0000',
+  BUSINESS_PHONE: process.env.BUSINESS_PHONE || '02-XXX-XXXX',
+  PUBLIC_URL: process.env.PUBLIC_URL || 'http://localhost:3001',
+  BUSINESS_HOURS: '19:00 - 02:00',
+  ALIGO_KEY: process.env.ALIGO_KEY || '',
+  ALIGO_USER_ID: process.env.ALIGO_USER_ID || '',
+  ALIGO_SENDER: process.env.ALIGO_SENDER || '',
+  TWILIO_SID: process.env.TWILIO_SID || '',
+  TWILIO_AUTH: process.env.TWILIO_AUTH || '',
+  TWILIO_FROM: process.env.TWILIO_FROM || '',
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  RESEND_FROM: process.env.RESEND_FROM || 'Pine & Co <noreply@pineandco.shop>',
+  SEATS: {
+    bar: ['B1','B2','B3','B4','B5','B6','B7','B8','B9','B10','B11','B12','B13','B14'],
+    tables: ['T1','T2','T3','T4'],
+    highTables: ['H1','H2'],
+    room: ['ROOM'],
+  },
+  CAPACITY: { T1:5,T2:5,T3:5,T4:5,H1:2,H2:2,ROOM:10,B1:1,B2:1,B3:1,B4:1,B5:1,B6:1,B7:1,B8:1,B9:1,B10:1,B11:1,B12:1,B13:1,B14:1 },
+  ROOM_MIN_CHARGE: 300000,
+  BAR_EDGE_SEATS: ['B1','B3','B4','B6'],
+  BAR_MID_SEATS: ['B2','B5'],
+  BAR_U_SEATS: ['B7','B8','B9','B10','B11','B12','B13','B14'],
+  WEEKDAY_SLOTS: ['19:00','20:00','21:00','23:00'],
+  WEEKEND_SLOTS: ['19:00','20:00','21:00'],
+  LATE_SLOT: '23:00',
+  LATE_BAR_MAX: 4,
+  LATE_TABLE_MAX: 2,
 };
-// ══════════════════════════════════════════════════════════════
+const STAFF_FILE = path.join(__dirname, 'staff.json');
+const DATA_FILE = path.join(__dirname, 'reservations.json');
+const EVENTS_FILE = path.join(__dirname, 'events.json');
+let reservations = [], events = {}, staffNames = ['DuUi','Manager'];
+let lockPromise = Promise.resolve();
+function withLock(fn) { lockPromise = lockPromise.then(fn).catch(e => { console.error(e); throw e; }); return lockPromise; }
 
-const IS_DEV = !CONFIG.ALIGO_KEY || CONFIG.ALIGO_KEY === 'YOUR_API_KEY';
+function loadData() {
+  try { if (fs.existsSync(DATA_FILE)) reservations = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch(e) { reservations = []; }
+  try { if (fs.existsSync(EVENTS_FILE)) events = JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf8')); } catch(e) { events = {}; }
+  try { if (fs.existsSync(STAFF_FILE)) staffNames = JSON.parse(fs.readFileSync(STAFF_FILE, 'utf8')); } catch(e) {}
+  console.log(`Loaded ${reservations.length} reservations, ${Object.keys(events).length} events, ${staffNames.length} staff`);
+}
+function saveRes() { try { fs.writeFileSync(DATA_FILE, JSON.stringify(reservations, null, 2)); } catch(e) { console.error(e); } }
+function saveEvents() { try { fs.writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2)); } catch(e) { console.error(e); } }
+function saveStaff() { try { fs.writeFileSync(STAFF_FILE, JSON.stringify(staffNames, null, 2)); } catch(e) { console.error(e); } }
+loadData();
 
 const app = express();
 app.use(express.json());
-app.use(express.static(__dirname));
-app.get('/', (_req, res) => res.redirect('/customer.html'));
-// Short URL for SMS (phones detect shorter URLs better)
-app.get('/t/:id', (req, res) => res.redirect('/customer.html?id=' + req.params.id));
+app.use(express.static(path.join(__dirname, 'public')));
 
-/* ═══════════════════════════════════════════════════════════
-   RELIABILITY LAYER — prevents queue corruption
-   ═══════════════════════════════════════════════════════════ */
+function kstToday() { return new Date(Date.now() + 9*3600000).toISOString().slice(0,10); }
+function isWeekend(d) { const day = new Date(d+'T12:00:00+09:00').getDay(); return day===0||day===5||day===6; }
+function getSlots(d) { return isWeekend(d) ? CONFIG.WEEKEND_SLOTS : CONFIG.WEEKDAY_SLOTS; }
+function getResFor(date,time) { return reservations.filter(r => r.date===date && r.time===time && r.status!=='cancelled' && r.status!=='noshow'); }
+function getOccupied(date,time) { const s=[]; getResFor(date,time).forEach(r => { if(r.seats) s.push(...r.seats); }); return s; }
 
-const DATA_FILE   = path.join(__dirname, 'queue.json');
-const BACKUP_FILE = path.join(__dirname, 'queue.backup.json');
-let queue        = [];
-let cancelTimers = {};
-let sseClients   = [];
-let opLock       = false;  // operation lock — prevents race conditions
+function autoAssign(date, time, partySize, preference) {
+  const occ = getOccupied(date, time);
+  const free = s => !occ.includes(s);
 
-// ── Atomic save: write to temp file first, then rename ──
-function saveQueue () {
-  const tmp = DATA_FILE + '.tmp';
-  const data = JSON.stringify(queue, null, 2);
-  try {
-    fs.writeFileSync(tmp, data, 'utf8');
-    fs.renameSync(tmp, DATA_FILE);
-    // Keep a backup every save
-    fs.writeFileSync(BACKUP_FILE, data, 'utf8');
-  } catch (e) {
-    console.error('⚠️  SAVE ERROR:', e.message);
-    // Fallback: direct write
-    try { fs.writeFileSync(DATA_FILE, data, 'utf8'); } catch {}
-  }
-}
-
-// ── Load with validation + backup recovery ──
-function loadQueue () {
-  let raw = null;
-  try {
-    if (fs.existsSync(DATA_FILE))
-      raw = fs.readFileSync(DATA_FILE, 'utf8');
-  } catch { raw = null; }
-
-  // If main file is broken, try backup
-  if (!raw || raw.trim() === '') {
-    try {
-      if (fs.existsSync(BACKUP_FILE))
-        raw = fs.readFileSync(BACKUP_FILE, 'utf8');
-    } catch { raw = null; }
-  }
-
-  if (!raw) { queue = []; return; }
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) throw new Error('Not an array');
-    // Validate each entry has required fields
-    queue = parsed.filter(e =>
-      e && typeof e.id === 'string' && typeof e.number === 'number'
-      && typeof e.name === 'string' && typeof e.phone === 'string'
-      && typeof e.status === 'string' && ['waiting','called'].includes(e.status)
-      && typeof e.joinedAt === 'number'
-    );
-    if (queue.length !== parsed.length) {
-      console.warn(`⚠️  Removed ${parsed.length - queue.length} invalid entries from queue`);
-      saveQueue();
+  if (preference === 'bar' || partySize === 1) {
+    if (partySize === 1) {
+      for (const s of CONFIG.BAR_EDGE_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+      for (const s of CONFIG.BAR_MID_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+      for (const s of CONFIG.BAR_U_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
     }
-  } catch (e) {
-    console.error('⚠️  CORRUPT queue.json, starting fresh:', e.message);
-    queue = [];
-    saveQueue();
-  }
-}
-
-loadQueue();
-
-// ── Operation lock: ensures one queue mutation at a time ──
-async function withLock (fn) {
-  // Simple spin-wait (Node is single-threaded, so this is safe)
-  let waited = 0;
-  while (opLock) {
-    await new Promise(r => setTimeout(r, 10));
-    waited += 10;
-    if (waited > 3000) { // 3 second timeout
-      console.error('⚠️  Lock timeout — forcing unlock');
-      opLock = false;
-      break;
+    if (partySize === 2) {
+      const pairs = [['B1','B2'],['B2','B3'],['B4','B5'],['B5','B6'],['B7','B8'],['B8','B9'],['B10','B11'],['B12','B13'],['B13','B14']];
+      for (const p of pairs) if (p.every(free)) return { zone:'bar', seats:p };
     }
-  }
-  opLock = true;
-  try { return await fn(); }
-  finally { opLock = false; }
-}
-
-// ── Get next queue number — guaranteed unique ──
-function nextNumber () {
-  const used = new Set(queue.map(q => q.number));
-  let n = queue.reduce((m, q) => Math.max(m, q.number), 0) + 1;
-  while (used.has(n)) n++;  // skip any collision
-  return n;
-}
-
-// ── Generate unique ID ──
-function uid () {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-function broadcast () {
-  const data = JSON.stringify(queue);
-  sseClients = sseClients.filter(r => !r.writableEnded);
-  sseClients.forEach(r => r.write(`data: ${data}\n\n`));
-  saveQueue();
-}
-
-/* ─── HTTP POST helper ─── */
-function httpPost (hostname, reqPath, params) {
-  const body = qs.stringify(params);
-  return new Promise((resolve, reject) => {
-    const req = https.request({
-      hostname, path: reqPath, method: 'POST',
-      headers: {
-        'Content-Type'   : 'application/x-www-form-urlencoded',
-        'Content-Length' : Buffer.byteLength(body),
-      },
-    }, res => {
-      let buf = '';
-      res.on('data', d => (buf += d));
-      res.on('end', () => { try { resolve(JSON.parse(buf)); } catch { resolve(buf); } });
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
-}
-
-/* ═══════════════════════════════════════════════════════════
-   PHONE NUMBER ROUTING
-   Korean numbers  → Aligo (KakaoTalk + SMS)
-   International   → Twilio
-   ═══════════════════════════════════════════════════════════ */
-
-function isKoreanNumber (phone) {
-  const clean = phone.replace(/[-\s()]/g, '');
-  // Simple rule: starts with 010 or +82 → Korean
-  if (clean.startsWith('010')) return true;
-  if (clean.startsWith('+82')) return true;
-  if (clean.startsWith('82')) return true;
-  return false;
-}
-
-// Format phone to E.164 for Twilio (e.g. +821012345678)
-function toE164 (phone) {
-  let clean = phone.replace(/[-\s()]/g, '');
-  // Already has + prefix
-  if (clean.startsWith('+')) return clean;
-  // Korean number without country code
-  if (/^01[0-9]/.test(clean)) return '+82' + clean.slice(1);
-  // Number with country code but no +
-  if (/^[1-9]\d{6,14}$/.test(clean)) return '+' + clean;
-  return '+' + clean;
-}
-
-/* ─── Twilio SMS sender ─── */
-async function sendTwilio (toPhone, message) {
-  const sid   = CONFIG.TWILIO_SID;
-  const token = CONFIG.TWILIO_TOKEN;
-  const from  = CONFIG.TWILIO_FROM;
-
-  const body = qs.stringify({ To: toPhone, From: from, Body: message });
-  const auth = Buffer.from(`${sid}:${token}`).toString('base64');
-
-  return new Promise((resolve, reject) => {
-    const req = https.request({
-      hostname: 'api.twilio.com',
-      path: `/2010-04-01/Accounts/${sid}/Messages.json`,
-      method: 'POST',
-      headers: {
-        'Content-Type'   : 'application/x-www-form-urlencoded',
-        'Content-Length' : Buffer.byteLength(body),
-        'Authorization'  : `Basic ${auth}`,
-      },
-    }, res => {
-      let buf = '';
-      res.on('data', d => (buf += d));
-      res.on('end', () => {
-        try { resolve(JSON.parse(buf)); } catch { resolve(buf); }
-      });
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
-}
-
-const IS_TWILIO_READY = CONFIG.TWILIO_SID !== 'YOUR_TWILIO_SID';
-const IS_EMAIL_READY = CONFIG.RESEND_KEY !== 'YOUR_RESEND_API_KEY';
-
-/* ─── Resend Email sender ─── */
-async function sendEmail (toEmail, subject, htmlBody) {
-  const body = JSON.stringify({
-    from: CONFIG.EMAIL_FROM,
-    to: [toEmail],
-    subject,
-    html: htmlBody,
-  });
-  return new Promise((resolve, reject) => {
-    const req = https.request({
-      hostname: 'api.resend.com',
-      path: '/emails',
-      method: 'POST',
-      headers: {
-        'Content-Type'  : 'application/json',
-        'Authorization' : `Bearer ${CONFIG.RESEND_KEY}`,
-        'Content-Length' : Buffer.byteLength(body),
-      },
-    }, res => {
-      let buf = '';
-      res.on('data', d => (buf += d));
-      res.on('end', () => { try { resolve(JSON.parse(buf)); } catch { resolve(buf); } });
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
-}
-
-function buildEmailHTML (type, entry, url, extra) {
-  const min = CONFIG.AUTO_CANCEL_MIN;
-  const biz = CONFIG.BUSINESS_PHONE;
-  const btnStyle = 'display:inline-block;padding:16px 40px;background:#b8935a;color:#1e1208;text-decoration:none;border-radius:8px;font-family:sans-serif;font-size:16px;font-weight:600;letter-spacing:1px;';
-
-  const templates = {
-    join: {
-      subject: `[PINE&CO] Waiting #${entry.number} confirmed`,
-      body: `
-        <p>파인앤코에 방문해주셔서 감사합니다.<br>Thank you for visiting Pine & Co.</p>
-        <p style="font-size:48px;color:#b8935a;font-weight:300;margin:20px 0;">#${entry.number}</p>
-        <p>웨이팅 ${entry.number}번 (${entry.partySize||2}명) 등록되었습니다.<br>
-        You are #${entry.number} (${entry.partySize||2} guests).</p>
-        <p>현재 대기: ${extra.myPos||1} / ${extra.total||1}</p>
-        <p style="margin:24px 0;"><a href="${url}" style="${btnStyle}">CHECK MY STATUS</a></p>
-        <p style="color:#999;">자리가 나면 문자/이메일로 알려드리겠습니다.<br>We'll notify you when your table is ready.</p>`,
-    },
-    call: {
-      subject: `[PINE&CO] Your table is ready!`,
-      body: `
-        <p style="font-size:24px;color:#b8935a;font-weight:500;">자리가 마련되었습니다!<br>Your table is ready!</p>
-        <p>${entry.name}님, ${min}분 내로 방문 부탁드리겠습니다.<br>
-        ${entry.name}, we kindly ask you to arrive within ${min} minutes.</p>
-        <p style="margin:24px 0;"><a href="${url}" style="${btnStyle}">VIEW DETAILS</a></p>
-        <p>시간이 더 필요하시면 편하게 연락 부탁드립니다.<br>Need more time? Please don't hesitate to call us.</p>
-        <p style="color:#b8935a;font-size:18px;margin-top:16px;">Tel: ${biz}</p>`,
-    },
-    cancel: {
-      subject: `[PINE&CO] Waiting cancelled`,
-      body: `
-        <p>${entry.name}님, ${min}분이 경과하여 웨이팅이 자동 취소되었습니다.<br>
-        ${entry.name}, your spot has been released after ${min} minutes.</p>
-        <p>다시 방문해 주시면 재등록 가능합니다.<br>You're welcome to register again.</p>
-        <p style="color:#b8935a;font-size:18px;margin-top:16px;">Tel: ${biz}</p>`,
-    },
-  };
-
-  const t = templates[type];
-  return {
-    subject: t.subject,
-    html: `<div style="max-width:480px;margin:0 auto;background:#1e1208;color:#f0ebe0;padding:40px 32px;font-family:'Georgia',serif;text-align:center;border-radius:12px;">
-      <div style="font-size:14px;letter-spacing:4px;color:#b8935a;margin-bottom:24px;">PINE & CO SEOUL</div>
-      ${t.body}
-      <hr style="border:none;border-top:1px solid rgba(184,147,90,.2);margin:32px 0 16px;"/>
-      <p style="font-size:11px;color:#7a6550;">Pine & Co Seoul</p>
-    </div>`,
-  };
-}
-
-// Normalize Korean phone to domestic format: 01012345678
-function toKoreanDomestic (phone) {
-  let clean = phone.replace(/[-\s()]/g, '');
-  // Remove +82 or 82 prefix
-  clean = clean.replace(/^\+?82/, '');
-  // Add back leading 0 if missing
-  if (!clean.startsWith('0')) clean = '0' + clean;
-  return clean;
-}
-
-/* ─── Notification: auto-routes Korean → Aligo, International → Twilio ─── */
-async function sendMessage (entry, type, extra = {}) {
-  const rawPhone = entry.phone.replace(/-/g, '');
-  const url   = `${CONFIG.PUBLIC_URL}/t/${entry.id}`;
-  const min   = CONFIG.AUTO_CANCEL_MIN;
-  const biz   = CONFIG.BUSINESS_PHONE;
-
-  const messages = {
-    join: {
-      tpl  : CONFIG.TPL_JOIN,
-      vars : { '#{이름}': entry.name, '#{번호}': String(entry.number),
-               '#{순서}': String(extra.myPos||1), '#{전체대기}': String(extra.total||1),
-               '#{링크}': url },
-      sms  : `[PINE&CO]\n`
-           + `파인앤코에 방문해주셔서 감사합니다.\n`
-           + `웨이팅 ${entry.number}번 (${entry.partySize||2}명) 등록되었습니다.\n`
-           + `자리가 나면 문자로 알려드리겠습니다.\n`
-           + `\n`
-           + `Thank you for visiting Pine & Co.\n`
-           + `You are #${entry.number} (${entry.partySize||2} guests).\n`
-           + `We'll notify you when your table is ready.\n`
-           + `\n`
-           + `대기: ${extra.myPos||1} / ${extra.total||1}\n`
-           + `\n`
-           + `${url}\n`
-           + `\n`
-           + `Tel: ${biz}`,
-    },
-    call: {
-      tpl  : CONFIG.TPL_CALL,
-      vars : { '#{이름}': entry.name, '#{번호}': String(entry.number), '#{분}': String(min), '#{링크}': url },
-      sms  : `[PINE&CO]\n`
-           + `${entry.name}님, 자리가 마련되었습니다!\n`
-           + `5분 내로 방문 부탁드리겠습니다.\n`
-           + `시간이 더 필요하시면 편하게 연락 부탁드립니다.\n`
-           + `\n`
-           + `${entry.name}, your table is ready!\n`
-           + `We kindly ask you to arrive within 5 minutes.\n`
-           + `Need more time? Please don't hesitate to call us.\n`
-           + `\n`
-           + `${url}\n`
-           + `\n`
-           + `Tel: ${biz}`,
-    },
-    cancel: {
-      tpl  : CONFIG.TPL_CANCEL,
-      vars : { '#{이름}': entry.name, '#{분}': String(min) },
-      sms  : `[PINE&CO]\n`
-           + `${entry.name}님, ${min}분이 경과하여 웨이팅이 자동 취소되었습니다.\n`
-           + `다시 방문해 주시면 재등록 가능합니다.\n`
-           + `\n`
-           + `${entry.name}, your spot has been released after ${min} minutes.\n`
-           + `You're welcome to register again.\n`
-           + `\n`
-           + `Tel: ${biz}`,
-    },
-  };
-
-  const m = messages[type];
-  const korean = isKoreanNumber(entry.phone);
-  const label  = { join:'REGISTER', call:'NOTIFY', cancel:'AUTO-CANCEL' }[type];
-  const krPhone = korean ? toKoreanDomestic(rawPhone) : rawPhone;
-
-  // ═══════════════════════════════════════════════
-  // EMAIL: always send if email provided (runs in parallel with SMS)
-  // ═══════════════════════════════════════════════
-  if (entry.email && IS_EMAIL_READY) {
-    const emailData = buildEmailHTML(type, entry, url, extra);
-    sendEmail(entry.email, emailData.subject, emailData.html)
-      .then(r => {
-        if (r?.id) console.log(`✅ Email sent (${type}) → ${entry.email}`);
-        else console.error(`⚠️  Email response (${type}):`, JSON.stringify(r));
-      })
-      .catch(e => console.error('Email error:', e.message));
+    return null;
   }
 
-  // ── Dev mode: console output ──
-  if (IS_DEV && !IS_TWILIO_READY) {
-    console.log(`\n🟡 [${label} simulation] ${korean ? 'KR' : 'INTL'}`);
-    console.log(`   To: ${krPhone} (${entry.name})`);
-    console.log(`   Msg: ${m.sms}\n`);
+  if (preference === 'table') {
+    if (partySize <= 2) {
+      for (const s of CONFIG.SEATS.highTables) if (free(s)) return { zone:'highTable', seats:[s] };
+      for (const s of CONFIG.SEATS.tables) if (free(s)) return { zone:'table', seats:[s] };
+    }
+    if (partySize >= 3 && partySize <= 5) {
+      for (const s of CONFIG.SEATS.tables) if (free(s)) return { zone:'table', seats:[s] };
+    }
+    if (partySize >= 6 && partySize <= 10) {
+      if (free('ROOM')) return { zone:'room', seats:['ROOM'], note: partySize >= 9 ? 'tight_room' : null };
+    }
+    return null;
+  }
+
+  // auto (no preference)
+  if (partySize === 1) {
+    for (const s of CONFIG.BAR_EDGE_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+    for (const s of CONFIG.BAR_MID_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+    for (const s of CONFIG.BAR_U_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+  }
+  if (partySize === 2) {
+    for (const s of CONFIG.SEATS.highTables) if (free(s)) return { zone:'highTable', seats:[s] };
+    const pairs = [['B1','B2'],['B2','B3'],['B4','B5'],['B5','B6'],['B7','B8'],['B8','B9'],['B10','B11'],['B12','B13'],['B13','B14']];
+    for (const p of pairs) if (p.every(free)) return { zone:'bar', seats:p };
+    for (const s of CONFIG.SEATS.tables) if (free(s)) return { zone:'table', seats:[s] };
+  }
+  if (partySize >= 3 && partySize <= 5) {
+    for (const s of CONFIG.SEATS.tables) if (free(s)) return { zone:'table', seats:[s] };
+  }
+  if (partySize >= 6 && partySize <= 10) {
+    if (free('ROOM')) return { zone:'room', seats:['ROOM'], note: partySize >= 9 ? 'tight_room' : null };
+  }
+  return null;
+}
+
+// ── Events (blocked dates) ──
+app.get('/api/events', (req, res) => res.json(events));
+app.post('/api/events/:date', (req, res) => {
+  const { date } = req.params;
+  const { pin, label } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  if (label) events[date] = label;
+  else delete events[date];
+  saveEvents();
+  res.json({ ok: true, events });
+});
+
+// ── Availability ──
+app.get('/api/availability/:date', (req, res) => {
+  const { date } = req.params;
+  if (events[date]) return res.json({ blocked: true, event: events[date] });
+  const slots = getSlots(date);
+  const result = {};
+  slots.forEach(time => {
+    const occ = getOccupied(date, time);
+    const isLate = time === CONFIG.LATE_SLOT && !isWeekend(date);
+    let barFree = CONFIG.SEATS.bar.filter(s => !occ.includes(s)).length;
+    let tablesFree = CONFIG.SEATS.tables.filter(s => !occ.includes(s)).length;
+    const highFree = CONFIG.SEATS.highTables.filter(s => !occ.includes(s)).length;
+    const roomFree = !occ.includes('ROOM') ? 1 : 0;
+    if (isLate) {
+      const ex = getResFor(date, time);
+      const ub = ex.filter(r => r.zone==='bar').reduce((s,r) => s+r.partySize, 0);
+      const ut = ex.filter(r => r.zone==='table'||r.zone==='highTable').length;
+      barFree = Math.max(0, CONFIG.LATE_BAR_MAX - ub);
+      tablesFree = Math.max(0, CONFIG.LATE_TABLE_MAX - ut);
+    }
+    result[time] = { bar:barFree, tables:tablesFree, highTables:highFree, room:roomFree, isLate, occupiedSeats:occ };
+  });
+  res.json(result);
+});
+
+// ── Guest reserve ──
+app.post('/api/reserve', async (req, res) => {
+  const { name, phone, instagram, email, partySize, date, time, preference } = req.body;
+  if (!name || !partySize || !date || !time) return res.status(400).json({ error: 'Required fields missing.' });
+  if (partySize < 1 || partySize > 10) return res.status(400).json({ error: 'Party size 1-10.' });
+  if (events[date]) return res.status(400).json({ error: 'This date is not available (event).' });
+  const slots = getSlots(date);
+  if (!slots.includes(time)) return res.status(400).json({ error: 'Invalid time.' });
+  try {
+    await withLock(async () => {
+      const a = autoAssign(date, time, partySize, preference);
+      if (!a) throw new Error('해당 시간에 좌석이 없습니다. / No seats available.');
+      const r = {
+        id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+        name, phone: phone||'', instagram: instagram||'', email: email||'',
+        partySize, date, time, preference: preference||'',
+        zone: a.zone, seats: a.seats, status: 'confirmed', source: 'online',
+        notes: '', createdAt: new Date().toISOString(),
+        reminderD1: false, reminderD0: false, modLog: [],
+      };
+      reservations.push(r); saveRes();
+      sendConfirmation(r);
+      res.json({ ok: true, reservation: r });
+    });
+  } catch(e) { res.status(409).json({ error: e.message }); }
+});
+
+// ── Staff routes ──
+app.get('/api/staff-names', (req, res) => res.json(staffNames));
+app.post('/api/staff-names', (req, res) => {
+  const { pin, name } = req.body;
+  if (pin !== CONFIG.ADMIN_PIN) return res.status(403).json({ error: 'Admin PIN required' });
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Name required' });
+  const n = name.trim();
+  if (staffNames.includes(n)) return res.status(400).json({ error: 'Already exists' });
+  staffNames.push(n);
+  saveStaff();
+  res.json({ ok: true, staffNames });
+});
+app.delete('/api/staff-names/:name', (req, res) => {
+  const { pin } = req.body || {};
+  if (pin !== CONFIG.ADMIN_PIN) return res.status(403).json({ error: 'Admin PIN required' });
+  const n = decodeURIComponent(req.params.name);
+  staffNames = staffNames.filter(s => s !== n);
+  saveStaff();
+  res.json({ ok: true, staffNames });
+});
+app.get('/api/month/:year/:month', (req, res) => {
+  const prefix = `${req.params.year}-${String(req.params.month).padStart(2,'0')}`;
+  const counts = {};
+  reservations.forEach(r => { if (r.date.startsWith(prefix) && r.status!=='cancelled') counts[r.date]=(counts[r.date]||0)+1; });
+  res.json(counts);
+});
+app.post('/api/staff/reserve', (req, res) => {
+  const { pin,name,phone,instagram,email,partySize,date,time,zone,seats,source,notes,staffName } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  const r = {
+    id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    name, phone:phone||'', instagram:instagram||'', email:email||'',
+    partySize:partySize||1, date, time, preference:'',
+    zone:zone||'bar', seats:seats||[], status:'confirmed',
+    source:source||'staff', notes:notes||'',
+    createdAt: new Date().toISOString(), reminderD1:false, reminderD0:false,
+    modLog: [{ action:'created', by:staffName||'Staff', at:new Date().toISOString() }],
+  };
+  reservations.push(r); saveRes();
+  res.json({ ok:true, reservation:r });
+});
+app.get('/api/reservations/:date', (req, res) => {
+  res.json(reservations.filter(r => r.date===req.params.date && r.status!=='cancelled'));
+});
+app.patch('/api/reservations/:id', (req, res) => {
+  const r = reservations.find(x => x.id===req.params.id);
+  if (!r) return res.status(404).json({ error:'Not found' });
+  const ch = [];
+  if (req.body.status && req.body.status!==r.status) { ch.push('status:'+r.status+'→'+req.body.status); r.status=req.body.status; }
+  if (req.body.notes!==undefined && req.body.notes!==r.notes) { ch.push('notes updated'); r.notes=req.body.notes; }
+  if (req.body.source && req.body.source!==r.source) { ch.push('source:'+r.source+'→'+req.body.source); r.source=req.body.source; }
+  if (ch.length) { if(!r.modLog)r.modLog=[]; r.modLog.push({ action:ch.join(', '), by:req.body.staffName||'Staff', at:new Date().toISOString() }); }
+  saveRes(); res.json({ ok:true, reservation:r });
+});
+app.delete('/api/reservations/:id', (req, res) => {
+  reservations = reservations.filter(r => r.id!==req.params.id); saveRes(); res.json({ ok:true });
+});
+app.get('/api/stats/noshow', (req, res) => {
+  const t=reservations.length, n=reservations.filter(r=>r.status==='noshow').length;
+  res.json({ total:t, noshows:n, rate:(t?Math.round(n/t*100):0)+'%' });
+});
+
+// ── SMS routing: Korean numbers → Aligo, International → Twilio ──
+function isKoreanNumber(phone) {
+  const cleaned = phone.replace(/[^0-9+]/g, '');
+  return cleaned.startsWith('010') || cleaned.startsWith('011') || cleaned.startsWith('+82') || cleaned.startsWith('82');
+}
+
+function sendSMS(to, msg) {
+  const cleaned = to.replace(/[^0-9+]/g, '');
+  if (!cleaned) return;
+
+  if (isKoreanNumber(cleaned)) {
+    sendAligoSMS(cleaned, msg);
+  } else {
+    sendTwilioSMS(cleaned, msg);
+  }
+}
+
+function sendAligoSMS(to, msg) {
+  if (!CONFIG.ALIGO_KEY) { console.log('📱 [ALIGO SIM] '+to+'\n'+msg+'\n'); return; }
+  const p = new URLSearchParams({ key:CONFIG.ALIGO_KEY, user_id:CONFIG.ALIGO_USER_ID, sender:CONFIG.ALIGO_SENDER, receiver:to.replace(/[^0-9]/g,''), msg, msg_type:'LMS' });
+  fetch('https://apis.aligo.in/send/',{method:'POST',body:p}).then(r=>r.json()).then(d=>console.log('Aligo:',d)).catch(e=>console.error('Aligo error:',e));
+}
+
+function sendTwilioSMS(to, msg) {
+  if (!CONFIG.TWILIO_SID || !CONFIG.TWILIO_AUTH) { console.log('📱 [TWILIO SIM] '+to+'\n'+msg+'\n'); return; }
+  let dest = to;
+  if (!dest.startsWith('+')) dest = '+' + dest;
+  const auth = Buffer.from(CONFIG.TWILIO_SID + ':' + CONFIG.TWILIO_AUTH).toString('base64');
+  const body = new URLSearchParams({ From: CONFIG.TWILIO_FROM, To: dest, Body: msg });
+  fetch('https://api.twilio.com/2010-04-01/Accounts/' + CONFIG.TWILIO_SID + '/Messages.json', {
+    method: 'POST',
+    headers: { 'Authorization': 'Basic ' + auth, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body,
+  }).then(r => r.json()).then(d => console.log('Twilio:', d.sid || d.message)).catch(e => console.error('Twilio error:', e));
+}
+
+// ── Email (Resend API) ──
+function sendConfirmEmail(toEmail, reservation) {
+  if (!CONFIG.RESEND_API_KEY) {
+    console.log('📧 [EMAIL SIM] To: '+toEmail);
+    console.log('  Reservation: '+reservation.name+' / '+reservation.date+' '+reservation.time+' / '+reservation.partySize+'명\n');
     return;
   }
+  const r = reservation;
+  const zoneKR = {bar:'바 좌석',table:'테이블',highTable:'하이테이블',room:'프라이빗 룸'};
+  const zoneName = zoneKR[r.zone] || r.zone;
+  let roomNote = '';
+  if (r.zone === 'room') roomNote = '<p style="color:#c9a96e;font-size:13px;">미니멈차지 ₩300,000 / Minimum charge ₩300,000</p>';
 
-  // ═══════════════════════════════════════════════
-  // ROUTE 1: Korean number → Aligo (KakaoTalk + SMS)
-  // ═══════════════════════════════════════════════
-  if (korean) {
-    if (IS_DEV) {
-      console.log(`\n🟡 [${label} KR simulation] ${krPhone}`);
-      console.log(`   ${m.sms}\n`);
-      return;
-    }
+  const html = `
+<div style="max-width:480px;margin:0 auto;font-family:'Helvetica Neue',sans-serif;background:#1e1208;color:#f0ebe0;padding:40px 30px;border-radius:12px;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <h1 style="font-family:Georgia,serif;font-size:24px;color:#b8935a;font-weight:400;letter-spacing:4px;margin:0;">PINE &amp; CO</h1>
+    <p style="font-family:Georgia,serif;font-size:10px;color:#c9a96e;letter-spacing:6px;margin:4px 0 0;">SEOUL</p>
+  </div>
+  <div style="width:40px;height:1px;background:#b8935a;margin:0 auto 24px;opacity:.5;"></div>
+  <h2 style="font-family:Georgia,serif;font-size:16px;color:#b8935a;text-align:center;font-weight:400;letter-spacing:2px;margin-bottom:20px;">RESERVATION CONFIRMED</h2>
+  <div style="background:rgba(184,147,90,.08);border:1px solid rgba(184,147,90,.2);border-radius:8px;padding:20px;margin-bottom:20px;">
+    <table style="width:100%;font-size:14px;color:#f0ebe0;border-collapse:collapse;">
+      <tr><td style="padding:6px 0;color:#c9a96e;width:80px;">Date</td><td style="padding:6px 0;font-weight:500;">${r.date}</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">Time</td><td style="padding:6px 0;font-weight:500;">${r.time}</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">Name</td><td style="padding:6px 0;">${r.name}</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">Party</td><td style="padding:6px 0;">${r.partySize}명</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">Seat</td><td style="padding:6px 0;">${zoneName}</td></tr>
+    </table>
+    ${roomNote}
+  </div>
+  <div style="text-align:center;font-size:12px;color:#c9a96e;line-height:1.8;">
+    <p>예약 취소는 전화로만 가능합니다.</p>
+    <p>To cancel, please call:</p>
+    <p style="font-size:14px;color:#b8935a;font-weight:500;">${CONFIG.BUSINESS_PHONE}</p>
+  </div>
+  <div style="width:40px;height:1px;background:#b8935a;margin:24px auto;opacity:.3;"></div>
+  <p style="text-align:center;font-size:10px;color:#c9a96e;opacity:.5;">Open 7PM — 2AM</p>
+</div>`;
 
-    // Try Alimtalk first
-    const hasKakao = CONFIG.KAKAO_SENDER_KEY !== 'YOUR_SENDER_KEY'
-                  && m.tpl !== `YOUR_TPL_CODE_${type.toUpperCase()}`;
-
-    if (hasKakao) {
-      let tplMsg = Object.entries(m.vars).reduce((s, [k, v]) => s.replaceAll(k, v), m.sms);
-      try {
-        const result = await httpPost('kakaoapi.aligo.in', '/akv10/alimtalk/send/', {
-          apikey: CONFIG.ALIGO_KEY, userid: CONFIG.ALIGO_USER_ID,
-          senderkey: CONFIG.KAKAO_SENDER_KEY, tpl_code: m.tpl,
-          sender: CONFIG.ALIGO_SENDER, receiver_1: krPhone,
-          recvname_1: entry.name, message_1: tplMsg,
-          failover: 'Y', fsubject_1: 'PINE&CO Waiting',
-          fmessage_1: m.sms, fmsg_type: 'LMS',
-        });
-        console.log(`✅ Alimtalk sent (${type}):`, result?.message || result?.result_code);
-        return result;
-      } catch (e) {
-        console.error('Alimtalk error, falling back to SMS:', e.message);
-      }
-    }
-
-    // Aligo SMS fallback
-    try {
-      const result = await httpPost('apis.aligo.in', '/send/', {
-        key: CONFIG.ALIGO_KEY, user_id: CONFIG.ALIGO_USER_ID,
-        sender: CONFIG.ALIGO_SENDER, receiver: krPhone,
-        msg: m.sms, msg_type: 'LMS',
-      });
-      console.log(`✅ KR SMS sent (${type}):`, JSON.stringify(result));
-      return result;
-    } catch (e) {
-      console.error('KR SMS error:', e.message);
-    }
-  }
-
-  // ═══════════════════════════════════════════════
-  // ROUTE 2: International number → Twilio
-  // ═══════════════════════════════════════════════
-  else {
-    const e164 = toE164(entry.phone);
-
-    if (!IS_TWILIO_READY) {
-      console.log(`\n🟡 [${label} INTL simulation] → ${e164}`);
-      console.log(`   ${m.sms}\n`);
-      return;
-    }
-
-    try {
-      const result = await sendTwilio(e164, m.sms);
-      if (result?.sid) {
-        console.log(`✅ Twilio sent (${type}) → ${e164}: SID ${result.sid}`);
-      } else {
-        console.error(`⚠️  Twilio response (${type}):`, JSON.stringify(result));
-      }
-      return result;
-    } catch (e) {
-      console.error('Twilio error:', e.message);
-    }
-  }
+  fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + CONFIG.RESEND_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: CONFIG.RESEND_FROM,
+      to: [toEmail],
+      subject: `[PINE&CO] Reservation Confirmed — ${r.date} ${r.time}`,
+      html: html,
+    }),
+  }).then(resp => resp.json()).then(d => console.log('Email sent:', d)).catch(e => console.error('Email error:', e));
 }
 
-/* ─── Auto-cancel timer ─── */
-function startCancelTimer (id) {
-  if (cancelTimers[id]) clearTimeout(cancelTimers[id]);
-  cancelTimers[id] = setTimeout(async () => {
-    await withLock(async () => {
-      const entry = queue.find(q => q.id === id);
-      if (!entry || entry.status !== 'called') return;
-      try { await sendMessage(entry, 'cancel'); } catch (e) { console.error(e); }
-      queue = queue.filter(q => q.id !== id);
-      delete cancelTimers[id];
-      broadcast();
-      console.log(`⏰ Auto-cancel (5 min): ${entry.name} (#${entry.number})`);
-    });
-  }, CONFIG.AUTO_CANCEL_MIN * 60 * 1000);
+// ── Send all confirmations ──
+function sendConfirmation(reservation) {
+  const r = reservation;
+  const msg = `[PINE&CO] ${r.name}님, 예약이 확인되었습니다.\n날짜: ${r.date} ${r.time}\n인원: ${r.partySize}명\n취소는 전화로만: ${CONFIG.BUSINESS_PHONE}\n\n[PINE&CO] Confirmed.\n${r.date} ${r.time} / Party: ${r.partySize}\nTo cancel: ${CONFIG.BUSINESS_PHONE}`;
+  if (r.phone) sendSMS(r.phone, msg);
+  if (r.email) sendConfirmEmail(r.email, r);
 }
 
-// ── Restart recovery: re-arm timers for entries that were "called" before crash ──
-function recoverTimers () {
-  const now = Date.now();
-  queue.forEach(e => {
-    if (e.status === 'called' && e.calledAt) {
-      const elapsed = now - e.calledAt;
-      const remaining = (CONFIG.AUTO_CANCEL_MIN * 60 * 1000) - elapsed;
-      if (remaining <= 0) {
-        console.log(`⏰ Expired during downtime: ${e.name} (#${e.number})`);
-        queue = queue.filter(q => q.id !== e.id);
-      } else {
-        console.log(`🔄 Recovering timer for ${e.name} (#${e.number}), ${Math.ceil(remaining/1000)}s left`);
-        startCancelTimer(e.id);
-      }
+// ── Reminders ──
+function sendReminders() {
+  const today=kstToday(), tmrw=new Date(Date.now()+9*3600000+86400000).toISOString().slice(0,10);
+  reservations.forEach(r => {
+    if(r.status!=='confirmed') return;
+    if(r.date===tmrw&&!r.reminderD1){
+      const msg=`[PINE&CO] ${r.name}님, 내일 예약 확인: ${r.date} ${r.time} / ${r.partySize}명\n변경/취소: ${CONFIG.BUSINESS_PHONE}`;
+      if(r.phone) sendSMS(r.phone, msg);
+      if(r.email) sendConfirmEmail(r.email, {...r, _reminderType:'D-1'});
+      r.reminderD1=true; saveRes();
+    }
+    if(r.date===today&&!r.reminderD0){
+      const msg=`[PINE&CO] ${r.name}님, 오늘 예약 확인: ${r.time} / ${r.partySize}명\n오늘 뵙겠습니다!`;
+      if(r.phone) sendSMS(r.phone, msg);
+      if(r.email) sendConfirmEmail(r.email, {...r, _reminderType:'D-0'});
+      r.reminderD0=true; saveRes();
     }
   });
-  if (queue.length > 0) saveQueue();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   API ROUTES
-   ═══════════════════════════════════════════════════════════ */
+function cleanup() {
+  const cut=Date.now()-7*86400000, b=reservations.length;
+  reservations=reservations.filter(r=>new Date(r.date+'T23:59:59+09:00').getTime()>cut);
+  if(reservations.length!==b){ console.log('Cleaned '+(b-reservations.length)); saveRes(); }
+}
 
-// SSE real-time stream
-app.get('/api/stream', (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-  res.write(`data: ${JSON.stringify(queue)}\n\n`);
-  sseClients.push(res);
-  req.on('close', () => { sseClients = sseClients.filter(c => c !== res); });
-});
-
-// Public config
-app.get('/api/config', (_req, res) => {
-  res.json({
-    businessName  : CONFIG.BUSINESS_NAME,
-    businessEmoji : CONFIG.BUSINESS_EMOJI,
-    autoCancelMin : CONFIG.AUTO_CANCEL_MIN,
-    staffPin      : CONFIG.STAFF_PIN,
-  });
-});
-
-// Queue read
-app.get('/api/queue', (_req, res) => res.json(queue));
-
-// ── Guest: join the waiting list ──
-app.post('/api/queue/join', async (req, res) => {
-  try {
-    const result = await withLock(async () => {
-      const { name, phone, partySize, email } = req.body;
-      if (!name?.trim() || !phone?.trim())
-        return { status: 400, body: { error: 'Please enter your name and phone number.' } };
-
-      const cleanPhone = phone.trim().replace(/-/g, '');
-      const size = Math.max(1, Math.min(20, parseInt(partySize) || 2));
-
-      // Prevent duplicate: same phone still in queue
-      const existing = queue.find(q => q.phone.replace(/-/g, '') === cleanPhone);
-      if (existing)
-        return { status: 409, body: { error: 'This phone number is already in the waiting list.', existing } };
-
-      const entry = {
-        id: uid(), number: nextNumber(),
-        name: name.trim(), phone: phone.trim(),
-        email: email?.trim() || null,
-        partySize: size,
-        joinedAt: Date.now(), status: 'waiting',
-      };
-      queue.push(entry);
-      broadcast();
-
-      const waitingList = queue.filter(q => q.status === 'waiting');
-      const myPos = waitingList.findIndex(q => q.id === entry.id) + 1;
-
-      // Send notification async — don't block response
-      sendMessage(entry, 'join', { myPos, total: waitingList.length }).catch(console.error);
-
-      return { status: 200, body: entry };
-    });
-
-    res.status(result.status).json(result.body);
-  } catch (e) {
-    console.error('JOIN error:', e);
-    res.status(500).json({ error: 'Server error. Please try again.' });
-  }
-});
-
-// ── Staff: notify guest (table ready) ──
-app.post('/api/queue/call/:id', async (req, res) => {
-  try {
-    const result = await withLock(async () => {
-      const entry = queue.find(q => q.id === req.params.id);
-      if (!entry) return { status: 404, body: { error: 'Entry not found' } };
-      if (entry.status === 'called') return { status: 200, body: { ok: true, note: 'Already notified' } };
-
-      entry.status   = 'called';
-      entry.calledAt = Date.now();
-      broadcast();
-
-      sendMessage(entry, 'call').catch(console.error);
-      startCancelTimer(entry.id);  // 10-min timer starts NOW
-
-      return { status: 200, body: { ok: true } };
-    });
-    res.status(result.status).json(result.body);
-  } catch (e) {
-    console.error('CALL error:', e);
-    res.status(500).json({ error: 'Server error.' });
-  }
-});
-
-// ── Guest: can't come (cancel immediately) ──
-app.post('/api/queue/decline/:id', async (req, res) => {
-  try {
-    await withLock(async () => {
-      const entry = queue.find(q => q.id === req.params.id);
-      if (!entry) return;
-      if (cancelTimers[entry.id]) { clearTimeout(cancelTimers[entry.id]); delete cancelTimers[entry.id]; }
-      console.log(`❌ Guest declined: ${entry.name} (#${entry.number})`);
-      queue = queue.filter(q => q.id !== entry.id);
-      broadcast();
-    });
-    res.json({ ok: true });
-  } catch (e) {
-    console.error('DECLINE error:', e);
-    res.status(500).json({ error: 'Server error.' });
-  }
-});
-
-// ── Staff: guest checked in (seated) ──
-app.post('/api/queue/done/:id', async (req, res) => {
-  try {
-    await withLock(async () => {
-      if (cancelTimers[req.params.id]) { clearTimeout(cancelTimers[req.params.id]); delete cancelTimers[req.params.id]; }
-      queue = queue.filter(q => q.id !== req.params.id);
-      broadcast();
-    });
-    res.json({ ok: true });
-  } catch (e) {
-    console.error('DONE error:', e);
-    res.status(500).json({ error: 'Server error.' });
-  }
-});
-
-// ── Staff: undo notification (back to waiting) ──
-app.post('/api/queue/undo/:id', async (req, res) => {
-  try {
-    await withLock(async () => {
-      if (cancelTimers[req.params.id]) { clearTimeout(cancelTimers[req.params.id]); delete cancelTimers[req.params.id]; }
-      const entry = queue.find(q => q.id === req.params.id);
-      if (entry) { entry.status = 'waiting'; delete entry.calledAt; }
-      broadcast();
-    });
-    res.json({ ok: true });
-  } catch (e) {
-    console.error('UNDO error:', e);
-    res.status(500).json({ error: 'Server error.' });
-  }
-});
-
-// ── Staff/Guest: remove from queue ──
-app.delete('/api/queue/:id', async (req, res) => {
-  try {
-    await withLock(async () => {
-      if (cancelTimers[req.params.id]) { clearTimeout(cancelTimers[req.params.id]); delete cancelTimers[req.params.id]; }
-      queue = queue.filter(q => q.id !== req.params.id);
-      broadcast();
-    });
-    res.json({ ok: true });
-  } catch (e) {
-    console.error('DELETE error:', e);
-    res.status(500).json({ error: 'Server error.' });
-  }
-});
-
-/* ─── Start ─── */
 app.listen(CONFIG.PORT, () => {
-  recoverTimers();
-  const kakaoReady = CONFIG.KAKAO_SENDER_KEY !== 'YOUR_SENDER_KEY';
-  console.log(`\n${CONFIG.BUSINESS_EMOJI}  ${CONFIG.BUSINESS_NAME} Waiting System started`);
-  console.log(`   Guest page   : ${CONFIG.PUBLIC_URL}/customer.html`);
-  console.log(`   Staff page   : ${CONFIG.PUBLIC_URL}/staff.html`);
-  console.log(`   Korean SMS   : ${IS_DEV ? '🟡 Simulation' : '✅ Aligo live'}`);
-  console.log(`   Alimtalk     : ${kakaoReady ? '✅ Connected' : '⚠️  Not configured'}`);
-  console.log(`   Intl SMS     : ${IS_TWILIO_READY ? '✅ Twilio live' : '🟡 Simulation'}`);
-  console.log(`   Email        : ${IS_EMAIL_READY ? '✅ Resend live' : '🟡 Not configured'}`);
-  console.log(`   Auto-cancel  : ${CONFIG.AUTO_CANCEL_MIN} min`);
-  console.log(`   Queue loaded : ${queue.length} entries\n`);
+  cleanup(); sendReminders(); setInterval(sendReminders, 30*60000);
+  console.log('\n🌲 PINE&CO Reserve | http://localhost:'+CONFIG.PORT+'\n');
 });
-
-/*
-╔══════════════════════════════════════════════════════════════╗
-║        📋 Aligo Alimtalk Template Registration              ║
-╠══════════════════════════════════════════════════════════════╣
-║                                                              ║
-║  ① Registration (TPL_JOIN)                                   ║
-║  ─────────────────────────────                               ║
-║  Hi #{이름}! 😊                                               ║
-║  You are ##{번호} on the PINE&CO waiting list.               ║
-║                                                              ║
-║  Position: #{순서} of #{전체대기} parties                     ║
-║                                                              ║
-║  Track your status:                                          ║
-║  #{링크}                                                     ║
-║                                                              ║
-║  ② Table ready (TPL_CALL)                                    ║
-║  ─────────────────────────────                               ║
-║  #{이름}, your table is ready! 🎉                             ║
-║                                                              ║
-║  Waiting ##{번호}                                             ║
-║  Please arrive within #{분} minutes.                         ║
-║                                                              ║
-║  #{링크}                                                     ║
-║                                                              ║
-║  ③ Auto-cancel (TPL_CANCEL)                                  ║
-║  ─────────────────────────────                               ║
-║  #{이름}, your spot has been released                         ║
-║  after #{분} minutes.                                        ║
-║                                                              ║
-║  You're welcome to register again! 🙏                        ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
-*/
