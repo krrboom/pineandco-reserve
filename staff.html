@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pine &amp; Co Seoul — Staff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Noto+Sans+KR:wght@300;400;500&family=Cinzel:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--ink:#1e1208;--ink2:#2a1a0e;--cream:#f0ebe0;--gold:#b8935a;--amber:#c9a96e;--muted:#7a6550;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cream);min-height:100vh;}
+
+/* PIN 스크린 */
+#pin-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.pin-title{font-family:'Cinzel',serif;font-size:14px;letter-spacing:.22em;color:var(--gold);margin-bottom:6px;}
+.pin-sub{font-size:12px;color:var(--muted);margin-bottom:28px;}
+.pin-dots{display:flex;gap:14px;margin-bottom:28px;}
+.dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--gold);background:transparent;transition:background .15s;}
+.dot.on{background:var(--gold);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,72px);gap:10px;justify-content:center;}
+.pin-btn{width:72px;height:56px;border:1px solid rgba(184,147,90,.25);border-radius:8px;
+  background:rgba(240,235,224,.04);color:var(--cream);font-family:'Cormorant Garamond',serif;
+  font-size:24px;cursor:pointer;transition:background .15s;}
+.pin-btn:hover{background:rgba(184,147,90,.12);}
+.pin-btn.del{font-size:18px;color:var(--muted);}
+.pin-err{color:#c07070;font-size:12px;margin-top:16px;min-height:18px;}
+
+/* 메인 대시보드 */
+#main-screen{display:none;}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;
+  border-bottom:1px solid rgba(184,147,90,.15);position:sticky;top:0;background:var(--ink);z-index:10;}
+.hdr-left{display:flex;align-items:center;gap:12px;}
+.hdr-name{font-family:'Cinzel',serif;font-size:14px;letter-spacing:.08em;color:var(--cream);}
+.hdr-sub{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.16em;color:var(--muted);}
+.btn-lock{background:none;border:1px solid rgba(184,147,90,.25);border-radius:6px;padding:8px 14px;
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:.1em;color:var(--muted);cursor:pointer;}
+.btn-lock:hover{border-color:var(--gold);color:var(--cream);}
+
+.main{padding:20px;max-width:600px;margin:0 auto;}
+
+/* QR 섹션 */
+.qr-section{border:1px solid rgba(184,147,90,.15);border-radius:8px;margin-bottom:20px;overflow:hidden;}
+.qr-toggle{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;
+  background:rgba(240,235,224,.03);border:none;width:100%;color:var(--cream);font-family:'Cinzel',serif;
+  font-size:11px;letter-spacing:.14em;}
+.qr-toggle:hover{background:rgba(184,147,90,.08);}
+.qr-body{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s;padding:0 16px;}
+.qr-body.open{max-height:300px;padding:16px;}
+.qr-img-wrap{display:flex;justify-content:center;margin-bottom:12px;}
+.qr-note{font-size:11px;color:var(--muted);text-align:center;line-height:1.6;}
+
+/* 리스트 */
+.list-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.list-title{font-family:'Cinzel',serif;font-size:12px;letter-spacing:.18em;color:var(--gold);}
+.q-list{display:flex;flex-direction:column;gap:10px;}
+.q-card{display:flex;align-items:center;gap:14px;padding:14px 16px;
+  border:1px solid rgba(184,147,90,.15);border-radius:8px;background:rgba(240,235,224,.03);}
+.q-card.faded{opacity:.6;}
+.num-badge{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;
+  font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;}
+.nb-w{border:1.5px solid var(--gold);color:var(--gold);}
+.nb-c{border:1.5px solid var(--amber);color:var(--amber);opacity:.7;}
+.q-info{flex:1;min-width:0;}
+.q-name{font-size:14px;font-weight:400;}
+.q-name.dim{color:var(--muted);}
+.q-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.q-actions{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.btn-call{padding:8px 14px;border:none;border-radius:5px;
+  background:linear-gradient(135deg,var(--gold),var(--amber));color:var(--ink);
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:.1em;cursor:pointer;font-weight:500;}
+.btn-call:hover{opacity:.9;}
+.btn-done{padding:8px 14px;border:1px solid rgba(100,180,100,.4);border-radius:5px;
+  background:rgba(100,180,100,.12);color:#8bc48b;
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:.1em;cursor:pointer;}
+.btn-sm{padding:6px 10px;border:1px solid rgba(184,147,90,.2);border-radius:4px;
+  background:none;color:var(--muted);font-size:11px;cursor:pointer;}
+.btn-sm:hover{border-color:var(--gold);color:var(--cream);}
+.btn-cfm{padding:8px 14px;border:none;border-radius:5px;
+  background:rgba(180,80,80,.2);color:#d08080;
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:.1em;cursor:pointer;border:1px solid rgba(180,80,80,.3);}
+
+.sec-div{display:flex;align-items:center;gap:10px;margin:20px 0 14px;}
+.sec-div span{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.16em;color:var(--muted);white-space:nowrap;}
+.sec-div div{flex:1;height:1px;background:rgba(184,147,90,.15);}
+
+.empty{text-align:center;padding:40px 0;color:var(--muted);font-size:13px;}
+
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);
+  background:rgba(30,18,8,.92);border:1px solid var(--gold);color:var(--cream);border-radius:8px;
+  font-size:13px;padding:12px 24px;z-index:99;white-space:nowrap;max-width:90vw;text-align:center;
+  pointer-events:none;opacity:0;transition:opacity .3s;backdrop-filter:blur(12px);}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div id="pin-screen">
+  <div class="pin-title">STAFF ACCESS</div>
+  <div class="pin-sub">Enter your PIN to continue</div>
+  <div class="pin-dots" id="dots">
+    <div class="dot" id="d0"></div><div class="dot" id="d1"></div>
+    <div class="dot" id="d2"></div><div class="dot" id="d3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="tapPin('1')">1</button>
+    <button class="pin-btn" onclick="tapPin('2')">2</button>
+    <button class="pin-btn" onclick="tapPin('3')">3</button>
+    <button class="pin-btn" onclick="tapPin('4')">4</button>
+    <button class="pin-btn" onclick="tapPin('5')">5</button>
+    <button class="pin-btn" onclick="tapPin('6')">6</button>
+    <button class="pin-btn" onclick="tapPin('7')">7</button>
+    <button class="pin-btn" onclick="tapPin('8')">8</button>
+    <button class="pin-btn" onclick="tapPin('9')">9</button>
+    <div></div>
+    <button class="pin-btn" onclick="tapPin('0')">0</button>
+    <button class="pin-btn del" onclick="pinDel()">&#9003;</button>
+  </div>
+  <div class="pin-err" id="pin-err"></div>
+</div>
+
+<div id="main-screen">
+  <header>
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-name">Pine &amp; Co Seoul</div>
+        <div class="hdr-sub">STAFF DASHBOARD</div>
+      </div>
+    </div>
+    <button class="btn-lock" onclick="logout()">&#128274; LOCK</button>
+  </header>
+  <div class="main" id="main-body"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const POLL_MS=2000;
+let queue=[],pin='',confirmId=null,qrOpen=false,pollTimer=null,staffPin='1234';
+
+async function loadQueue(){try{const r=await fetch('/api/queue');if(r.ok)queue=await r.json();}catch{}render();}
+async function loadConfig(){try{const r=await fetch('/api/config');if(r.ok){const c=await r.json();staffPin=c.staffPin||'1234';}}catch{}}
+
+function tapPin(d){
+  if(pin.length>=4)return;
+  pin+=d;updateDots();
+  if(pin.length===4)setTimeout(checkPin,80);
+}
+function pinDel(){pin=pin.slice(0,-1);updateDots();document.getElementById('pin-err').textContent='';}
+function updateDots(){for(let i=0;i<4;i++){const d=document.getElementById('d'+i);d.className='dot'+(i<pin.length?' on':'');}}
+function checkPin(){
+  if(pin===staffPin){
+    document.getElementById('pin-screen').style.display='none';
+    document.getElementById('main-screen').style.display='block';
+    loadQueue();pollTimer=setInterval(loadQueue,POLL_MS);
+    // Update timer display every 1 second
+    setInterval(()=>{const c=(queue||[]).filter(q=>q.status==='called');if(c.length>0)render();},1000);
+  }else{
+    document.getElementById('pin-err').textContent='Incorrect PIN. Please try again.';
+    pin='';updateDots();
+    document.querySelector('.pin-dots').classList.add('shake');
+    setTimeout(()=>document.querySelector('.pin-dots').classList.remove('shake'),500);
+  }
+}
+function logout(){
+  if(pollTimer)clearInterval(pollTimer);
+  pin='';updateDots();
+  document.getElementById('main-screen').style.display='none';
+  document.getElementById('pin-screen').style.display='flex';
+  document.getElementById('pin-err').textContent='';
+}
+
+async function callEntry(id){
+  const e=(queue||[]).find(q=>q.id===id);
+  const name=e?e.name:'Guest';
+  if(!confirm(`${name}님의 자리알림을 보내겠습니까?\nSend table notification to ${name}?`))return;
+  await fetch(`/api/queue/call/${id}`,{method:'POST'});loadQueue();
+}
+async function doneEntry(id){
+  const e=(queue||[]).find(q=>q.id===id);
+  const name=e?e.name:'Guest';
+  if(!confirm(`${name}님이 입장했습니까?\nCheck in ${name}?`))return;
+  await fetch(`/api/queue/done/${id}`,{method:'POST'});loadQueue();
+}
+async function undoEntry(id){
+  const e=(queue||[]).find(q=>q.id===id);
+  const name=e?e.name:'Guest';
+  if(!confirm(`${name}님의 알림을 취소하고 대기로 되돌리겠습니까?\nUndo notification for ${name}?`))return;
+  await fetch(`/api/queue/undo/${id}`,{method:'POST'});loadQueue();
+}
+async function removeEntry(id){
+  const e=(queue||[]).find(q=>q.id===id);
+  const name=e?e.name:'Guest';
+  if(!confirm(`${name}님의 웨이팅을 취소하겠습니까?\nCancel waiting for ${name}?`))return;
+  await fetch(`/api/queue/${id}`,{method:'DELETE'});confirmId=null;loadQueue();
+}
+function setConfirm(id){confirmId=id;render();}
+function clearConfirm(){confirmId=null;render();}
+function toggleQR(){qrOpen=!qrOpen;render();}
+
+function timeAgo(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return `${s}s ago`;
+  if(s<3600)return `${Math.floor(s/60)}m ago`;
+  return `${Math.floor(s/3600)}h ago`;
+}
+
+function timeRemain(calledAt){
+  const total=5*60*1000;
+  const elapsed=Date.now()-calledAt;
+  const remain=Math.max(0,Math.ceil((total-elapsed)/1000));
+  const mm=Math.floor(remain/60);
+  const ss=remain%60;
+  if(remain<=0)return '<span style="color:#a05050;">시간 초과</span>';
+  const color=mm>=5?'#5DCAA5':mm>=2?'#c9a030':'#a05050';
+  return `<span style="color:${color};font-weight:500;">${mm}:${String(ss).padStart(2,'0')}</span>`;
+}
+
+function render(){
+  const body=document.getElementById('main-body');
+  if(!body)return;
+  const w=(queue||[]).filter(q=>q.status==='waiting');
+  const c=(queue||[]).filter(q=>q.status==='called');
+
+  let html=`
+  <div class="qr-section">
+    <button class="qr-toggle" onclick="toggleQR()">
+      <span>GUEST QR CODE</span>
+      <span>${qrOpen?'▲ CLOSE':'▼ SHOW QR'}</span>
+    </button>
+    <div class="qr-body${qrOpen?' open':''}" id="qr-body">
+      <div class="qr-img-wrap"><img id="qr-img" src="${qrOpen?'https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=1C1917&bgcolor=FEF3C7&data='+encodeURIComponent(location.origin+'/customer.html'):''}" alt="QR" style="width:170px;height:170px;border-radius:4px;"/></div>
+      <p class="qr-note">Show this QR to guests, or display<br/><strong style="color:var(--gold)">customer.html</strong> on a tablet at the entrance.</p>
+    </div>
+  </div>
+  <div class="list-hdr"><span class="list-title">WAITING LIST</span><span style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.16em;color:var(--muted)">${w.length>0?w.length+' WAITING':''}</span></div>`;
+
+  if(queue.length===0){html+=`<div class="empty">No parties in the queue.</div>`;}
+  else{
+    html+=`<div class="q-list">`;
+    w.forEach(e=>{
+      html+=`<div class="q-card">
+        <div class="num-badge nb-w">${e.number}</div>
+        <div class="q-info"><div class="q-name">${e.name}</div><div class="q-meta">${e.partySize||'?'} guests &middot; ${e.phone}${e.email?' &middot; '+e.email:''} &middot; ${timeAgo(e.joinedAt)}</div></div>
+        <div class="q-actions">
+            <button class="btn-call" onclick="callEntry('${e.id}')">NOTIFY</button>
+            <button class="btn-sm" onclick="removeEntry('${e.id}')">&#10005;</button>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+
+    if(c.length>0){
+      html+=`<div class="sec-div"><span>NOTIFIED</span><div></div></div><div class="q-list">`;
+      c.forEach(e=>{
+        html+=`<div class="q-card">
+          <div class="num-badge nb-c">${e.number}</div>
+          <div class="q-info"><div class="q-name">${e.name} <span style="font-size:11px;margin-left:6px;">${timeRemain(e.calledAt)}</span></div><div class="q-meta">${e.partySize||'?'} guests &middot; ${e.phone}</div></div>
+          <div class="q-actions">
+            <button class="btn-done" onclick="doneEntry('${e.id}')">CHECKED IN</button>
+            <button class="btn-sm" onclick="undoEntry('${e.id}')">Undo</button>
+          </div>
+        </div>`;
+      });
+      html+=`</div>`;
+    }
+  }
+  body.innerHTML=html;
+}
+
+function flash(msg){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(()=>t.className='toast',3500);}
+
+loadConfig();
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 {
-  "name": "pineandco-reserve",
-  "version": "2.0.0",
-  "description": "Pine & Co Seoul Reservation System",
+  "name": "pineandco-waiting",
+  "version": "1.0.0",
+  "description": "Pine & Co Seoul — Real-time waiting list system",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
