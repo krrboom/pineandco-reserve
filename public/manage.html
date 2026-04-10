@@ -45,8 +45,12 @@
 <div id="login"><input type="password" id="pin" placeholder="PIN" maxlength="4" onkeydown="if(event.key==='Enter')doLogin()"/><button onclick="doLogin()">ENTER</button></div>
 <div id="dash" style="display:none">
 <div class="sb"><label>담당 직원:</label><select id="stSel"></select></div>
-<div class="vt"><button class="vb sel" id="tC" onclick="sv('cal')">📅 Calendar</button><button class="vb" id="tD" onclick="sv('day')">📋 Day View</button><button class="vb" id="tS" onclick="sv('set')">⚙️ Settings</button></div>
-<div id="vCal"><div class="cn"><button onclick="sm(-1)">&larr;</button><div class="ml" id="mL"></div><button onclick="sm(1)">&rarr;</button></div><div class="cg" id="cG"></div></div>
+<div class="vt"><button class="vb sel" id="tH" onclick="sv('home')">🏠 Today</button><button class="vb" id="tC" onclick="sv('cal')">📅 Calendar</button><button class="vb" id="tD" onclick="sv('day')">📋 Day View</button><button class="vb" id="tS" onclick="sv('set')">⚙️ Settings</button></div>
+<!-- HOME / TODAY VIEW -->
+<div id="vHome">
+<div id="todaySummary"></div>
+</div>
+<div id="vCal" style="display:none"><div class="cn"><button onclick="sm(-1)">&larr;</button><div class="ml" id="mL"></div><button onclick="sm(1)">&rarr;</button></div><div class="cg" id="cG"></div></div>
 <div id="vDay" style="display:none">
 <div class="dh"><button onclick="sv('cal')">&larr; Calendar</button><div class="dt" id="dT"></div><div></div></div>
 <div class="tt" id="tT"></div><div class="fw" id="fW"></div><div id="rL"></div>
@@ -81,8 +85,14 @@
 </div>
 <div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:16px;margin-bottom:12px;">
 <h2 style="font-family:Cinzel,serif;font-size:14px;color:var(--gold);font-weight:400;margin-bottom:12px;">이벤트 / 대관 관리</h2>
-<p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:10px;">📅 Calendar 탭에서 날짜 위에 마우스를 올리면 우측 상단에 <strong style="color:var(--red);">E</strong> 버튼이 나타납니다.<br>클릭하면 이벤트명을 입력할 수 있고, 해당 날짜의 예약이 차단됩니다.<br>다시 클릭하면 이벤트가 해제됩니다.</p>
+<p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:10px;">📅 Calendar 탭에서 날짜 위에 마우스를 올리면 우측 상단에 <strong style="color:var(--red);">E</strong> 버튼이 나타납니다.<br>클릭하면 이벤트명을 입력할 수 있고, 해당 날짜의 예약이 차단됩니다.</p>
 <div id="eventList"></div>
+</div>
+<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:16px;margin-bottom:12px;">
+<h2 style="font-family:Cinzel,serif;font-size:14px;color:var(--gold);font-weight:400;margin-bottom:12px;">📅 Google Calendar 연동</h2>
+<p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:10px;">구글 캘린더에 있는 예약을 시스템으로 가져옵니다.<br>매 1시간마다 자동 동기화되며, 아래 버튼으로 수동 동기화도 가능합니다.</p>
+<button onclick="gcalSync()" style="padding:10px 20px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-size:12px;cursor:pointer;">🔄 지금 동기화</button>
+<div id="gcalStatus" style="font-size:12px;color:var(--mu);margin-top:8px;"></div>
 </div>
 </div></div></div>
 <div class="toast" id="toast"></div>
@@ -101,11 +111,97 @@ var as=document.getElementById('aSz');as.innerHTML='';for(var i=1;i<=10;i++)as.i
 evts=await fetch('/api/events').then(function(r){return r.json();}).catch(function(){return {};});
 var n=kst();cY=n.getFullYear();cM=n.getMonth();cD=ktd();
 document.getElementById('login').style.display='none';document.getElementById('dash').style.display='block';
-lc();
+loadHome();
 }
-function sv(v){document.getElementById('vCal').style.display=v==='cal'?'block':'none';document.getElementById('vDay').style.display=v==='day'?'block':'none';document.getElementById('vSet').style.display=v==='set'?'block':'none';
-document.getElementById('tC').className='vb'+(v==='cal'?' sel':'');document.getElementById('tD').className='vb'+(v==='day'?' sel':'');document.getElementById('tS').className='vb'+(v==='set'?' sel':'');
-if(v==='cal')lc();if(v==='day')ld();if(v==='set')loadSettings();}
+function sv(v){
+document.getElementById('vHome').style.display=v==='home'?'block':'none';
+document.getElementById('vCal').style.display=v==='cal'?'block':'none';
+document.getElementById('vDay').style.display=v==='day'?'block':'none';
+document.getElementById('vSet').style.display=v==='set'?'block':'none';
+document.getElementById('tH').className='vb'+(v==='home'?' sel':'');
+document.getElementById('tC').className='vb'+(v==='cal'?' sel':'');
+document.getElementById('tD').className='vb'+(v==='day'?' sel':'');
+document.getElementById('tS').className='vb'+(v==='set'?' sel':'');
+if(v==='home')loadHome();if(v==='cal')lc();if(v==='day')ld();if(v==='set')loadSettings();
+}
+// ── Home: Today's Overview ──
+async function loadHome(){
+var today=ktd();
+var todayRes=await fetch('/api/reservations/'+today).then(function(r){return r.json();}).catch(function(){return [];});
+var todayAvail=await fetch('/api/availability/'+today).then(function(r){return r.json();}).catch(function(){return {};});
+
+var el=document.getElementById('todaySummary');
+var d=new Date(today+'T12:00:00');
+var h='';
+
+// Header
+h+='<div style="text-align:center;margin-bottom:16px;">';
+h+='<div style="font-family:Cinzel,serif;font-size:18px;color:var(--gold);font-weight:400;">'+today+' ('+DK[d.getDay()]+')</div>';
+h+='<div style="font-size:12px;color:var(--mu);margin-top:4px;">Pine &amp; Co Seoul</div>';
+h+='</div>';
+
+// Event check
+if(todayAvail.blocked){
+h+='<div style="background:rgba(170,51,51,.08);border:1px solid rgba(170,51,51,.2);border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">';
+h+='<div style="font-size:14px;color:var(--red);font-weight:500;">🚫 EVENT DAY — '+todayAvail.event+'</div></div>';
+el.innerHTML=h;return;
+}
+
+var active=todayRes.filter(function(r){return r.status==='confirmed'||r.status==='seated';});
+var newToday=todayRes.filter(function(r){return r.createdAt&&r.createdAt.startsWith(today);});
+
+// Stats cards
+h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">';
+h+='<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;text-align:center;">';
+h+='<div style="font-size:24px;color:var(--gold);font-weight:500;">'+active.length+'</div>';
+h+='<div style="font-size:11px;color:var(--mu);">오늘 예약</div></div>';
+h+='<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;text-align:center;">';
+h+='<div style="font-size:24px;color:var(--gold);font-weight:500;">'+active.reduce(function(s,r){return s+r.partySize;},0)+'</div>';
+h+='<div style="font-size:11px;color:var(--mu);">총 인원</div></div>';
+h+='<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;text-align:center;">';
+h+='<div style="font-size:24px;color:'+(newToday.length>0?'var(--grn)':'var(--gold)')+';font-weight:500;">'+newToday.length+'</div>';
+h+='<div style="font-size:11px;color:var(--mu);">오늘 신규</div></div>';
+h+='</div>';
+
+// Time slots
+var slots=Object.keys(todayAvail);
+var sl={online:'Online',instagram:'Instagram',email:'Email',staff:'직원',phone:'전화',google_calendar:'GCal'};
+var sc={online:'so',instagram:'si',email:'se',staff:'ss',phone:'ss',google_calendar:'so'};
+var zn={bar:'Bar',table:'Table',highTable:'High',room:'Room'};
+
+if(!slots.length){h+='<div style="text-align:center;color:var(--mu);padding:20px;">영업일이 아닙니다.</div>';el.innerHTML=h;return;}
+
+slots.forEach(function(time){
+var tRes=active.filter(function(r){return r.time===time;});
+h+='<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;margin-bottom:8px;">';
+h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+h+='<div style="font-family:Cinzel,serif;font-size:15px;color:var(--gold);">'+time+'</div>';
+h+='<div style="font-size:12px;color:var(--mu);">'+tRes.length+'팀 / '+tRes.reduce(function(s,r){return s+r.partySize;},0)+'명</div>';
+h+='</div>';
+if(!tRes.length){h+='<div style="font-size:12px;color:var(--mu);opacity:.5;">예약 없음</div>';}
+else{
+tRes.forEach(function(r){
+var isNew=r.createdAt&&r.createdAt.startsWith(today);
+h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:4px;margin-bottom:4px;background:'+(isNew?'rgba(74,124,89,.06)':'rgba(0,0,0,.02)')+';">';
+h+='<div><span style="font-weight:500;font-size:13px;">'+r.name+'</span>';
+h+=' <span style="font-size:11px;color:var(--mu);">'+r.partySize+'명 · '+(zn[r.zone]||r.zone)+'</span>';
+h+=' <span class="st '+(sc[r.source]||'ss')+'" style="font-size:9px;">'+(sl[r.source]||r.source)+'</span>';
+if(isNew)h+=' <span style="font-size:9px;color:var(--grn);font-weight:500;">NEW</span>';
+if(r.notes)h+=' <span style="font-size:10px;" title="'+r.notes+'">📝</span>';
+h+='</div>';
+h+='<div style="font-size:11px;color:var(--mu);">'+r.status+'</div>';
+h+='</div>';
+});
+}
+h+='</div>';
+});
+
+// Quick action
+h+='<button onclick="sv(\'day\')" style="width:100%;padding:12px;border:1px solid var(--brd);border-radius:8px;background:var(--card);color:var(--gold);font-size:12px;cursor:pointer;margin-top:8px;font-family:Cinzel,serif;">Day View에서 상세 관리 →</button>';
+
+el.innerHTML=h;
+}
+
 function sm(n){cM+=n;if(cM>11){cM=0;cY++;}if(cM<0){cM=11;cY--;}lc();}
 
 async function lc(){
@@ -302,5 +398,12 @@ if(!confirm(d+' 이벤트를 해제할까요?'))return;
 await fetch('/api/events/'+d,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin,label:''})});
 evts=await fetch('/api/events').then(function(r){return r.json();}).catch(function(){return {};});
 renderEventList();fl('이벤트 해제: '+d);
+}
+
+async function gcalSync(){
+document.getElementById('gcalStatus').textContent='동기화 중...';
+var r=await fetch('/api/gcal-sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin})}).then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
+if(r.ok)document.getElementById('gcalStatus').textContent='✅ 동기화 완료! (총 '+r.count+'건)';
+else document.getElementById('gcalStatus').textContent='⚠️ '+(r.error||'동기화 실패');
 }
 </script></body></html>

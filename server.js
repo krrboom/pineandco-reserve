@@ -17,6 +17,9 @@ const CONFIG = {
   TWILIO_FROM: process.env.TWILIO_FROM || '',
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   RESEND_FROM: process.env.RESEND_FROM || 'Pine & Co <noreply@pineandco.shop>',
+  GOOGLE_CLIENT_EMAIL: process.env.GOOGLE_CLIENT_EMAIL || '',
+  GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY || '',
+  GOOGLE_CALENDAR_ID: process.env.GOOGLE_CALENDAR_ID || '',
   SEATS: {
     bar: ['B1','B2','B3','B4','B5','B6','B7','B8','B9','B10','B11','B12','B13','B14'],
     tables: ['T1','T2','T3','T4'],
@@ -151,14 +154,37 @@ app.get('/api/availability/:date', (req, res) => {
   res.json(result);
 });
 
+// ── Detect preference from special request text ──
+function detectPreference(text, partySize) {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  if (/\b(bar|바|바좌석|바석)\b/.test(t)) return 'bar';
+  if (/\b(room|룸|프라이빗|private)\b/.test(t)) return 'room_request';
+  if (/\b(table|테이블|테이블석)\b/.test(t)) return 'table';
+  return null;
+}
+
 // ── Guest reserve ──
 app.post('/api/reserve', async (req, res) => {
-  const { name, phone, instagram, email, partySize, date, time, preference } = req.body;
+  const { name, phone, instagram, email, partySize, date, time, specialRequest } = req.body;
   if (!name || !partySize || !date || !time) return res.status(400).json({ error: 'Required fields missing.' });
   if (partySize < 1 || partySize > 10) return res.status(400).json({ error: 'Party size 1-10.' });
   if (events[date]) return res.status(400).json({ error: 'This date is not available (event).' });
   const slots = getSlots(date);
   if (!slots.includes(time)) return res.status(400).json({ error: 'Invalid time.' });
+
+  // Auto-detect preference from special request or party size
+  let preference = detectPreference(specialRequest, partySize);
+  if (preference === 'room_request') {
+    if (partySize < 6) preference = 'table'; // room requested but too few people
+    else preference = null; // will auto-assign to room via partySize logic
+  }
+  if (!preference) {
+    // Default: 1-2 → bar, 3+ → table
+    if (partySize <= 2) preference = null; // auto (tries highTable/bar)
+    else preference = 'table';
+  }
+
   try {
     await withLock(async () => {
       const a = autoAssign(date, time, partySize, preference);
@@ -166,9 +192,9 @@ app.post('/api/reserve', async (req, res) => {
       const r = {
         id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
         name, phone: phone||'', instagram: instagram||'', email: email||'',
-        partySize, date, time, preference: preference||'',
+        partySize, date, time, preference: preference||'auto',
         zone: a.zone, seats: a.seats, status: 'confirmed', source: 'online',
-        notes: '', createdAt: new Date().toISOString(),
+        notes: specialRequest||'', createdAt: new Date().toISOString(),
         reminderD1: false, reminderD0: false, modLog: [],
       };
       reservations.push(r); saveRes();
@@ -356,6 +382,82 @@ function sendReminders() {
   });
 }
 
+// ── Google Calendar Sync ──
+async function syncGoogleCalendar() {
+  if (!CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY || !CONFIG.GOOGLE_CALENDAR_ID) {
+    console.log('📅 [GCAL] No credentials, skipping sync');
+    return;
+  }
+  try {
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(
+      CONFIG.GOOGLE_CLIENT_EMAIL,
+      null,
+      CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      ['https://www.googleapis.com/auth/calendar.readonly']
+    );
+    const cal = google.calendar({ version: 'v3', auth });
+    const now = new Date();
+    const twoMonths = new Date(now.getTime() + 62 * 86400000);
+    const res = await cal.events.list({
+      calendarId: CONFIG.GOOGLE_CALENDAR_ID,
+      timeMin: now.toISOString(),
+      timeMax: twoMonths.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 200,
+    });
+    const gcalEvents = res.data.items || [];
+    let added = 0;
+    gcalEvents.forEach(ev => {
+      if (!ev.start || !ev.start.dateTime) return;
+      const start = new Date(ev.start.dateTime);
+      const date = start.toISOString().slice(0, 10);
+      const hour = start.getHours();
+      const time = String(hour).padStart(2, '0') + ':00';
+      const title = ev.summary || 'Google Calendar';
+      const desc = ev.description || '';
+      // Skip if already exists (match by gcalId)
+      if (reservations.find(r => r.gcalId === ev.id)) return;
+      // Parse party size from title/desc (e.g. "Kim 3명" or "2 pax")
+      let ps = 2;
+      const psMatch = (title + ' ' + desc).match(/(\d+)\s*(명|pax|people|persons|guests)/i);
+      if (psMatch) ps = parseInt(psMatch[1]);
+      // Parse name (first word of title)
+      const name = title.split(/[\s·\-,]/)[0] || 'Guest';
+      // Detect preference
+      const pref = detectPreference(title + ' ' + desc, ps);
+      const a = autoAssign(date, time, ps, pref);
+      if (!a) { console.log('📅 [GCAL] No seats for: ' + title + ' ' + date + ' ' + time); return; }
+      const r = {
+        id: 'gc_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+        gcalId: ev.id,
+        name, phone: '', instagram: '', email: '',
+        partySize: ps, date, time, preference: pref || 'auto',
+        zone: a.zone, seats: a.seats, status: 'confirmed',
+        source: 'google_calendar', notes: title + (desc ? '\n' + desc : ''),
+        createdAt: new Date().toISOString(),
+        reminderD1: false, reminderD0: false,
+        modLog: [{ action: 'imported from Google Calendar', by: 'System', at: new Date().toISOString() }],
+      };
+      reservations.push(r);
+      added++;
+    });
+    if (added > 0) { saveRes(); console.log('📅 [GCAL] Imported ' + added + ' reservations'); }
+    else console.log('📅 [GCAL] No new reservations to import');
+  } catch (e) {
+    console.error('📅 [GCAL] Sync error:', e.message);
+  }
+}
+
+// Staff: trigger manual sync
+app.post('/api/gcal-sync', async (req, res) => {
+  const { pin } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  await syncGoogleCalendar();
+  res.json({ ok: true, count: reservations.length });
+});
+
 function cleanup() {
   const cut=Date.now()-7*86400000, b=reservations.length;
   reservations=reservations.filter(r=>new Date(r.date+'T23:59:59+09:00').getTime()>cut);
@@ -363,6 +465,8 @@ function cleanup() {
 }
 
 app.listen(CONFIG.PORT, () => {
-  cleanup(); sendReminders(); setInterval(sendReminders, 30*60000);
+  cleanup(); sendReminders(); syncGoogleCalendar();
+  setInterval(sendReminders, 30*60000);
+  setInterval(syncGoogleCalendar, 60*60000); // sync every hour
   console.log('\n🌲 PINE&CO Reserve | http://localhost:'+CONFIG.PORT+'\n');
 });

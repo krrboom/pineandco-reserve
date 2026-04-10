@@ -1,24 +1,21 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Pine &amp; Co Seoul — Reserve</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
 :root{--ink:#1e1208;--cream:#f0ebe0;--gold:#b8935a;--amber:#c9a96e;--bg:#0d0a06;}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Noto Sans KR','Cormorant Garamond',serif;background:var(--bg);color:var(--cream);min-height:100vh;overflow-x:hidden;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--cream);min-height:100vh;overflow-x:hidden;}
 canvas#rings{position:fixed;top:0;left:0;width:100%;height:100%;opacity:.08;pointer-events:none;z-index:0;}
 .wrap{position:relative;z-index:1;max-width:420px;margin:0 auto;padding:24px 20px 60px;}
-.logo{text-align:center;}.logo-text{font-family:Cinzel,serif;font-size:28px;letter-spacing:.15em;color:var(--gold);font-weight:400;}
-.logo-sub{font-family:Cinzel,serif;font-size:11px;letter-spacing:.35em;color:var(--amber);opacity:.7;}
-.hours{text-align:center;font-size:11px;color:var(--amber);opacity:.5;margin:4px 0 8px;}
-.div{width:60px;height:1px;background:var(--gold);margin:12px auto 20px;opacity:.4;}
+.logo{text-align:center;}.lt{font-family:Cinzel,serif;font-size:28px;letter-spacing:.15em;color:var(--gold);font-weight:400;}
+.ls{font-family:Cinzel,serif;font-size:11px;letter-spacing:.35em;color:var(--amber);opacity:.7;}
+.hrs{text-align:center;font-size:11px;color:var(--amber);opacity:.5;margin:4px 0 8px;}
+.dv{width:60px;height:1px;background:var(--gold);margin:12px auto 20px;opacity:.4;}
 h2{font-family:Cinzel,serif;font-size:13px;letter-spacing:.12em;color:var(--gold);font-weight:400;margin-bottom:12px;}
-.step{display:none;animation:fi .3s ease;}.step.on{display:block;}
-@keyframes fi{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 .back{background:none;border:none;color:var(--amber);font-size:12px;cursor:pointer;opacity:.6;margin-bottom:12px;}.back:hover{opacity:1;}
-.progress{display:flex;gap:6px;margin-bottom:16px;justify-content:center;}
-.progress .dot{width:8px;height:8px;border-radius:50%;background:rgba(184,147,90,.15);transition:background .3s;}
-.progress .dot.active{background:var(--gold);}
-
+.prog{display:flex;gap:6px;margin-bottom:16px;justify-content:center;}
+.prog .dot{width:8px;height:8px;border-radius:50%;background:rgba(184,147,90,.15);transition:background .3s;}
+.prog .dot.on{background:var(--gold);}
 /* Calendar */
 .cn2{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px;}
 .cn2 button{background:none;border:1px solid rgba(184,147,90,.2);border-radius:6px;color:var(--gold);width:32px;height:32px;font-size:14px;cursor:pointer;}
@@ -29,77 +26,63 @@ h2{font-family:Cinzel,serif;font-size:13px;letter-spacing:.12em;color:var(--gold
 .cc:hover{border-color:var(--gold);background:rgba(184,147,90,.1);}
 .cc.td{border-color:var(--gold);}.cc.sel{background:rgba(184,147,90,.2);border-color:var(--gold);}
 .cc.dis{opacity:.2;pointer-events:none;}.cc.ev{background:rgba(163,51,51,.12);border-color:rgba(163,51,51,.25);pointer-events:none;}
-.cc .dn{font-size:12px;}.cc .dn.sun{color:#c66;}.cc.ev .el{font-size:7px;color:#c66;margin-top:1px;}
-.cc.om{opacity:.15;pointer-events:none;}
-
-/* Time grid */
+.cc .dn{font-size:12px;}.cc .dn.sun{color:#c66;}.cc.ev .el{font-size:7px;color:#c66;margin-top:1px;}.cc.om{opacity:.15;pointer-events:none;}
+/* Time */
 .tg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
 .tb{background:rgba(184,147,90,.06);border:1px solid rgba(184,147,90,.2);border-radius:8px;color:var(--cream);padding:14px;font-family:Cinzel,serif;font-size:16px;cursor:pointer;text-align:center;transition:all .2s;}
 .tb:hover{border-color:var(--gold);}.tb.sel{border-color:var(--gold);background:rgba(184,147,90,.2);color:var(--gold);}
 .tb.full{opacity:.3;pointer-events:none;text-decoration:line-through;}
 .tb .sub{font-family:'Noto Sans KR',sans-serif;font-size:10px;opacity:.5;display:block;margin-top:3px;}
-
-/* Preference */
-.pg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
-.pb{border:1px solid rgba(184,147,90,.2);border-radius:10px;background:rgba(184,147,90,.04);padding:20px 12px;text-align:center;cursor:pointer;transition:all .2s;}
-.pb:hover{border-color:var(--gold);}.pb.sel{border-color:var(--gold);background:rgba(184,147,90,.15);}
-.pb .ic{font-size:24px;margin-bottom:6px;}.pb .lb{font-family:Cinzel,serif;font-size:13px;color:var(--gold);}
-.pb .ds{font-size:10px;color:var(--amber);opacity:.6;margin-top:2px;}
-
-/* Party size */
+/* Size */
 .sr{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
 .sb2{width:44px;height:44px;border:1px solid rgba(184,147,90,.2);border-radius:8px;background:none;color:var(--cream);font-size:16px;cursor:pointer;font-family:Cinzel,serif;transition:all .2s;}
 .sb2:hover{border-color:var(--gold);}.sb2.sel{border-color:var(--gold);background:rgba(184,147,90,.2);color:var(--gold);}
-
 .note{font-size:12px;color:var(--amber);opacity:.7;margin-top:8px;line-height:1.6;}
 .warn{font-size:12px;color:#e8a855;margin:10px 0;padding:10px;border:1px solid rgba(232,168,85,.2);border-radius:6px;background:rgba(232,168,85,.06);line-height:1.6;}
-input{width:100%;background:rgba(240,235,224,.05);border:1px solid rgba(184,147,90,.2);border-radius:8px;padding:14px 16px;color:var(--cream);font-size:15px;font-family:'Noto Sans KR',sans-serif;margin-bottom:10px;outline:none;transition:border-color .2s;}
-input:focus{border-color:var(--gold);}input::placeholder{color:rgba(240,235,224,.3);}
+input,textarea{width:100%;background:rgba(240,235,224,.05);border:1px solid rgba(184,147,90,.2);border-radius:8px;padding:14px 16px;color:var(--cream);font-size:15px;font-family:'Noto Sans KR',sans-serif;margin-bottom:10px;outline:none;transition:border-color .2s;}
+input:focus,textarea:focus{border-color:var(--gold);}input::placeholder,textarea::placeholder{color:rgba(240,235,224,.3);}
+textarea{resize:vertical;min-height:60px;font-size:14px;}
 .ilbl{font-size:11px;color:var(--amber);opacity:.5;margin-bottom:4px;}
 .nbtn{width:100%;padding:16px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--amber));color:var(--ink);font-family:Cinzel,serif;font-size:13px;letter-spacing:.12em;cursor:pointer;margin-top:8px;}
 .nbtn:disabled{opacity:.4;cursor:default;}
-
 .cbox{text-align:center;padding:20px 0;}.cbox .cic{font-size:40px;margin-bottom:12px;}
 .cbox h3{font-family:Cinzel,serif;font-size:18px;color:var(--gold);font-weight:400;margin-bottom:16px;}
 .cbox .det{font-size:14px;line-height:2;}.cbox .det strong{color:var(--gold);}
 .cbox .cnn{font-size:12px;color:var(--amber);margin-top:16px;line-height:1.6;opacity:.8;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(30,18,8,.95);border:1px solid var(--gold);color:var(--cream);border-radius:8px;font-size:13px;padding:12px 24px;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none;}.toast.show{opacity:1;}
+.hint{font-size:11px;color:var(--amber);opacity:.4;margin-top:4px;line-height:1.5;}
 </style></head><body>
 <canvas id="rings"></canvas>
 <div class="wrap">
-<div class="logo"><div class="logo-text">PINE &amp; CO</div><div class="logo-sub">SEOUL</div></div>
-<div class="hours">Open 7PM — 2AM</div>
-<div class="div"></div>
+<div class="logo"><div class="lt">PINE &amp; CO</div><div class="ls">SEOUL</div></div>
+<div class="hrs">Open 7PM — 2AM</div>
+<div class="dv"></div>
 <div id="app"></div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
 var DK=['일','월','화','수','목','금','토'],MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
-var step=1,selDate='',selTime='',pref='',partySize=0,confirmed=null,avail={},evts={},calY,calM;
+var step=1,selDate='',selTime='',partySize=0,confirmed=null,avail={},evts={},calY,calM,savedSR='';
 
 function kst(){return new Date(Date.now()+9*3600000);}
 function td2(){return kst().toISOString().slice(0,10);}
 function flash(m){var t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(function(){t.className='toast';},3000);}
 
-// Load events on init
 (function(){var n=kst();calY=n.getFullYear();calM=n.getMonth();
 fetch('/api/events').then(function(r){return r.json();}).then(function(d){evts=d;render();}).catch(function(){render();});
 })();
 
 function shiftCal(n){calM+=n;if(calM>11){calM=0;calY++;}if(calM<0){calM=11;calY--;}render();}
-function goStep(s){step=s;render();}
+function goStep(s){
+  if(step===2&&s===3){var el=document.getElementById('sr');if(el)savedSR=el.value.trim();}
+  step=s;render();
+}
 
 function render(){
 var app=document.getElementById('app'),h='';
+if(step<=3){h+='<div class="prog">';for(var i=1;i<=3;i++)h+='<div class="dot'+(i<=step?' on':'')+'"></div>';h+='</div>';}
 
-// Progress dots
-if(step<=4){
-h+='<div class="progress">';
-for(var i=1;i<=4;i++) h+='<div class="dot'+(i<=step?' active':'')+'"></div>';
-h+='</div>';
-}
-
-// ══════ STEP 1: CALENDAR ══════
+// ═══ STEP 1: CALENDAR ═══
 if(step===1){
 h+='<h2>1. SELECT DATE · 날짜 선택</h2>';
 h+='<div class="cn2"><button onclick="shiftCal(-1)">&larr;</button><div class="ml">'+MN[calM]+' '+calY+'</div><button onclick="shiftCal(1)">&rarr;</button></div>';
@@ -122,14 +105,16 @@ for(var i=1;i<=rem;i++)h+='<div class="cc om"><div class="dn">'+i+'</div></div>'
 h+='</div>';
 }
 
-// ══════ STEP 2: TIME ══════
+// ═══ STEP 2: TIME + PARTY SIZE + SPECIAL REQUEST ═══
 if(step===2){
 h+='<button class="back" onclick="goStep(1)">← 날짜 다시 선택</button>';
-h+='<h2>2. SELECT TIME · 시간 선택</h2>';
+h+='<h2>2. TIME &amp; DETAILS · 시간 및 인원</h2>';
 h+='<div class="note" style="margin-bottom:12px">📅 '+selDate+'</div>';
-h+='<div class="tg">';
+
+h+='<div class="ilbl">시간 선택 / Select time *</div>';
+h+='<div class="tg" style="margin-bottom:16px">';
 var slots=Object.keys(avail);
-if(slots.length===0) h+='<div style="grid-column:1/-1;text-align:center;color:var(--amber);padding:20px;">이 날짜에 예약 가능한 시간이 없습니다.</div>';
+if(!slots.length) h+='<div style="grid-column:1/-1;text-align:center;color:var(--amber);padding:20px;">예약 가능한 시간이 없습니다.</div>';
 slots.forEach(function(t){
   var a=avail[t],total=a.bar+a.tables+a.highTables+a.room,full=total===0;
   h+='<button class="tb'+(selTime===t?' sel':'')+(full?' full':'')+'" onclick="pickTime(\''+t+'\')">'+t;
@@ -138,39 +123,30 @@ slots.forEach(function(t){
   h+='</button>';
 });
 h+='</div>';
-}
 
-// ══════ STEP 3: PREFERENCE + PARTY SIZE ══════
-if(step===3){
-h+='<button class="back" onclick="goStep(2)">← 시간 다시 선택</button>';
-h+='<h2>3. PREFERENCE &amp; PARTY SIZE</h2>';
-h+='<div class="note" style="margin-bottom:12px">📅 '+selDate+' · ⏰ '+selTime+'</div>';
-h+='<div class="pg">';
-h+='<div class="pb'+(pref==='bar'?' sel':'')+'" onclick="setPref(\'bar\')"><div class="ic">🥃</div><div class="lb">BAR</div><div class="ds">바 좌석 (1~2명)</div></div>';
-h+='<div class="pb'+(pref==='table'?' sel':'')+'" onclick="setPref(\'table\')"><div class="ic">🪑</div><div class="lb">TABLE</div><div class="ds">테이블 / 하이테이블 / 룸</div></div>';
-h+='</div>';
-if(pref){
-  h+='<h2 style="margin-top:16px">PARTY SIZE · 인원</h2><div class="sr">';
-  var max=pref==='bar'?2:10;
-  for(var i=1;i<=max;i++)h+='<button class="sb2'+(partySize===i?' sel':'')+'" onclick="pickSize('+i+')">'+i+'</button>';
+if(selTime){
+  h+='<div class="ilbl">인원 / Party size *</div>';
+  h+='<div class="sr">';
+  for(var i=1;i<=10;i++)h+='<button class="sb2'+(partySize===i?' sel':'')+'" onclick="pickSize('+i+')">'+i+'</button>';
   h+='</div>';
-  if(pref==='bar')h+='<div class="note">바 좌석은 1~2명까지 가능합니다.</div>';
-  if(pref==='table'){
-    h+='<div class="note">2명: 하이테이블 · 3~5명: 테이블 · 6~10명: 프라이빗 룸';
-    if(partySize>=6)h+='<br>🔑 룸 미니멈차지 30만원';
-    if(partySize>=9)h+='<br>※ '+partySize+'명은 룸이 다소 좁을 수 있습니다.';
-    h+='</div>';
-  }
-}
-if(pref&&partySize>0)h+='<button class="nbtn" style="margin-top:16px" onclick="goStep(4)">NEXT → 연락처 입력</button>';
+
+  if(partySize>=6)h+='<div class="note">🔑 6명 이상은 프라이빗 룸 배정 (미니멈차지 30만원)</div>';
+  if(partySize>=9)h+='<div class="note">※ '+partySize+'명은 룸이 다소 좁을 수 있습니다.</div>';
+
+  h+='<div class="ilbl" style="margin-top:12px">요구사항 / Special requests (optional)</div>';
+  h+='<textarea id="sr" placeholder="예: 바 좌석 원합니다 / 생일파티 / 조용한 자리 / Bar seat please...">'+(savedSR||'')+'</textarea>';
+  h+='<div class="hint">💡 "바", "테이블", "룸" 키워드를 적으면 자동으로 좌석이 배정됩니다.<br>💡 Keywords like "bar", "table", "room" will auto-assign seating.</div>';
 }
 
-// ══════ STEP 4: CONTACT INFO ══════
-if(step===4){
-h+='<button class="back" onclick="goStep(3)">← 뒤로</button>';
-h+='<h2>4. CONTACT INFO · 연락처</h2>';
-h+='<div class="note" style="margin-bottom:12px">📅 '+selDate+' · ⏰ '+selTime+' · '+(pref==='bar'?'🥃 Bar':'🪑 Table')+' · '+partySize+'명</div>';
-h+='<div class="warn">⚠️ 예약 확인을 위해 <strong>이메일 또는 전화번호</strong>를 반드시 입력해주세요.<br>Please provide your <strong>email or phone number</strong> for reservation confirmation.</div>';
+if(selTime&&partySize>0)h+='<button class="nbtn" style="margin-top:12px" onclick="goStep(3)">NEXT → 연락처 입력</button>';
+}
+
+// ═══ STEP 3: CONTACT INFO ═══
+if(step===3){
+h+='<button class="back" onclick="goStep(2)">← 뒤로</button>';
+h+='<h2>3. CONTACT INFO · 연락처</h2>';
+h+='<div class="note" style="margin-bottom:12px">📅 '+selDate+' · ⏰ '+selTime+' · '+partySize+'명'+(savedSR?' · 📝 '+savedSR:'')+'</div>';
+h+='<div class="warn">⚠️ 예약 확인을 위해 <strong>이메일 또는 전화번호</strong>를 반드시 입력해주세요.<br>Please provide your <strong>email or phone number</strong> for confirmation.</div>';
 h+='<div class="ilbl">이름 / Name *</div>';
 h+='<input type="text" id="rn" placeholder="홍길동 / John" autocomplete="name"/>';
 h+='<div class="ilbl">전화번호 / Phone</div>';
@@ -183,8 +159,8 @@ h+='<button class="nbtn" id="sbtn" onclick="doSubmit()">RESERVE · 예약하기<
 h+='<div class="note" style="margin-top:12px;text-align:center">예약 취소는 전화로만 가능합니다.<br>Cancellation by phone only.</div>';
 }
 
-// ══════ STEP 5: CONFIRMED ══════
-if(step===5&&confirmed){
+// ═══ STEP 4: CONFIRMED ═══
+if(step===4&&confirmed){
 var zn={bar:'바 좌석',table:'테이블',highTable:'하이테이블',room:'프라이빗 룸'};
 h+='<div class="cbox"><div class="cic">🌲</div><h3>RESERVATION CONFIRMED</h3>';
 h+='<div class="det"><strong>'+confirmed.date+'</strong> '+confirmed.time+'<br>';
@@ -202,13 +178,13 @@ app.innerHTML=h;
 }
 
 async function pickDate(d){
-selDate=d;selTime='';pref='';partySize=0;
+if(evts[d]){flash('이 날짜는 이벤트로 예약 불가합니다.');return;}
+selDate=d;selTime='';partySize=0;
 var r=await fetch('/api/availability/'+d).then(function(x){return x.json();}).catch(function(){return {};});
-if(r.blocked){flash('이 날짜는 이벤트로 예약이 불가합니다.');return;}
+if(r.blocked){flash('이 날짜는 이벤트로 예약 불가합니다.');return;}
 avail=r;step=2;render();
 }
-function pickTime(t){selTime=t;pref='';partySize=0;step=3;render();}
-function setPref(p){pref=p;partySize=0;render();}
+function pickTime(t){selTime=t;partySize=0;render();}
 function pickSize(n){partySize=n;render();}
 
 async function doSubmit(){
@@ -216,18 +192,16 @@ var name=(document.getElementById('rn')||{}).value;if(name)name=name.trim();
 var phone=(document.getElementById('rp')||{}).value;if(phone)phone=phone.trim();
 var email=(document.getElementById('re')||{}).value;if(email)email=email.trim();
 var ig=(document.getElementById('ri')||{}).value;if(ig)ig=ig.trim();
-
-if(!name){flash('이름을 입력해주세요. / Please enter your name.');return;}
-if(!phone&&!email){flash('이메일 또는 전화번호를 입력해주세요. / Please provide email or phone.');return;}
-
+if(!name){flash('이름을 입력해주세요.');return;}
+if(!phone&&!email){flash('이메일 또는 전화번호를 입력해주세요.');return;}
 var btn=document.getElementById('sbtn');if(btn){btn.disabled=true;btn.textContent='RESERVING...';}
-var body={name:name,phone:phone||'',email:email||'',instagram:ig||'',partySize:partySize,date:selDate,time:selTime,preference:pref};
+var body={name:name,phone:phone||'',email:email||'',instagram:ig||'',partySize:partySize,date:selDate,time:selTime,specialRequest:savedSR};
 try{
   var resp=await fetch('/api/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   var data=await resp.json();
-  if(data.ok){confirmed=data.reservation;step=5;render();}
-  else{flash(data.error||'예약 실패. 다시 시도해주세요.');if(btn){btn.disabled=false;btn.textContent='RESERVE · 예약하기';}}
-}catch(e){flash('네트워크 오류. 다시 시도해주세요.');if(btn){btn.disabled=false;btn.textContent='RESERVE · 예약하기';}}
+  if(data.ok){confirmed=data.reservation;step=4;render();}
+  else{flash(data.error||'예약 실패');if(btn){btn.disabled=false;btn.textContent='RESERVE · 예약하기';}}
+}catch(e){flash('네트워크 오류');if(btn){btn.disabled=false;btn.textContent='RESERVE · 예약하기';}}
 }
 
 // Tree-ring canvas
