@@ -189,7 +189,8 @@ h+=' <span class="st '+(sc[r.source]||'ss')+'" style="font-size:9px;">'+(sl[r.so
 if(isNew)h+=' <span style="font-size:9px;color:var(--grn);font-weight:500;">NEW</span>';
 if(r.notes)h+=' <span style="font-size:10px;" title="'+r.notes+'">📝</span>';
 h+='</div>';
-h+='<div style="font-size:11px;color:var(--mu);">'+r.status+'</div>';
+h+='<div style="font-size:11px;color:'+(r.status==='needs_assignment'?'var(--red)':'var(--mu)')+';">'+
+(r.status==='needs_assignment'?'🚨 좌석 미배정!':r.status)+'</div>';
 h+='</div>';
 });
 }
@@ -291,11 +292,15 @@ v+='</svg>';el.innerHTML=v;}
 
 function td(id){exId=exId===id?null:id;rl();}
 function rl(){
-var el=document.getElementById('rL');var res=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';}).sort(function(a,b){return a.createdAt<b.createdAt?-1:1;});
+var el=document.getElementById('rL');var res=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';}).sort(function(a,b){
+  if(a.status==='needs_assignment'&&b.status!=='needs_assignment')return -1;
+  if(b.status==='needs_assignment'&&a.status!=='needs_assignment')return 1;
+  return a.createdAt<b.createdAt?-1:1;
+});
 if(!res.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:20px">No reservations</div>';return;}
 var sl={online:'Online',instagram:'Instagram',email:'Email',staff:'직원',phone:'전화'},sc={online:'so',instagram:'si',email:'se',staff:'ss',phone:'ss'},zn={bar:'Bar',table:'Table',highTable:'High Table',room:'Room'};
 var h='';res.forEach(function(r){var ex=exId===r.id;
-h+='<div class="rc2"><div class="rt" onclick="td(\''+r.id+'\')">';
+h+='<div class="rc2" style="'+(r.status==='needs_assignment'?'border-color:var(--red);background:rgba(170,51,51,.03);':'')+'"><div class="rt" onclick="td(\''+r.id+'\')">';
 h+='<div class="ri"><div class="nm">'+r.name+' · '+r.partySize+'명 · '+(zn[r.zone]||r.zone)+' ('+(r.seats||[]).join(',')+')</div>';
 h+='<div class="mt">'+r.time+'<span class="st '+(sc[r.source]||'ss')+'">'+(sl[r.source]||r.source)+'</span>';if(r.notes)h+=' · 📝';h+='</div></div>';
 h+='<div class="ra">';if(r.status==='confirmed'){h+='<button class="bs" onclick="event.stopPropagation();us(\''+r.id+'\',\'seated\')">SEATED</button>';
@@ -309,7 +314,7 @@ h+='<div class="dr"><label>예약경로</label><select onchange="sf(\''+r.id+'\'
 ['online','instagram','email','staff','phone'].forEach(function(s){h+='<option value="'+s+'"'+(r.source===s?' selected':'')+'>'+(sl[s])+'</option>';});
 h+='</select></div>';
 h+='<div class="dr"><label>특이사항</label><textarea onblur="sf(\''+r.id+'\',\'notes\',this.value)">'+(r.notes||'')+'</textarea></div>';
-h+='<div class="dr"><label>상태</label><span style="font-weight:500">'+r.status+'</span></div>';
+h+='<div class="dr"><label>상태</label><span style="font-weight:500;color:'+(r.status==='needs_assignment'?'var(--red)':'inherit')+';">'+(r.status==='needs_assignment'?'🚨 좌석 미배정 — 수동 배정 필요':r.status)+'</span></div>';
 if(r.modLog&&r.modLog.length){h+='<div class="ml2"><strong>수정 이력:</strong><br>';r.modLog.forEach(function(m){h+=m.at.slice(0,16).replace('T',' ')+' — '+m.by+': '+m.action+'<br>';});h+='</div>';}
 h+='</div></div>';});el.innerHTML=h;}
 
@@ -401,9 +406,18 @@ renderEventList();fl('이벤트 해제: '+d);
 }
 
 async function gcalSync(){
-document.getElementById('gcalStatus').textContent='동기화 중...';
+document.getElementById('gcalStatus').innerHTML='동기화 중...';
 var r=await fetch('/api/gcal-sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin})}).then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
-if(r.ok)document.getElementById('gcalStatus').textContent='✅ 동기화 완료! (총 '+r.count+'건)';
-else document.getElementById('gcalStatus').textContent='⚠️ '+(r.error||'동기화 실패');
+if(r.ok){
+  var msg='✅ 동기화 완료! 새로 추가: <strong>'+r.added+'건</strong> (캘린더 총 '+r.total+'건, 시스템 총 '+r.reservationCount+'건)';
+  if(r.warnings&&r.warnings.length>0){
+    msg+='<div style="margin-top:8px;padding:8px;background:rgba(170,51,51,.06);border:1px solid rgba(170,51,51,.15);border-radius:4px;font-size:11px;line-height:1.6;">';
+    msg+='<strong style="color:var(--red);">⚠️ 주의 ('+r.warnings.length+'건):</strong><br>';
+    r.warnings.forEach(function(w){msg+=w+'<br>';});
+    msg+='</div>';
+  }
+  document.getElementById('gcalStatus').innerHTML=msg;
+}
+else document.getElementById('gcalStatus').innerHTML='❌ '+(r.error||'동기화 실패');
 }
 </script></body></html>

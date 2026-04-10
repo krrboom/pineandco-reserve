@@ -412,7 +412,7 @@ function parseGcalEntry(text) {
       if (timeMatch[0].startsWith('오후') && h < 12) h += 12;
       // Round to nearest slot
       const mins = typeof m === 'string' && !isNaN(m) ? parseInt(m) : 0;
-      if (mins >= 30) h += 1;
+      // Floor to the hour (7:30 → 19:00, not 20:00)
       if (h < 12) h += 12; // assume PM for bar hours
       result.time = String(h).padStart(2, '0') + ':00';
       // Also store exact time for notes
@@ -449,7 +449,7 @@ function parseGcalEntry(text) {
 async function syncGoogleCalendar() {
   if (!CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY || !CONFIG.GOOGLE_CALENDAR_ID) {
     console.log('📅 [GCAL] No credentials, skipping sync');
-    return;
+    return { added:0, warnings:[], total:0 };
   }
   try {
     const { google } = require('googleapis');
@@ -468,16 +468,22 @@ async function syncGoogleCalendar() {
       timeMax: twoMonths.toISOString(),
       singleEvents: true,
       orderBy: 'startTime',
-      maxResults: 200,
+      maxResults: 500,
     });
     const gcalEvents = res.data.items || [];
     let added = 0;
+    const warnings = [];
+
     gcalEvents.forEach(ev => {
       // Skip if already imported
       if (reservations.find(r => r.gcalId === ev.id)) return;
+      // Skip cancelled
+      if (ev.status === 'cancelled') return;
 
       const title = ev.summary || '';
       const desc = ev.description || '';
+      if (!title.trim() && !desc.trim()) return; // truly empty event
+
       const fullText = title + (desc ? ' / ' + desc : '');
 
       // Get date from Google Calendar event
@@ -485,20 +491,23 @@ async function syncGoogleCalendar() {
       if (ev.start && ev.start.dateTime) {
         const start = new Date(ev.start.dateTime);
         date = start.toISOString().slice(0, 10);
-        fallbackTime = String(start.getHours()).padStart(2, '0') + ':00';
+        const h = start.getHours();
+        fallbackTime = String(h).padStart(2, '0') + ':00';
       } else if (ev.start && ev.start.date) {
         date = ev.start.date;
-        fallbackTime = '19:00';
-      } else return;
+        fallbackTime = '19:00'; // default for all-day events
+      } else {
+        warnings.push('⚠️ 날짜없음: ' + title);
+        return;
+      }
 
       // Parse the free-form text
       const parsed = parseGcalEntry(fullText);
       const time = parsed.time || fallbackTime;
       const pref = detectPreference(fullText, parsed.partySize);
 
-      // Try auto-assign
+      // Try auto-assign seats
       const a = autoAssign(date, time, parsed.partySize, pref);
-      if (!a) { console.log('📅 [GCAL] No seats: ' + fullText + ' → ' + date + ' ' + time); return; }
 
       // Build notes
       let notes = '📅 Google Calendar: ' + title;
@@ -506,25 +515,58 @@ async function syncGoogleCalendar() {
       if (parsed.staffName) notes += '\n👤 담당: ' + parsed.staffName;
       if (desc) notes += '\n' + desc;
 
+      let status = 'confirmed';
+      let warn = null;
+
+      // If no seats available, STILL import but flag it
+      if (!a) {
+        status = 'needs_assignment';
+        warn = '🚨 좌석 부족: ' + parsed.name + ' / ' + date + ' ' + time + ' / ' + parsed.partySize + '명 → 수동 배정 필요';
+        notes += '\n\n🚨 자동 좌석 배정 실패 — 직원이 수동으로 배정해주세요!';
+      }
+
+      // If name is still "Guest", something might be off
+      if (parsed.name === 'Guest' && title.trim()) {
+        parsed.name = title.split(/[\/·,]/)[0].trim() || 'Guest';
+      }
+      if (parsed.name === 'Guest') {
+        warn = (warn ? warn + ' | ' : '') + '⚠️ 이름 인식 실패: ' + title;
+      }
+
       const r = {
         id: 'gc_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
         gcalId: ev.id,
-        name: parsed.name, phone: parsed.phone, instagram: '', email: '',
-        partySize: parsed.partySize, date, time, preference: pref || 'auto',
-        zone: a.zone, seats: a.seats, status: 'confirmed',
-        source: 'google_calendar', notes: notes,
+        name: parsed.name,
+        phone: parsed.phone,
+        instagram: '', email: '',
+        partySize: parsed.partySize,
+        date, time,
+        preference: pref || 'auto',
+        zone: a ? a.zone : 'unassigned',
+        seats: a ? a.seats : [],
+        status: status,
+        source: 'google_calendar',
+        notes: notes,
         createdAt: new Date().toISOString(),
         reminderD1: false, reminderD0: false,
-        modLog: [{ action: 'imported from Google Calendar (' + title + ')', by: parsed.staffName || 'System', at: new Date().toISOString() }],
+        modLog: [{
+          action: 'imported from Google Calendar' + (a ? '' : ' (⚠️ 좌석 미배정)'),
+          by: parsed.staffName || 'System',
+          at: new Date().toISOString()
+        }],
       };
       reservations.push(r);
       added++;
-      console.log('📅 [GCAL] Added: ' + parsed.name + ' / ' + date + ' ' + time + ' / ' + parsed.partySize + 'pax');
+      if (warn) warnings.push(warn);
+      console.log('📅 [GCAL] ' + (a ? '✅' : '⚠️') + ' ' + parsed.name + ' / ' + date + ' ' + time + ' / ' + parsed.partySize + 'pax');
     });
-    if (added > 0) { saveRes(); console.log('📅 [GCAL] Total imported: ' + added); }
-    else console.log('📅 [GCAL] No new reservations');
+
+    if (added > 0) saveRes();
+    console.log('📅 [GCAL] Imported: ' + added + ', Warnings: ' + warnings.length);
+    return { added, warnings, total: gcalEvents.length };
   } catch (e) {
     console.error('📅 [GCAL] Sync error:', e.message);
+    return { added: 0, warnings: ['❌ 동기화 오류: ' + e.message], total: 0 };
   }
 }
 
@@ -532,8 +574,8 @@ async function syncGoogleCalendar() {
 app.post('/api/gcal-sync', async (req, res) => {
   const { pin } = req.body;
   if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
-  await syncGoogleCalendar();
-  res.json({ ok: true, count: reservations.length });
+  const result = await syncGoogleCalendar();
+  res.json({ ok: true, added: result.added, warnings: result.warnings, total: result.total, reservationCount: reservations.length });
 });
 
 function cleanup() {
