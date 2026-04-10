@@ -1,0 +1,232 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pine &amp; Co — Booking Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--ink:#2a1a0e;--cream:#f5f0e6;--gold:#b8935a;--bg:#f0ebe0;--card:#fff;--brd:rgba(42,26,14,.1);--tx:#3d2e1f;--mu:#8a7560;--grn:#4a7c59;--red:#a33;}
+*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;}
+.w{max-width:900px;margin:0 auto;padding:16px;}
+.hd{text-align:center;margin-bottom:16px;}.hd h1{font-family:Cinzel,serif;font-size:16px;letter-spacing:.15em;color:var(--gold);font-weight:400;}
+.hd a{font-size:12px;color:var(--mu);text-decoration:none;}.hd a:hover{color:var(--gold);}
+#login{text-align:center;padding:80px 20px;}#login input{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:14px;color:var(--tx);font-size:18px;text-align:center;width:160px;letter-spacing:.3em;outline:none;}
+#login button{display:block;margin:12px auto 0;padding:12px 32px;border:none;border-radius:8px;background:var(--gold);color:#fff;font-family:Cinzel,serif;font-size:12px;cursor:pointer;}
+.tabs{display:flex;gap:4px;margin-bottom:16px;}.tab{flex:1;padding:10px;border:1px solid var(--brd);border-radius:8px;background:var(--card);color:var(--mu);font-size:13px;cursor:pointer;text-align:center;}.tab.sel{border-color:var(--gold);color:var(--gold);font-weight:500;}
+/* Bulk import */
+.bulk-box{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:16px;margin-bottom:16px;}
+.bulk-box h2{font-family:Cinzel,serif;font-size:14px;color:var(--gold);font-weight:400;margin-bottom:8px;}
+.bulk-box textarea{width:100%;min-height:120px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:10px;font-size:12px;color:var(--tx);font-family:'Noto Sans KR',sans-serif;resize:vertical;outline:none;line-height:1.8;}
+.bulk-box textarea:focus{border-color:var(--gold);}
+.bulk-box .row{display:flex;gap:8px;margin-top:8px;align-items:center;}
+.bulk-box input[type=date]{background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:8px;font-size:13px;color:var(--tx);outline:none;}
+.bulk-box select{background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:8px;font-size:13px;color:var(--tx);}
+.bulk-btn{padding:10px 20px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-size:12px;cursor:pointer;font-family:Cinzel,serif;}
+.bulk-result{margin-top:12px;font-size:12px;line-height:1.6;}
+/* Reservation cards */
+.date-group{margin-bottom:20px;}
+.date-header{font-family:Cinzel,serif;font-size:14px;color:var(--gold);padding:8px 0;border-bottom:1px solid var(--brd);margin-bottom:8px;display:flex;justify-content:space-between;}
+.rcard{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:flex-start;}
+.rcard.warn{border-color:var(--red);background:rgba(170,51,51,.03);}
+.rcard.new{border-left:3px solid var(--grn);}
+.ri2{flex:1;}
+.ri2 .nm{font-weight:500;font-size:14px;color:var(--ink);}
+.ri2 .mt{font-size:12px;color:var(--mu);margin-top:2px;}
+.ri2 .nt{background:rgba(184,147,90,.06);border-left:3px solid var(--gold);padding:6px 10px;border-radius:0 4px 4px 0;font-size:11px;margin-top:6px;line-height:1.5;color:var(--tx);white-space:pre-wrap;}
+.st{display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;}.so{background:#e3f0e8;color:var(--grn);}.si{background:#fce4ec;color:#c2185b;}.se{background:#e3f2fd;color:#1565c0;}.ss{background:#fff3e0;color:#e65100;}.sb2{background:#f3e8fd;color:#7b1fa2;}
+.badge{font-size:9px;padding:2px 6px;border-radius:3px;margin-left:4px;font-weight:500;}
+.badge-new{background:#e8f5e9;color:var(--grn);}
+.badge-warn{background:#fbe9e7;color:var(--red);}
+.ra2{display:flex;gap:4px;flex-shrink:0;align-items:flex-start;}
+.ra2 button{padding:6px 8px;border:none;border-radius:4px;font-size:10px;cursor:pointer;}
+.bs{background:var(--grn);color:#fff;}.bn{background:var(--red);color:#fff;}.bd{background:rgba(0,0,0,.06);color:var(--mu);}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);border-radius:8px;font-size:12px;padding:10px 20px;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none;}.toast.show{opacity:1;}
+.empty{text-align:center;color:var(--mu);padding:30px;background:var(--card);border:1px solid var(--brd);border-radius:8px;}
+</style></head><body>
+<div class="w">
+<div class="hd"><h1>📋 BOOKING MANAGER</h1><a href="manage.html">← Staff Dashboard</a></div>
+<div id="login"><input type="password" id="pin" placeholder="PIN" maxlength="4" onkeydown="if(event.key==='Enter')doLogin()"/><button onclick="doLogin()">ENTER</button></div>
+<div id="main" style="display:none">
+<div class="tabs">
+<button class="tab sel" id="tabAll" onclick="showTab('all')">📋 전체 예약</button>
+<button class="tab" id="tabNew" onclick="showTab('new')">📩 오늘 들어온</button>
+<button class="tab" id="tabImport" onclick="showTab('import')">📥 복붙 입력</button>
+</div>
+<div id="vAll"></div>
+<div id="vNew" style="display:none"></div>
+<div id="vImport" style="display:none">
+<div class="bulk-box">
+<h2>📥 캘린더 복붙 일괄 입력</h2>
+<p style="font-size:12px;color:var(--mu);margin-bottom:8px;line-height:1.6;">구글 캘린더의 예약을 한줄씩 복붙하세요. 자동으로 이름, 시간, 인원, 전화번호, 인스타를 인식합니다.<br>예: <code>양수옥 2명 8시 01058281583 신규</code></p>
+<textarea id="bulkText" placeholder="한 줄에 하나씩 입력:&#10;양수옥 2명 8시 01058281583 신규&#10;Sasha / 7:30 / 2pax / 01083484036 / 명준&#10;Kim 4명 9pm @kim_insta DuUi"></textarea>
+<div class="row">
+<label style="font-size:12px;color:var(--mu);">날짜:</label>
+<input type="date" id="bulkDate"/>
+<label style="font-size:12px;color:var(--mu);margin-left:8px;">담당:</label>
+<select id="bulkStaff"></select>
+<button class="bulk-btn" onclick="doBulkImport()">일괄 입력</button>
+</div>
+<div class="bulk-result" id="bulkResult"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+var pin='',allRes=[];
+var DK=['일','월','화','수','목','금','토'];
+function kst(){return new Date(Date.now()+9*3600000);}
+function ktd(){return kst().toISOString().slice(0,10);}
+function fl(m){var t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(function(){t.className='toast';},3000);}
+
+async function doLogin(){
+pin=document.getElementById('pin').value;
+if(pin.length!==4){fl('4자리 PIN');return;}
+var sn=await fetch('/api/staff-names').then(function(r){return r.json();}).catch(function(){return ['Staff'];});
+document.getElementById('bulkStaff').innerHTML=sn.map(function(n){return '<option>'+n+'</option>';}).join('');
+document.getElementById('bulkDate').value=ktd();
+document.getElementById('login').style.display='none';
+document.getElementById('main').style.display='block';
+loadAll();
+}
+
+function showTab(t){
+document.getElementById('vAll').style.display=t==='all'?'block':'none';
+document.getElementById('vNew').style.display=t==='new'?'block':'none';
+document.getElementById('vImport').style.display=t==='import'?'block':'none';
+document.getElementById('tabAll').className='tab'+(t==='all'?' sel':'');
+document.getElementById('tabNew').className='tab'+(t==='new'?' sel':'');
+document.getElementById('tabImport').className='tab'+(t==='import'?' sel':'');
+if(t==='all')loadAll();if(t==='new')loadNew();
+}
+
+var sl={online:'Online',instagram:'Instagram',email:'Email',staff:'직원',phone:'전화',google_calendar:'GCal',bulk_import:'복붙'};
+var sc={online:'so',instagram:'si',email:'se',staff:'ss',phone:'ss',google_calendar:'so',bulk_import:'sb2'};
+var zn={bar:'Bar',table:'Table',highTable:'High',room:'Room',unassigned:'미배정'};
+
+function renderCard(r,showDate){
+var today=ktd();
+var isNew=r.createdAt&&r.createdAt.startsWith(today);
+var isWarn=r.status==='needs_assignment';
+var cls='rcard';if(isWarn)cls+=' warn';if(isNew&&!isWarn)cls+=' new';
+var h='<div class="'+cls+'">';
+h+='<div class="ri2">';
+h+='<div class="nm">'+r.name+' · '+r.partySize+'명 · '+(zn[r.zone]||r.zone);
+if(r.seats&&r.seats.length)h+=' ('+r.seats.join(',')+')';
+h+='</div>';
+h+='<div class="mt">';
+if(showDate)h+='📅 '+r.date+' ';
+h+='⏰ '+r.time;
+h+=' <span class="st '+(sc[r.source]||'ss')+'">'+(sl[r.source]||r.source)+'</span>';
+if(isNew)h+='<span class="badge badge-new">NEW</span>';
+if(isWarn)h+='<span class="badge badge-warn">미배정</span>';
+h+='</div>';
+// Contact
+var contacts=[];
+if(r.phone)contacts.push('📱'+r.phone);
+if(r.instagram)contacts.push('📷'+r.instagram);
+if(r.email)contacts.push('📧'+r.email);
+if(contacts.length)h+='<div class="mt">'+contacts.join(' · ')+'</div>';
+// Notes
+if(r.notes&&r.notes.trim()){
+var dn=r.notes.replace(/^📅 /,'');
+h+='<div class="nt">'+dn+'</div>';
+}
+h+='</div>';
+// Actions
+h+='<div class="ra2">';
+if(r.status==='confirmed')h+='<button class="bs" onclick="us(\''+r.id+'\',\'seated\')">SEATED</button><button class="bn" onclick="us(\''+r.id+'\',\'noshow\')">NO SHOW</button>';
+h+='<button class="bd" onclick="dr(\''+r.id+'\')">✕</button>';
+h+='</div></div>';
+return h;
+}
+
+async function loadAll(){
+// Load upcoming dates
+var el=document.getElementById('vAll');
+el.innerHTML='<div style="color:var(--mu);padding:16px;text-align:center;">로딩 중...</div>';
+// Fetch next 14 days
+var today=ktd();
+var dates=[];
+for(var i=0;i<14;i++){
+  var d=new Date(kst().getTime()+i*86400000);
+  dates.push(d.toISOString().slice(0,10));
+}
+var allByDate={};
+for(var i=0;i<dates.length;i++){
+  var res=await fetch('/api/reservations/'+dates[i]).then(function(r){return r.json();}).catch(function(){return [];});
+  if(res.length>0)allByDate[dates[i]]=res;
+}
+var h='';
+var totalRes=0;
+dates.forEach(function(date){
+  var res=allByDate[date];
+  if(!res||!res.length)return;
+  totalRes+=res.length;
+  var d=new Date(date+'T12:00:00');
+  var isToday=date===today;
+  h+='<div class="date-group">';
+  h+='<div class="date-header"><span>'+(isToday?'🔴 오늘 ':'')+''+date+' ('+DK[d.getDay()]+')</span><span>'+res.length+'팀 / '+res.reduce(function(s,r){return s+r.partySize;},0)+'명</span></div>';
+  // Sort by time
+  res.sort(function(a,b){return (a.time+a.name)<(b.time+b.name)?-1:1;});
+  res.forEach(function(r){h+=renderCard(r,false);});
+  h+='</div>';
+});
+if(totalRes===0)h='<div class="empty">향후 2주간 예약이 없습니다.</div>';
+el.innerHTML=h;
+}
+
+async function loadNew(){
+var el=document.getElementById('vNew');
+var today=ktd();
+var newRes=await fetch('/api/new-today').then(function(r){return r.json();}).catch(function(){return [];});
+var h='<div style="text-align:center;margin-bottom:12px;font-family:Cinzel,serif;font-size:14px;color:var(--gold);">📩 오늘 들어온 예약 · '+newRes.length+'건</div>';
+if(!newRes.length){h+='<div class="empty">오늘 들어온 예약이 없습니다.</div>';el.innerHTML=h;return;}
+// Group by reservation date
+var byDate={};
+newRes.forEach(function(r){if(!byDate[r.date])byDate[r.date]=[];byDate[r.date].push(r);});
+var sortedDates=Object.keys(byDate).sort();
+sortedDates.forEach(function(date){
+  var d=new Date(date+'T12:00:00');
+  var res=byDate[date];
+  h+='<div class="date-group">';
+  h+='<div class="date-header"><span>📅 '+date+' ('+DK[d.getDay()]+')</span><span>'+res.length+'건</span></div>';
+  res.forEach(function(r){h+=renderCard(r,false);});
+  h+='</div>';
+});
+el.innerHTML=h;
+}
+
+async function doBulkImport(){
+var text=document.getElementById('bulkText').value.trim();
+var date=document.getElementById('bulkDate').value;
+var staff=document.getElementById('bulkStaff').value;
+if(!text){fl('예약 내용을 입력하세요');return;}
+if(!date){fl('날짜를 선택하세요');return;}
+var r=await fetch('/api/bulk-import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin,text:text,date:date,staffName:staff})}).then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
+if(r.ok){
+  var h='<div style="padding:8px;background:rgba(74,124,89,.06);border:1px solid rgba(74,124,89,.15);border-radius:6px;">';
+  h+='<strong style="color:var(--grn);">✅ '+r.count+'건 입력 완료!</strong><br><br>';
+  r.results.forEach(function(x){
+    var icon=x.assigned?'✅':'🚨';
+    h+='<div style="font-size:11px;padding:2px 0;">'+icon+' <strong>'+x.name+'</strong> '+x.time+' '+x.partySize+'명';
+    if(x.phone)h+=' 📱'+x.phone;
+    if(x.instagram)h+=' 📷'+x.instagram;
+    if(!x.assigned)h+=' <span style="color:var(--red);">(좌석 미배정)</span>';
+    else h+=' → '+x.zone;
+    h+='</div>';
+  });
+  h+='</div>';
+  document.getElementById('bulkResult').innerHTML=h;
+  document.getElementById('bulkText').value='';
+  fl(r.count+'건 입력 완료!');
+}else fl(r.error||'Error');
+}
+
+async function us(id,status){
+await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:status,staffName:'Staff'})});
+loadAll();loadNew();
+}
+async function dr(id){
+if(!confirm('삭제할까요?'))return;
+await fetch('/api/reservations/'+id,{method:'DELETE'});
+loadAll();loadNew();
+}
+</script></body></html>

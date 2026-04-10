@@ -45,14 +45,10 @@
 <div id="login"><input type="password" id="pin" placeholder="PIN" maxlength="4" onkeydown="if(event.key==='Enter')doLogin()"/><button onclick="doLogin()">ENTER</button></div>
 <div id="dash" style="display:none">
 <div class="sb"><label>담당 직원:</label><select id="stSel"></select></div>
-<div class="vt"><button class="vb sel" id="tH" onclick="sv('home')">🏠 Today</button><button class="vb" id="tN" onclick="sv('new')">📩 New</button><button class="vb" id="tC" onclick="sv('cal')">📅 Calendar</button><button class="vb" id="tD" onclick="sv('day')">📋 Day View</button><button class="vb" id="tS" onclick="sv('set')">⚙️ Settings</button></div>
+<div class="vt"><button class="vb sel" id="tH" onclick="sv('home')">🏠 Today</button><button class="vb" id="tC" onclick="sv('cal')">📅 Calendar</button><button class="vb" id="tD" onclick="sv('day')">📋 Day View</button><button class="vb" onclick="location.href='bookings.html'">📋 예약관리</button><button class="vb" id="tS" onclick="sv('set')">⚙️</button></div>
 <!-- HOME / TODAY VIEW -->
 <div id="vHome">
 <div id="todaySummary"></div>
-</div>
-<!-- NEW BOOKINGS VIEW -->
-<div id="vNew" style="display:none">
-<div id="newBookings"></div>
 </div>
 <div id="vCal" style="display:none"><div class="cn"><button onclick="sm(-1)">&larr;</button><div class="ml" id="mL"></div><button onclick="sm(1)">&rarr;</button></div><div class="cg" id="cG"></div></div>
 <div id="vDay" style="display:none">
@@ -121,16 +117,14 @@ loadHome();
 }
 function sv(v){
 document.getElementById('vHome').style.display=v==='home'?'block':'none';
-document.getElementById('vNew').style.display=v==='new'?'block':'none';
 document.getElementById('vCal').style.display=v==='cal'?'block':'none';
 document.getElementById('vDay').style.display=v==='day'?'block':'none';
 document.getElementById('vSet').style.display=v==='set'?'block':'none';
 document.getElementById('tH').className='vb'+(v==='home'?' sel':'');
-document.getElementById('tN').className='vb'+(v==='new'?' sel':'');
 document.getElementById('tC').className='vb'+(v==='cal'?' sel':'');
 document.getElementById('tD').className='vb'+(v==='day'?' sel':'');
 document.getElementById('tS').className='vb'+(v==='set'?' sel':'');
-if(v==='home')loadHome();if(v==='new')loadNew();if(v==='cal')lc();if(v==='day')ld();if(v==='set')loadSettings();
+if(v==='home')loadHome();if(v==='cal')lc();if(v==='day')ld();if(v==='set')loadSettings();
 }
 // ── New Bookings: Reservations received today ──
 async function loadNew(){

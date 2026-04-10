@@ -582,6 +582,39 @@ app.post('/api/gcal-report', async (req, res) => {
   } catch (e) { res.json({ ok: false, error: e.message }); }
 });
 
+// ── Bulk import: paste multiple reservations at once ──
+app.post('/api/bulk-import', async (req, res) => {
+  const { pin, text, date } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  if (!text || !date) return res.status(400).json({ error: 'Text and date required' });
+
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const results = [];
+
+  for (const line of lines) {
+    const parsed = parseGcalEntry(line);
+    const time = parsed.time || '19:00';
+    const pref = detectPreference(line, parsed.partySize);
+    const a = autoAssign(date, time, parsed.partySize, pref);
+
+    // Always create, even without seat
+    const r = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name: parsed.name, phone: parsed.phone, instagram: parsed.instagram, email: '',
+      partySize: parsed.partySize, date, time, preference: pref || 'auto',
+      zone: a ? a.zone : 'unassigned', seats: a ? a.seats : [],
+      status: a ? 'confirmed' : 'needs_assignment',
+      source: 'bulk_import', notes: '원본: ' + line + (parsed.staffName ? '\n👤 담당: ' + parsed.staffName : ''),
+      createdAt: new Date().toISOString(), reminderD1: false, reminderD0: false,
+      modLog: [{ action: 'bulk import', by: req.body.staffName || 'Staff', at: new Date().toISOString() }],
+    };
+    reservations.push(r);
+    results.push({ line, name: parsed.name, time, partySize: parsed.partySize, phone: parsed.phone, instagram: parsed.instagram, assigned: !!a, zone: r.zone });
+  }
+  saveRes();
+  res.json({ ok: true, count: results.length, results });
+});
+
 // Staff: trigger manual sync
 app.post('/api/gcal-sync', async (req, res) => {
   const { pin } = req.body;
