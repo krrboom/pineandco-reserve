@@ -51,6 +51,11 @@ textarea{resize:vertical;min-height:60px;font-size:14px;}
 .cbox .cnn{font-size:12px;color:var(--amber);margin-top:16px;line-height:1.6;opacity:.8;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(30,18,8,.95);border:1px solid var(--gold);color:var(--cream);border-radius:8px;font-size:13px;padding:12px 24px;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none;}.toast.show{opacity:1;}
 .hint{font-size:11px;color:var(--amber);opacity:.4;margin-top:4px;line-height:1.5;}
+.phone-row{display:flex;gap:6px;margin-bottom:10px;}
+.phone-row select{width:110px;background:rgba(240,235,224,.05);border:1px solid rgba(184,147,90,.2);border-radius:8px;padding:14px 8px;color:var(--cream);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;-webkit-appearance:none;appearance:none;}
+.phone-row select:focus{border-color:var(--gold);}
+.phone-row select option{background:#1e1208;color:var(--cream);}
+.phone-row input{flex:1;}
 </style></head><body>
 <canvas id="rings"></canvas>
 <div class="wrap">
@@ -150,7 +155,29 @@ h+='<div class="warn">⚠️ 예약 확인을 위해 <strong>이메일 또는 �
 h+='<div class="ilbl">이름 / Name *</div>';
 h+='<input type="text" id="rn" placeholder="홍길동 / John" autocomplete="name"/>';
 h+='<div class="ilbl">전화번호 / Phone</div>';
+h+='<div class="phone-row">';
+h+='<select id="rcc">';
+h+='<option value="+82">🇰🇷 +82</option>';
+h+='<option value="+1">🇺🇸 +1</option>';
+h+='<option value="+44">🇬🇧 +44</option>';
+h+='<option value="+81">🇯🇵 +81</option>';
+h+='<option value="+86">🇨🇳 +86</option>';
+h+='<option value="+852">🇭🇰 +852</option>';
+h+='<option value="+886">🇹🇼 +886</option>';
+h+='<option value="+65">🇸🇬 +65</option>';
+h+='<option value="+61">🇦🇺 +61</option>';
+h+='<option value="+49">🇩🇪 +49</option>';
+h+='<option value="+33">🇫🇷 +33</option>';
+h+='<option value="+39">🇮🇹 +39</option>';
+h+='<option value="+34">🇪🇸 +34</option>';
+h+='<option value="+66">🇹🇭 +66</option>';
+h+='<option value="+84">🇻🇳 +84</option>';
+h+='<option value="+60">🇲🇾 +60</option>';
+h+='<option value="+63">🇵🇭 +63</option>';
+h+='<option value="+91">🇮🇳 +91</option>';
+h+='</select>';
 h+='<input type="tel" id="rp" placeholder="010-1234-5678" autocomplete="tel"/>';
+h+='</div>';
 h+='<div class="ilbl">이메일 / Email</div>';
 h+='<input type="email" id="re" placeholder="you@email.com" autocomplete="email"/>';
 h+='<div class="ilbl">Instagram (optional)</div>';
@@ -190,6 +217,8 @@ function pickSize(n){partySize=n;render();}
 async function doSubmit(){
 var name=(document.getElementById('rn')||{}).value;if(name)name=name.trim();
 var phone=(document.getElementById('rp')||{}).value;if(phone)phone=phone.trim();
+var cc=(document.getElementById('rcc')||{}).value||'+82';
+if(phone){phone=cc+phone.replace(/^0/,'');}
 var email=(document.getElementById('re')||{}).value;if(email)email=email.trim();
 var ig=(document.getElementById('ri')||{}).value;if(ig)ig=ig.trim();
 if(!name){flash('이름을 입력해주세요.');return;}
