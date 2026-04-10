@@ -520,6 +520,15 @@ function snapToSlot(time, date) {
   return best;
 }
 
+
+// Helper: get start of today in UTC (for fetching all of today's events)
+function todayStartUTC() {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 3600000);
+  const start = new Date(kst.getFullYear(), kst.getMonth(), kst.getDate());
+  return new Date(start.getTime() - 9 * 3600000);
+}
+
 async function syncGoogleCalendar() {
   if (!CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY || !CONFIG.GOOGLE_CALENDAR_ID) {
     console.log('📅 [GCAL] No credentials, skipping sync');
@@ -538,7 +547,7 @@ async function syncGoogleCalendar() {
     const twoMonths = new Date(now.getTime() + 62 * 86400000);
     const res = await cal.events.list({
       calendarId: CONFIG.GOOGLE_CALENDAR_ID,
-      timeMin: now.toISOString(),
+      timeMin: todayStartUTC().toISOString(),
       timeMax: twoMonths.toISOString(),
       singleEvents: true,
       orderBy: 'startTime',
@@ -632,7 +641,7 @@ app.post('/api/gcal-report', async (req, res) => {
     const cal = google.calendar({ version: 'v3', auth });
     const now = new Date();
     const twoMonths = new Date(now.getTime() + 62 * 86400000);
-    const r = await cal.events.list({ calendarId: CONFIG.GOOGLE_CALENDAR_ID, timeMin: now.toISOString(), timeMax: twoMonths.toISOString(), singleEvents: true, orderBy: 'startTime', maxResults: 500 });
+    const r = await cal.events.list({ calendarId: CONFIG.GOOGLE_CALENDAR_ID, timeMin: todayStartUTC().toISOString(), timeMax: twoMonths.toISOString(), singleEvents: true, orderBy: 'startTime', maxResults: 500 });
     const events = (r.data.items || []).filter(ev => ev.status !== 'cancelled' && (ev.summary || '').trim());
     const report = events.map(ev => {
       const imported = reservations.find(x => x.gcalId === ev.id);
@@ -726,7 +735,7 @@ app.post('/api/gcal-test', async (req, res) => {
     const twoMonths = new Date(now.getTime() + 62 * 86400000);
     const result = await cal.events.list({
       calendarId: CONFIG.GOOGLE_CALENDAR_ID,
-      timeMin: now.toISOString(),
+      timeMin: todayStartUTC().toISOString(),
       timeMax: twoMonths.toISOString(),
       singleEvents: true,
       orderBy: 'startTime',
