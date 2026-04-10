@@ -63,10 +63,17 @@ function kstToday() { return new Date(Date.now() + 9*3600000).toISOString().slic
 function isWeekend(d) { const day = new Date(d+'T12:00:00+09:00').getDay(); return day===0||day===5||day===6; }
 function getSlots(d) { return isWeekend(d) ? CONFIG.WEEKEND_SLOTS : CONFIG.WEEKDAY_SLOTS; }
 function getResFor(date,time) { return reservations.filter(r => r.date===date && r.time===time && r.status!=='cancelled' && r.status!=='noshow'); }
-function getOccupied(date,time) { const s=[]; getResFor(date,time).forEach(r => { if(r.seats) s.push(...r.seats); }); return s; }
+// Get ALL occupied seats for the entire date (seat booked at 7pm = unavailable all night)
+function getOccupiedForDate(date) {
+  const s=[];
+  reservations.filter(r => r.date===date && r.status!=='cancelled' && r.status!=='noshow')
+    .forEach(r => { if(r.seats) s.push(...r.seats); });
+  return s;
+}
 
 function autoAssign(date, time, partySize, preference) {
-  const occ = getOccupied(date, time);
+  // Check ALL seats for the whole date, not just this time slot
+  const occ = getOccupiedForDate(date);
   const free = s => !occ.includes(s);
 
   if (preference === 'bar' || partySize === 1) {
@@ -134,24 +141,29 @@ app.get('/api/availability/:date', (req, res) => {
   const { date } = req.params;
   if (events[date]) return res.json({ blocked: true, event: events[date] });
   const slots = getSlots(date);
+  const occ = getOccupiedForDate(date); // whole-date occupancy
+
+  const barFree = CONFIG.SEATS.bar.filter(s => !occ.includes(s)).length;
+  const tablesFree = CONFIG.SEATS.tables.filter(s => !occ.includes(s)).length;
+  const highFree = CONFIG.SEATS.highTables.filter(s => !occ.includes(s)).length;
+  const roomFree = !occ.includes('ROOM') ? 1 : 0;
+  const totalFree = barFree + tablesFree + highFree + roomFree;
+  const isFull = totalFree === 0;
+
   const result = {};
   slots.forEach(time => {
-    const occ = getOccupied(date, time);
     const isLate = time === CONFIG.LATE_SLOT && !isWeekend(date);
-    let barFree = CONFIG.SEATS.bar.filter(s => !occ.includes(s)).length;
-    let tablesFree = CONFIG.SEATS.tables.filter(s => !occ.includes(s)).length;
-    const highFree = CONFIG.SEATS.highTables.filter(s => !occ.includes(s)).length;
-    const roomFree = !occ.includes('ROOM') ? 1 : 0;
+    let eBar = barFree, eTbl = tablesFree;
     if (isLate) {
       const ex = getResFor(date, time);
       const ub = ex.filter(r => r.zone==='bar').reduce((s,r) => s+r.partySize, 0);
       const ut = ex.filter(r => r.zone==='table'||r.zone==='highTable').length;
-      barFree = Math.max(0, CONFIG.LATE_BAR_MAX - ub);
-      tablesFree = Math.max(0, CONFIG.LATE_TABLE_MAX - ut);
+      eBar = Math.max(0, CONFIG.LATE_BAR_MAX - ub);
+      eTbl = Math.max(0, CONFIG.LATE_TABLE_MAX - ut);
     }
-    result[time] = { bar:barFree, tables:tablesFree, highTables:highFree, room:roomFree, isLate, occupiedSeats:occ };
+    result[time] = { bar:eBar, tables:eTbl, highTables:highFree, room:roomFree, isLate, occupiedSeats:occ };
   });
-  res.json(result);
+  res.json({ ...result, _isFull: isFull, _totalFree: totalFree });
 });
 
 // ── Detect preference from special request text ──
