@@ -619,8 +619,83 @@ app.post('/api/bulk-import', async (req, res) => {
 app.post('/api/gcal-sync', async (req, res) => {
   const { pin } = req.body;
   if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  // Clear previously imported gcal reservations to re-import all
+  if (req.body.force) {
+    const before = reservations.length;
+    reservations = reservations.filter(r => r.source !== 'google_calendar');
+    saveRes();
+    console.log('📅 [GCAL] Force: cleared ' + (before - reservations.length) + ' old gcal imports');
+  }
   const result = await syncGoogleCalendar();
   res.json({ ok: true, added: result.added, warnings: result.warnings, total: result.total, reservationCount: reservations.length });
+});
+
+// Diagnostic: test Google Calendar connection
+app.post('/api/gcal-test', async (req, res) => {
+  const { pin } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+
+  const diag = {
+    hasEmail: !!CONFIG.GOOGLE_CLIENT_EMAIL,
+    hasKey: !!CONFIG.GOOGLE_PRIVATE_KEY,
+    keyLength: (CONFIG.GOOGLE_PRIVATE_KEY || '').length,
+    hasCalId: !!CONFIG.GOOGLE_CALENDAR_ID,
+    calId: CONFIG.GOOGLE_CALENDAR_ID || '(empty)',
+    email: CONFIG.GOOGLE_CLIENT_EMAIL || '(empty)',
+  };
+
+  if (!diag.hasEmail || !diag.hasKey || !diag.hasCalId) {
+    return res.json({ ok: false, error: 'Missing env vars', diag });
+  }
+
+  try {
+    const { google } = require('googleapis');
+    const key = CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    diag.keyStart = key.substring(0, 30);
+    diag.keyHasNewlines = key.includes('\n');
+
+    const auth = new google.auth.JWT(CONFIG.GOOGLE_CLIENT_EMAIL, null, key, ['https://www.googleapis.com/auth/calendar.readonly']);
+    const cal = google.calendar({ version: 'v3', auth });
+
+    const now = new Date();
+    const twoMonths = new Date(now.getTime() + 62 * 86400000);
+    const result = await cal.events.list({
+      calendarId: CONFIG.GOOGLE_CALENDAR_ID,
+      timeMin: now.toISOString(),
+      timeMax: twoMonths.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 500,
+    });
+
+    const events = result.data.items || [];
+    const alreadyImported = [];
+    const notImported = [];
+
+    events.forEach(ev => {
+      if (ev.status === 'cancelled') return;
+      const title = ev.summary || '(no title)';
+      let date = '';
+      if (ev.start && ev.start.dateTime) date = new Date(ev.start.dateTime).toISOString().slice(0, 10);
+      else if (ev.start && ev.start.date) date = ev.start.date;
+      const existing = reservations.find(r => r.gcalId === ev.id);
+      const entry = { id: ev.id, title, date, imported: !!existing };
+      if (existing) alreadyImported.push(entry);
+      else notImported.push(entry);
+    });
+
+    res.json({
+      ok: true,
+      totalEvents: events.length,
+      alreadyImported: alreadyImported.length,
+      notImported: notImported.length,
+      notImportedList: notImported,
+      alreadyImportedList: alreadyImported,
+      diag,
+    });
+  } catch (e) {
+    res.json({ ok: false, error: e.message, diag });
+  }
 });
 
 function cleanup() {

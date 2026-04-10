@@ -91,8 +91,10 @@
 <div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:16px;margin-bottom:12px;">
 <h2 style="font-family:Cinzel,serif;font-size:14px;color:var(--gold);font-weight:400;margin-bottom:12px;">📅 Google Calendar 연동</h2>
 <p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:10px;">구글 캘린더에 있는 예약을 시스템으로 가져옵니다.<br>매 1시간마다 자동 동기화되며, 아래 버튼으로 수동 동기화도 가능합니다.</p>
-<button onclick="gcalSync()" style="padding:10px 20px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-size:12px;cursor:pointer;">🔄 지금 동기화</button>
-<button onclick="gcalReport()" style="padding:10px 20px;border:none;border-radius:6px;background:rgba(170,51,51,.8);color:#fff;font-size:12px;cursor:pointer;margin-left:8px;">🔍 누락 확인</button>
+<button onclick="gcalSync(false)" style="padding:10px 20px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-size:12px;cursor:pointer;">🔄 동기화</button>
+<button onclick="gcalSync(true)" style="padding:10px 20px;border:none;border-radius:6px;background:rgba(170,51,51,.8);color:#fff;font-size:12px;cursor:pointer;margin-left:4px;">🔄 전체 다시</button>
+<button onclick="gcalTest()" style="padding:10px 20px;border:none;border-radius:6px;background:rgba(58,110,165,.8);color:#fff;font-size:12px;cursor:pointer;margin-left:4px;">🔍 진단</button>
+<button onclick="gcalReport()" style="padding:10px 20px;border:none;border-radius:6px;background:rgba(0,0,0,.3);color:#fff;font-size:12px;cursor:pointer;margin-left:4px;">📊 비교</button>
 <div id="gcalStatus" style="font-size:12px;color:var(--mu);margin-top:8px;"></div>
 <div id="gcalReportArea" style="margin-top:12px;"></div>
 </div>
@@ -492,20 +494,52 @@ evts=await fetch('/api/events').then(function(r){return r.json();}).catch(functi
 renderEventList();fl('이벤트 해제: '+d);
 }
 
-async function gcalSync(){
-document.getElementById('gcalStatus').innerHTML='동기화 중...';
-var r=await fetch('/api/gcal-sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin})}).then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
+async function gcalSync(force){
+document.getElementById('gcalStatus').innerHTML=(force?'⚠️ 기존 캘린더 예약 삭제 후 전체 다시 가져오는 중...':'동기화 중...');
+var r=await fetch('/api/gcal-sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin,force:!!force})}).then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
 if(r.ok){
-  var msg='✅ 동기화 완료! 새로 추가: <strong>'+r.added+'건</strong> (캘린더 총 '+r.total+'건, 시스템 총 '+r.reservationCount+'건)';
+  var msg='✅ 완료! 추가: <strong>'+r.added+'건</strong> (캘린더: '+r.total+'건, 시스템: '+r.reservationCount+'건)';
   if(r.warnings&&r.warnings.length>0){
     msg+='<div style="margin-top:8px;padding:8px;background:rgba(170,51,51,.06);border:1px solid rgba(170,51,51,.15);border-radius:4px;font-size:11px;line-height:1.6;">';
-    msg+='<strong style="color:var(--red);">⚠️ 주의 ('+r.warnings.length+'건):</strong><br>';
+    msg+='<strong style="color:var(--red);">⚠️ ('+r.warnings.length+'건):</strong><br>';
     r.warnings.forEach(function(w){msg+=w+'<br>';});
     msg+='</div>';
   }
   document.getElementById('gcalStatus').innerHTML=msg;
 }
-else document.getElementById('gcalStatus').innerHTML='❌ '+(r.error||'동기화 실패');
+else document.getElementById('gcalStatus').innerHTML='❌ '+(r.error||'실패');
+}
+
+async function gcalTest(){
+document.getElementById('gcalStatus').innerHTML='🔍 Google Calendar 연결 진단 중...';
+var r=await fetch('/api/gcal-test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin})}).then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
+var h='<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;margin-top:8px;font-size:12px;line-height:1.8;">';
+h+='<strong>📊 진단 결과:</strong><br>';
+if(r.diag){
+h+='환경변수 EMAIL: '+(r.diag.hasEmail?'✅':'❌')+' '+r.diag.email+'<br>';
+h+='환경변수 KEY: '+(r.diag.hasKey?'✅ ('+r.diag.keyLength+'자)':'❌')+'<br>';
+h+='환경변수 CAL_ID: '+(r.diag.hasCalId?'✅':'❌')+' '+r.diag.calId+'<br>';
+if(r.diag.keyHasNewlines!==undefined)h+='KEY 줄바꿈: '+(r.diag.keyHasNewlines?'✅':'❌ 줄바꿈 없음!')+'<br>';
+}
+if(r.ok){
+h+='<br><strong style="color:var(--grn);">✅ 연결 성공!</strong><br>';
+h+='캘린더 이벤트: <strong>'+r.totalEvents+'</strong>건<br>';
+h+='이미 시스템에 있음: <strong>'+r.alreadyImported+'</strong>건<br>';
+h+='<strong style="color:var(--red);">아직 안 들어감: '+r.notImported+'건</strong><br>';
+if(r.notImportedList&&r.notImportedList.length>0){
+h+='<br><strong style="color:var(--red);">❌ 누락된 예약:</strong><br>';
+r.notImportedList.forEach(function(x){h+='• '+x.date+' <strong>'+x.title+'</strong><br>';});
+h+='<br>→ <strong>"🔄 전체 다시"</strong> 버튼을 눌러서 전체 재동기화하세요!';
+}
+if(r.alreadyImportedList&&r.alreadyImportedList.length>0){
+h+='<br><br>✅ 이미 들어간 예약:<br>';
+r.alreadyImportedList.forEach(function(x){h+='• '+x.date+' '+x.title+'<br>';});
+}
+}else{
+h+='<br><strong style="color:var(--red);">❌ 연결 실패: '+r.error+'</strong>';
+}
+h+='</div>';
+document.getElementById('gcalStatus').innerHTML=h;
 }
 
 async function gcalReport(){
