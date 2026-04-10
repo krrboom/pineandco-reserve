@@ -113,6 +113,24 @@ h+='</div>';
 // ═══ STEP 2: TIME + PARTY SIZE + SPECIAL REQUEST ═══
 if(step===2){
 h+='<button class="back" onclick="goStep(1)">← 날짜 다시 선택</button>';
+
+// Check if fully booked
+if(avail._isFull){
+h+='<div style="text-align:center;padding:40px 20px;">';
+h+='<div style="font-size:40px;margin-bottom:16px;">🌲</div>';
+h+='<h2 style="font-size:16px;margin-bottom:12px;letter-spacing:.08em;">FULLY BOOKED</h2>';
+h+='<div style="font-size:14px;color:var(--cream);line-height:1.8;margin-bottom:16px;">';
+h+='죄송합니다, <strong style="color:var(--gold);">'+selDate+'</strong> 예약이 마감되었습니다.<br>';
+h+='워크인(현장 방문)으로만 도와드릴 수 있습니다.</div>';
+h+='<div style="font-size:13px;color:var(--amber);line-height:1.8;">';
+h+='Sorry, <strong>'+selDate+'</strong> is fully booked.<br>';
+h+='Walk-ins are welcome!</div>';
+h+='<div style="margin-top:20px;font-size:12px;color:var(--amber);opacity:.6;">';
+h+='영업시간: 7PM — 2AM</div>';
+h+='<button class="nbtn" style="margin-top:20px;max-width:200px;" onclick="goStep(1)">다른 날짜 선택</button>';
+h+='</div>';
+} else {
+
 h+='<h2>2. TIME &amp; DETAILS · 시간 및 인원</h2>';
 h+='<div class="note" style="margin-bottom:12px">📅 '+selDate+'</div>';
 
@@ -144,6 +162,7 @@ if(selTime){
 }
 
 if(selTime&&partySize>0)h+='<button class="nbtn" style="margin-top:12px" onclick="goStep(3)">NEXT → 연락처 입력</button>';
+} // end of else (not full)
 }
 
 // ═══ STEP 3: CONTACT INFO ═══

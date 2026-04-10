@@ -163,7 +163,7 @@ app.get('/api/availability/:date', (req, res) => {
     }
     result[time] = { bar:eBar, tables:eTbl, highTables:highFree, room:roomFree, isLate, occupiedSeats:occ };
   });
-  res.json({ ...result, _isFull: isFull, _totalFree: totalFree });
+  res.json({ ...result, _isFull: isFull, _remaining: { bar: barFree, tables: tablesFree, highTables: highFree, room: roomFree } });
 });
 
 // ── Detect preference from special request text ──
@@ -184,6 +184,31 @@ app.post('/api/reserve', async (req, res) => {
   if (events[date]) return res.status(400).json({ error: 'This date is not available (event).' });
   const slots = getSlots(date);
   if (!slots.includes(time)) return res.status(400).json({ error: 'Invalid time.' });
+
+  // ── Anti-abuse checks ──
+  const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+
+  // 1. Same phone/email can't book same date twice
+  if (phone) {
+    const cleanPhone = phone.replace(/[^0-9+]/g, '');
+    const dup = reservations.find(r => r.date === date && r.phone && r.phone.replace(/[^0-9+]/g, '') === cleanPhone && r.status !== 'cancelled');
+    if (dup) return res.status(400).json({ error: '이미 해당 날짜에 예약이 있습니다. 변경은 전화로 문의해주세요. / You already have a reservation on this date.' });
+  }
+  if (email) {
+    const dup = reservations.find(r => r.date === date && r.email && r.email.toLowerCase() === email.toLowerCase() && r.status !== 'cancelled');
+    if (dup) return res.status(400).json({ error: '이미 해당 날짜에 예약이 있습니다. / You already have a reservation on this date.' });
+  }
+
+  // 2. Max 3 active reservations per phone/email total
+  if (phone) {
+    const activeCount = reservations.filter(r => r.phone && r.phone.replace(/[^0-9+]/g, '') === phone.replace(/[^0-9+]/g, '') && r.status === 'confirmed').length;
+    if (activeCount >= 3) return res.status(400).json({ error: '예약 가능 횟수를 초과했습니다. 기존 예약을 확인해주세요. / Maximum reservation limit reached.' });
+  }
+
+  // 3. Max 5 reservations per IP per day
+  const today = kstToday();
+  const ipCount = reservations.filter(r => r._ip === ip && r.createdAt && r.createdAt.startsWith(today)).length;
+  if (ipCount >= 1) return res.status(429).json({ error: '오늘 이미 예약하셨습니다. 추가 예약은 전화로 문의해주세요. / You already made a reservation today. Please call for additional bookings.' });
 
   // Auto-detect preference from special request or party size
   let preference = detectPreference(specialRequest, partySize);
@@ -207,6 +232,7 @@ app.post('/api/reserve', async (req, res) => {
         partySize, date, time, preference: preference||'auto',
         zone: a.zone, seats: a.seats, status: 'confirmed', source: 'online',
         notes: specialRequest||'', createdAt: new Date().toISOString(),
+        _ip: ip,
         reminderD1: false, reminderD0: false, modLog: [],
       };
       reservations.push(r); saveRes();

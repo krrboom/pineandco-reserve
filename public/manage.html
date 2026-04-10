@@ -252,6 +252,17 @@ h+='<div style="font-size:24px;color:'+(newToday.length>0?'var(--grn)':'var(--go
 h+='<div style="font-size:11px;color:var(--mu);">오늘 신규</div></div>';
 h+='</div>';
 
+// Show remaining seats for today
+if(todayAvail._remaining){
+var rm=todayAvail._remaining;
+h+='<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;justify-content:center;">';
+h+='<div style="font-size:11px;padding:4px 10px;border:1px solid var(--brd);border-radius:20px;color:var(--mu);">🥃 바 '+rm.bar+'석 남음</div>';
+h+='<div style="font-size:11px;padding:4px 10px;border:1px solid var(--brd);border-radius:20px;color:var(--mu);">🪑 테이블 '+rm.tables+'개 남음</div>';
+h+='<div style="font-size:11px;padding:4px 10px;border:1px solid var(--brd);border-radius:20px;color:var(--mu);">🪑 하이 '+rm.highTables+'개 남음</div>';
+h+='<div style="font-size:11px;padding:4px 10px;border:1px solid var(--brd);border-radius:20px;color:var(--mu);">🔑 룸 '+(rm.room?'가능':'불가')+'</div>';
+h+='</div>';
+}
+
 // Time slots
 var slots=Object.keys(todayAvail);
 var sl={online:'Online',instagram:'Instagram',email:'Email',staff:'직원',phone:'전화',google_calendar:'GCal'};
@@ -339,8 +350,10 @@ document.getElementById('tT').innerHTML=h;}
 function pt(t){cT=t;rf();rl();rtb(Object.keys(av));}
 
 function rf(){
-var el=document.getElementById('fW');var res=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';});
-var oc={};res.forEach(function(r){if(r.seats)r.seats.forEach(function(s){oc[s]=r;});});
+var el=document.getElementById('fW');
+// Show ALL reservations for the date (seats booked for whole evening)
+var allDateRes=aR.filter(function(r){return r.status!=='cancelled';});
+var oc={};allDateRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){oc[s]=r;});});
 function bs(cx,cy,id){var r=oc[id];var f=r?'rgba(184,147,90,.35)':'rgba(184,147,90,.06)';var sk=r?'#b8935a':'rgba(184,147,90,.25)';
 var s='<g style="cursor:'+(r?'pointer':'default')+'" '+(r?'onclick="td(\''+r.id+'\')"':'')+'><circle cx="'+cx+'" cy="'+cy+'" r="16" fill="'+f+'" stroke="'+sk+'" stroke-width="'+(r?1.5:1)+'"/>';
 if(r){s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="9" font-weight="500">'+r.name.slice(0,4)+'</text>';
