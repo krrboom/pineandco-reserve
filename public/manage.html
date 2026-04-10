@@ -340,21 +340,48 @@ function pt(t){cT=t;rf();rl();rtb(Object.keys(av));}
 
 function rf(){
 var el=document.getElementById('fW');
-// Show ALL reservations for the date (seats booked for whole evening)
+// All occupied seats for the date
 var allDateRes=aR.filter(function(r){return r.status!=='cancelled';});
-var oc={};allDateRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){oc[s]=r;});});
-function bs(cx,cy,id){var r=oc[id];var f=r?'rgba(184,147,90,.35)':'rgba(184,147,90,.06)';var sk=r?'#b8935a':'rgba(184,147,90,.25)';
-var s='<g style="cursor:'+(r?'pointer':'default')+'" '+(r?'onclick="td(\''+r.id+'\')"':'')+'><circle cx="'+cx+'" cy="'+cy+'" r="16" fill="'+f+'" stroke="'+sk+'" stroke-width="'+(r?1.5:1)+'"/>';
-if(r){s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="9" font-weight="500">'+r.name.slice(0,4)+'</text>';
-s+='<text x="'+cx+'" y="'+(cy+7)+'" text-anchor="middle" fill="#8a7560" font-size="8">'+r.partySize+'명</text>';}return s+'</g>';}
-function zs(x,y,w,h,id){var r=oc[id];var f=r?'rgba(184,147,90,.3)':'rgba(184,147,90,.04)';var sk=r?'#b8935a':'rgba(184,147,90,.2)';
-var s='<g style="cursor:'+(r?'pointer':'default')+'" '+(r?'onclick="td(\''+r.id+'\')"':'')+'><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="'+f+'" stroke="'+sk+'" stroke-width="'+(r?1.5:1)+'"/>';
-if(r){s+='<text x="'+(x+w/2)+'" y="'+(y+h/2-8)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+r.name.slice(0,5)+'</text>';
-s+='<text x="'+(x+w/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+r.time+' · '+r.partySize+'명</text>';}return s+'</g>';}
-function es(cx,cy,rx,ry,id){var r=oc[id];var f=r?'rgba(184,147,90,.3)':'rgba(184,147,90,.04)';var sk=r?'#b8935a':'rgba(184,147,90,.2)';
-var s='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="'+f+'" stroke="'+sk+'" stroke-width="'+(r?1.5:1)+'" style="cursor:'+(r?'pointer':'default')+'" '+(r?'onclick="td(\''+r.id+'\')"':'')+'/>';
-if(r){s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+r.name.slice(0,5)+'</text>';
-s+='<text x="'+cx+'" y="'+(cy+8)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+r.partySize+'명</text>';}return s;}
+var ocAll={};allDateRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){ocAll[s]=r;});});
+// Only current time slot reservations (for highlighting)
+var curTimeRes=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';});
+var ocCur={};curTimeRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){ocCur[s]=r;});});
+
+function bs(cx,cy,id){
+  var cur=ocCur[id];var other=ocAll[id]&&!ocCur[id]?ocAll[id]:null;
+  var f,sk,sw;
+  if(cur){f='rgba(184,147,90,.4)';sk='#b8935a';sw=1.5;}
+  else if(other){f='rgba(120,120,120,.15)';sk='rgba(120,120,120,.3)';sw=1;}
+  else{f='rgba(184,147,90,.06)';sk='rgba(184,147,90,.25)';sw=1;}
+  var s='<g style="cursor:'+(cur||other?'pointer':'default')+'" '+((cur||other)?'onclick="td(\''+(cur||other).id+'\')"':'')+'><circle cx="'+cx+'" cy="'+cy+'" r="16" fill="'+f+'" stroke="'+sk+'" stroke-width="'+sw+'"/>';
+  if(cur){s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="9" font-weight="500">'+cur.name.slice(0,4)+'</text>';
+  s+='<text x="'+cx+'" y="'+(cy+7)+'" text-anchor="middle" fill="#8a7560" font-size="8">'+cur.partySize+'명</text>';}
+  else if(other){s+='<text x="'+cx+'" y="'+(cy)+'" text-anchor="middle" fill="#999" font-size="7">'+other.time+'</text>';}
+  return s+'</g>';}
+
+function zs(x,y,w,h,id){
+  var cur=ocCur[id];var other=ocAll[id]&&!ocCur[id]?ocAll[id]:null;
+  var f,sk,sw2;
+  if(cur){f='rgba(184,147,90,.35)';sk='#b8935a';sw2=1.5;}
+  else if(other){f='rgba(120,120,120,.1)';sk='rgba(120,120,120,.25)';sw2=1;}
+  else{f='rgba(184,147,90,.04)';sk='rgba(184,147,90,.2)';sw2=1;}
+  var s='<g style="cursor:'+(cur||other?'pointer':'default')+'" '+((cur||other)?'onclick="td(\''+(cur||other).id+'\')"':'')+'><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="'+f+'" stroke="'+sk+'" stroke-width="'+sw2+'"/>';
+  if(cur){s+='<text x="'+(x+w/2)+'" y="'+(y+h/2-8)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+cur.name.slice(0,5)+'</text>';
+  s+='<text x="'+(x+w/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+cur.time+' · '+cur.partySize+'명</text>';}
+  else if(other){s+='<text x="'+(x+w/2)+'" y="'+(y+h/2)+'" text-anchor="middle" fill="#999" font-size="9">'+other.time+' '+other.name.slice(0,4)+'</text>';}
+  return s+'</g>';}
+
+function es(cx,cy,rx,ry,id){
+  var cur=ocCur[id];var other=ocAll[id]&&!ocCur[id]?ocAll[id]:null;
+  var f,sk,sw2;
+  if(cur){f='rgba(184,147,90,.35)';sk='#b8935a';sw2=1.5;}
+  else if(other){f='rgba(120,120,120,.1)';sk='rgba(120,120,120,.25)';sw2=1;}
+  else{f='rgba(184,147,90,.04)';sk='rgba(184,147,90,.2)';sw2=1;}
+  var s='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="'+f+'" stroke="'+sk+'" stroke-width="'+sw2+'" style="cursor:'+(cur||other?'pointer':'default')+'" '+((cur||other)?'onclick="td(\''+(cur||other).id+'\')"':'')+'/>';
+  if(cur){s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+cur.name.slice(0,5)+'</text>';
+  s+='<text x="'+cx+'" y="'+(cy+8)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+cur.partySize+'명</text>';}
+  else if(other){s+='<text x="'+cx+'" y="'+(cy)+'" text-anchor="middle" fill="#999" font-size="8">'+other.time+'</text>';}
+  return s;}
 var v='<svg width="100%" viewBox="0 0 660 500">';
 v+='<rect x="155" y="15" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
 v+='<rect x="370" y="15" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
@@ -406,6 +433,9 @@ h+='<div class="dr"><label>예약경로</label><select onchange="sf(\''+r.id+'\'
 h+='</select></div>';
 h+='<div class="dr"><label>특이사항</label><textarea onblur="sf(\''+r.id+'\',\'notes\',this.value)">'+(r.notes||'')+'</textarea></div>';
 h+='<div class="dr"><label>상태</label><span style="font-weight:500;color:'+(r.status==='needs_assignment'?'var(--red)':'inherit')+';">'+(r.status==='needs_assignment'?'🚨 좌석 미배정 — 수동 배정 필요':r.status)+'</span></div>';
+h+='<div class="dr"><label>좌석</label><div><span style="font-weight:500;">'+(zn[r.zone]||r.zone)+' ('+(r.seats||[]).join(', ')+')</span>';
+h+=' <button onclick="event.stopPropagation();showSeatPicker(\''+r.id+'\')" style="margin-left:8px;padding:4px 10px;border:1px solid var(--gold);border-radius:4px;background:none;color:var(--gold);font-size:11px;cursor:pointer;">🔄 좌석 변경</button>';
+h+='<div id="sp_'+r.id+'" style="display:none;margin-top:8px;"></div></div></div>';
 if(r.modLog&&r.modLog.length){h+='<div class="ml2"><strong>수정 이력:</strong><br>';r.modLog.forEach(function(m){h+=m.at.slice(0,16).replace('T',' ')+' — '+m.by+': '+m.action+'<br>';});h+='</div>';}
 h+='</div></div>';});el.innerHTML=h;}
 
@@ -414,6 +444,54 @@ await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'app
 aR=await fetch('/api/reservations/'+cD).then(function(r){return r.json();}).catch(function(){return [];});rl();}
 async function us(id,st){await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st,staffName:gs()})});ld();}
 async function dr(id){if(!confirm('Delete?'))return;await fetch('/api/reservations/'+id,{method:'DELETE'});ld();}
+
+function showSeatPicker(id){
+var el=document.getElementById('sp_'+id);
+if(el.style.display==='block'){el.style.display='none';return;}
+el.style.display='block';
+var r=aR.find(function(x){return x.id===id;});
+if(!r){el.innerHTML='Error';return;}
+var occ=[];aR.filter(function(x){return x.id!==id&&x.status!=='cancelled';}).forEach(function(x){if(x.seats)occ.push.apply(occ,x.seats);});
+var isFree=function(s){return occ.indexOf(s)<0;};
+var h='<div style="font-size:11px;color:var(--mu);margin-bottom:6px;">빈 좌석을 클릭하세요 ('+r.partySize+'명):</div>';
+function seatBtn(seats,zone,label){
+return '<button onclick="changeSeat(\''+id+'\',\''+seats.join(',')+'\',\''+zone+'\')" style="padding:4px 8px;border:1px solid var(--gold);border-radius:4px;background:none;color:var(--gold);font-size:11px;cursor:pointer;margin:2px;">'+label+'</button>';
+}
+var allSeats=['B1','B2','B3','B4','B5','B6','B7','B8','B9','B10','B11','B12','B13','B14'];
+var freeBar=allSeats.filter(isFree);
+if(freeBar.length){
+h+='<div style="font-size:10px;color:var(--mu);margin:4px 0 2px;">🥃 바 (1인):</div><div style="display:flex;flex-wrap:wrap;">';
+freeBar.forEach(function(s){h+=seatBtn([s],'bar',s);});h+='</div>';
+}
+if(r.partySize>=2){
+var pairs=[['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B4','B5']];
+var fp=pairs.filter(function(p){return p.every(isFree);});
+if(fp.length){
+h+='<div style="font-size:10px;color:var(--mu);margin:4px 0 2px;">🥃 바 (2인):</div><div style="display:flex;flex-wrap:wrap;">';
+fp.forEach(function(p){h+=seatBtn(p,'bar',p.join('+'));});h+='</div>';
+}}
+var freeTbl=['T1','T2','T3','T4'].filter(isFree);
+if(freeTbl.length){
+h+='<div style="font-size:10px;color:var(--mu);margin:4px 0 2px;">🪑 테이블:</div><div style="display:flex;flex-wrap:wrap;">';
+freeTbl.forEach(function(s){h+=seatBtn([s],'table',s);});h+='</div>';
+}
+var freeHi=['H1','H2'].filter(isFree);
+if(freeHi.length){
+h+='<div style="font-size:10px;color:var(--mu);margin:4px 0 2px;">🪑 하이:</div><div style="display:flex;flex-wrap:wrap;">';
+freeHi.forEach(function(s){h+=seatBtn([s],'highTable',s);});h+='</div>';
+}
+if(isFree('ROOM')){h+='<div style="margin-top:4px;">'+seatBtn(['ROOM'],'room','🔑 Room')+'</div>';}
+if(!freeBar.length&&!freeTbl.length&&!freeHi.length&&!isFree('ROOM'))h+='<div style="color:var(--red);font-size:11px;">빈 좌석이 없습니다.</div>';
+el.innerHTML=h;
+}
+
+async function changeSeat(id,seatsStr,zone){
+var seats=seatsStr.split(',');
+if(!confirm('좌석을 '+seats.join(', ')+' (으)로 변경할까요?'))return;
+await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({seats:seats,zone:zone,staffName:gs()})});
+fl('좌석 변경: '+seats.join(','));
+ld();
+}
 
 async function sadd(){
 var d={pin:pin,name:document.getElementById('aN').value.trim(),phone:document.getElementById('aPh').value.trim(),

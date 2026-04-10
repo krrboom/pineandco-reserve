@@ -83,7 +83,7 @@ function autoAssign(date, time, partySize, preference) {
       for (const s of CONFIG.BAR_U_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
     }
     if (partySize === 2) {
-      const pairs = [['B1','B2'],['B2','B3'],['B4','B5'],['B5','B6'],['B7','B8'],['B8','B9'],['B10','B11'],['B12','B13'],['B13','B14']];
+      const pairs = [['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B2','B3'],['B4','B5'],['B5','B6'],['B8','B9'],['B10','B11'],['B12','B13']];
       for (const p of pairs) if (p.every(free)) return { zone:'bar', seats:p };
     }
     return null;
@@ -110,10 +110,17 @@ function autoAssign(date, time, partySize, preference) {
     for (const s of CONFIG.BAR_U_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
   }
   if (partySize === 2) {
-    for (const s of CONFIG.SEATS.highTables) if (free(s)) return { zone:'highTable', seats:[s] };
-    const pairs = [['B1','B2'],['B2','B3'],['B4','B5'],['B5','B6'],['B7','B8'],['B8','B9'],['B10','B11'],['B12','B13'],['B13','B14']];
+    // Bar pairs first
+    const pairs = [['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B2','B3'],['B4','B5'],['B5','B6'],['B8','B9'],['B10','B11'],['B12','B13']];
     for (const p of pairs) if (p.every(free)) return { zone:'bar', seats:p };
+    // High tables only for later times (21:00+)
+    if (time >= '21:00') {
+      for (const s of CONFIG.SEATS.highTables) if (free(s)) return { zone:'highTable', seats:[s] };
+    }
+    // Tables as fallback
     for (const s of CONFIG.SEATS.tables) if (free(s)) return { zone:'table', seats:[s] };
+    // High tables as last resort even for early times
+    for (const s of CONFIG.SEATS.highTables) if (free(s)) return { zone:'highTable', seats:[s] };
   }
   if (partySize >= 3 && partySize <= 5) {
     for (const s of CONFIG.SEATS.tables) if (free(s)) return { zone:'table', seats:[s] };
@@ -297,6 +304,13 @@ app.patch('/api/reservations/:id', (req, res) => {
   if (req.body.status && req.body.status!==r.status) { ch.push('status:'+r.status+'→'+req.body.status); r.status=req.body.status; }
   if (req.body.notes!==undefined && req.body.notes!==r.notes) { ch.push('notes updated'); r.notes=req.body.notes; }
   if (req.body.source && req.body.source!==r.source) { ch.push('source:'+r.source+'→'+req.body.source); r.source=req.body.source; }
+  if (req.body.seats) {
+    const old = r.seats ? r.seats.join(',') : 'none';
+    r.seats = req.body.seats;
+    if (req.body.zone) r.zone = req.body.zone;
+    ch.push('seat:'+old+'→'+req.body.seats.join(','));
+    if (r.status === 'needs_assignment') r.status = 'confirmed';
+  }
   if (ch.length) { if(!r.modLog)r.modLog=[]; r.modLog.push({ action:ch.join(', '), by:req.body.staffName||'Staff', at:new Date().toISOString() }); }
   saveRes(); res.json({ ok:true, reservation:r });
 });
