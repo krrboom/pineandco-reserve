@@ -390,14 +390,44 @@ function sendReminders() {
 
 // ── Google Calendar Sync ──
 // ── Parse free-form Google Calendar entry ──
-// Examples: "Sasha / 7:30 / 2pax / 01083484036 / 명준"
-//           "Kim / 8pm / 4명 / @kimbar / DuUi"
-//           "John 20:00 3 table 010-1234-5678"
 function parseGcalEntry(text) {
   const result = { name:'Guest', time:null, partySize:2, phone:'', instagram:'', staffName:'', raw:text };
   if (!text) return result;
 
-  // Split by / , · or multiple spaces
+  // First, try to find time anywhere in the full text (not just per-part)
+  // Patterns: 7:30, 7:30pm, 8pm, 8PM, 8시, 오후8시, 9PM, 21:00
+  const fullTimeMatch = text.match(/(\d{1,2})\s*:\s*(\d{2})\s*(pm|am|PM|AM)?/)
+    || text.match(/(\d{1,2})\s*(pm|PM|am|AM)\b/)
+    || text.match(/(\d{1,2})\s*시/)
+    || text.match(/오후\s*(\d{1,2})\s*시?/);
+  if (fullTimeMatch) {
+    let h = parseInt(fullTimeMatch[1]);
+    const ampm = (fullTimeMatch[3] || fullTimeMatch[2] || '').toLowerCase();
+    if (ampm === 'pm' && h < 12) h += 12;
+    if (ampm === 'am' && h === 12) h = 0;
+    if (text.includes('오후') && h < 12) h += 12;
+    // For a bar open 7PM-2AM: any hour 1-12 without am/pm → assume PM
+    if (!ampm && !text.includes('오후') && h >= 1 && h <= 12) h += 12;
+    // If still morning (like 7 → 19, 8 → 20), force to PM
+    if (h >= 1 && h <= 6) h += 12; // 1am-6am range (late night)
+    if (h >= 7 && h <= 12) h += 12; // if somehow still AM range
+    // Clamp to valid range
+    if (h > 24) h = h - 12;
+    result.time = String(h).padStart(2, '0') + ':00';
+    result.exactTime = fullTimeMatch[0];
+  }
+
+  // Also extract phone from full text (for space-separated entries)
+  if (!result.phone) {
+    const phoneInText = text.match(/\b(01[0-9][\-\s]?\d{3,4}[\-\s]?\d{4})\b/) || text.match(/(\+\d{10,15})/) || text.match(/Contact\s*:\s*([\+\d\s\-]{10,})/i);
+    if (phoneInText) result.phone = phoneInText[1].replace(/[\s\-]/g, '');
+  }
+
+  // Extract Name: pattern from full text
+  const nameInText = text.match(/Name\s*:\s*([A-Za-z\u3131-\uD79D]+(?:\s+[A-Za-z\u3131-\uD79D]+)*)/i);
+  if (nameInText) result.name = nameInText[1].trim();
+
+  // Split by / , · or multiple spaces for other fields
   const parts = text.split(/[\/·,]|\s{2,}/).map(s => s.trim()).filter(Boolean);
   const unmatched = [];
 
@@ -405,56 +435,89 @@ function parseGcalEntry(text) {
     const p = part.trim();
     if (!p) continue;
 
-    // Instagram handle: starts with @
-    if (/^@/.test(p)) { result.instagram = p; continue; }
+    // Instagram: starts with @ or contains "Instagram" followed by handle
+    if (/^@\w/.test(p)) { result.instagram = p; continue; }
+    const igMatch = p.match(/(?:instagram|ig|insta)\s*[:\s]\s*@?(\w+)/i);
+    if (igMatch) { result.instagram = '@' + igMatch[1]; continue; }
 
-    // Time patterns: 7:30, 19:00, 8pm, 8PM, 오후8시, etc.
-    const timeMatch = p.match(/^(\d{1,2})\s*:\s*(\d{2})\s*(pm|am)?$/i)
-      || p.match(/^(\d{1,2})\s*(pm|PM|am|AM)$/)
-      || p.match(/^오후\s*(\d{1,2})\s*시?$/);
-    if (timeMatch && !result.time) {
-      let h = parseInt(timeMatch[1]);
-      const ampm = (timeMatch[3] || timeMatch[2] || '').toLowerCase();
-      if (ampm === 'pm' && h < 12) h += 12;
-      if (ampm === 'am' && h === 12) h = 0;
-      if (timeMatch[0].startsWith('오후') && h < 12) h += 12;
-      if (h < 12) h += 12; // assume PM for bar hours
-      result.time = String(h).padStart(2, '0') + ':00';
-      result.exactTime = p;
-      continue;
-    }
+    // Skip time-like strings (already parsed from full text)
+    if (/^\d{1,2}\s*:\s*\d{2}/.test(p)) continue;
+    if (/^\d{1,2}\s*(pm|am|PM|AM)$/.test(p)) continue;
+    if (/^\d{1,2}\s*시$/.test(p)) continue;
+    if (/^오후/.test(p)) continue;
 
-    // Party size: 2pax, 3명, 4people, 5p
-    const paxMatch = p.match(/^(\d{1,2})\s*(pax|명|people|persons|guests|p|PAX)$/i);
+    // Party size: 2pax, 3명, 4people, 5p, "Number of People:2"
+    const paxMatch = p.match(/(\d{1,2})\s*(pax|명|people|persons|guests|PAX)/i);
     if (paxMatch) { result.partySize = parseInt(paxMatch[1]); continue; }
-    // Standalone small number (1-10) likely party size
+    const nopMatch = p.match(/Number\s*of\s*People\s*:\s*(\d+)/i);
+    if (nopMatch) { result.partySize = parseInt(nopMatch[1]); continue; }
+    // Standalone small number
     if (/^\d{1,2}$/.test(p) && parseInt(p) >= 1 && parseInt(p) <= 10 && !result._gotPax) {
       result.partySize = parseInt(p); result._gotPax = true; continue;
     }
+    // "2명" embedded in text
+    const paxEmbed = p.match(/^(\d{1,2})명$/);
+    if (paxEmbed) { result.partySize = parseInt(paxEmbed[1]); continue; }
 
-    // Phone number: 010-xxxx-xxxx, +82-10-xxxx-xxxx, or 8+ digits
+    // Phone: 8+ digits
     const phoneClean = p.replace(/[\s\-().]/g, '');
     if (/^[\+]?\d{8,15}$/.test(phoneClean)) { result.phone = phoneClean; continue; }
-    // Also catch shorter Korean mobile: 010xxxxxxxx pattern within text
-    if (/^01[0-9][\-\s]?\d{3,4}[\-\s]?\d{4}$/.test(p)) { result.phone = phoneClean; continue; }
+    // "Contact: +86..." format
+    const contactMatch = p.match(/Contact\s*:\s*([\+\d\s\-]+)/i);
+    if (contactMatch) { result.phone = contactMatch[1].replace(/[\s\-]/g, ''); continue; }
+
+    // Skip known keywords
+    if (/^(Name|Date|Time|Contact|Number|Hi+!*|전화예약|신규|가게전화|바좌석|요정|요청)\s*:?$/i.test(p)) continue;
+    // "Name:Zosia" format
+    const nameMatch = p.match(/^Name\s*:\s*(.+)/i);
+    if (nameMatch && result.name === 'Guest') { result.name = nameMatch[1].trim(); continue; }
 
     // Everything else is text
     unmatched.push(p);
   }
 
-  // First unmatched = guest name
-  if (unmatched.length >= 1) result.name = unmatched[0];
-  // If 2+ unmatched, last one = staff name (but NOT if it's a known keyword)
+  // First unmatched = guest name (if not set by Name: pattern)
+  if (unmatched.length >= 1 && result.name === 'Guest') result.name = unmatched[0];
+  // Fallback: if still Guest, try first word that looks like a name from raw text
+  if (result.name === 'Guest' || result.name === 'April 10th') {
+    const words = text.split(/[\s\/,·]+/);
+    for (const w of words) {
+      if (!w) continue;
+      if (/^\d/.test(w)) continue; // starts with number
+      if (/^[@+]/.test(w)) continue; // instagram or phone
+      if (/^(Name|Date|Time|Contact|Number|Hi+|Instagram|of|People|Friday|April|and|the|th|PM|AM|pax|Pax|PAX)\b/i.test(w)) continue;
+      if (/^(신규|가게전화|전화예약|바좌석|요정|요청|오후|오전)\b/.test(w)) continue;
+      if (w.length < 2) continue;
+      result.name = w.replace(/님$/, ''); // remove 님 suffix
+      break;
+    }
+  }
+  // Last unmatched = staff (if 2+ unmatched and not a keyword)
   if (unmatched.length >= 2) {
     const last = unmatched[unmatched.length - 1];
-    // Don't treat keywords as staff
-    if (!/^(bar|table|room|바|테이블|룸|counter|private)$/i.test(last)) {
+    if (!/^(bar|table|room|바|테이블|룸|counter|private|신규|가게전화|전화예약)\s*$/i.test(last)) {
       result.staffName = last;
     }
   }
 
   delete result._gotPax;
   return result;
+}
+
+// ── Force time to nearest valid slot ──
+function snapToSlot(time, date) {
+  const slots = isWeekend(date) ? CONFIG.WEEKEND_SLOTS : CONFIG.WEEKDAY_SLOTS;
+  if (slots.includes(time)) return time;
+  // Find nearest slot
+  const h = parseInt(time.split(':')[0]);
+  let best = slots[0];
+  let bestDiff = 999;
+  slots.forEach(s => {
+    const sh = parseInt(s.split(':')[0]);
+    const diff = Math.abs(sh - h);
+    if (diff < bestDiff) { bestDiff = diff; best = s; }
+  });
+  return best;
 }
 
 async function syncGoogleCalendar() {
@@ -511,7 +574,9 @@ async function syncGoogleCalendar() {
       }
 
       const parsed = parseGcalEntry(fullText);
-      const time = parsed.time || fallbackTime;
+      // Use parsed time, fallback to calendar time, then snap to nearest valid slot
+      let rawTime = parsed.time || fallbackTime;
+      const time = snapToSlot(rawTime, date);
       const pref = detectPreference(fullText, parsed.partySize);
       const a = autoAssign(date, time, parsed.partySize, pref);
 
