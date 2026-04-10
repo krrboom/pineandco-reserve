@@ -114,8 +114,13 @@ h+='</div>';
 if(step===2){
 h+='<button class="back" onclick="goStep(1)">← 날짜 다시 선택</button>';
 
-// Check if fully booked
-if(avail._isFull){
+// Check if fully booked (all slots have 0 seats)
+var allFull=true;
+var slots2=Object.keys(avail);
+slots2.forEach(function(t){if(t.startsWith('_'))return;var a=avail[t];if(a.bar+a.tables+a.highTables+a.room>0)allFull=false;});
+if(slots2.length===0)allFull=true;
+
+if(allFull){
 h+='<div style="text-align:center;padding:40px 20px;">';
 h+='<div style="font-size:40px;margin-bottom:16px;">🌲</div>';
 h+='<h2 style="font-size:16px;margin-bottom:12px;letter-spacing:.08em;">FULLY BOOKED</h2>';

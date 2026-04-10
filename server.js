@@ -147,8 +147,6 @@ app.get('/api/availability/:date', (req, res) => {
   const tablesFree = CONFIG.SEATS.tables.filter(s => !occ.includes(s)).length;
   const highFree = CONFIG.SEATS.highTables.filter(s => !occ.includes(s)).length;
   const roomFree = !occ.includes('ROOM') ? 1 : 0;
-  const totalFree = barFree + tablesFree + highFree + roomFree;
-  const isFull = totalFree === 0;
 
   const result = {};
   slots.forEach(time => {
@@ -163,7 +161,7 @@ app.get('/api/availability/:date', (req, res) => {
     }
     result[time] = { bar:eBar, tables:eTbl, highTables:highFree, room:roomFree, isLate, occupiedSeats:occ };
   });
-  res.json({ ...result, _isFull: isFull, _remaining: { bar: barFree, tables: tablesFree, highTables: highFree, room: roomFree } });
+  res.json(result);
 });
 
 // ── Detect preference from special request text ──

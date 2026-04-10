@@ -252,17 +252,6 @@ h+='<div style="font-size:24px;color:'+(newToday.length>0?'var(--grn)':'var(--go
 h+='<div style="font-size:11px;color:var(--mu);">오늘 신규</div></div>';
 h+='</div>';
 
-// Show remaining seats for today
-if(todayAvail._remaining){
-var rm=todayAvail._remaining;
-h+='<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;justify-content:center;">';
-h+='<div style="font-size:11px;padding:4px 10px;border:1px solid var(--brd);border-radius:20px;color:var(--mu);">🥃 바 '+rm.bar+'석 남음</div>';
-h+='<div style="font-size:11px;padding:4px 10px;border:1px solid var(--brd);border-radius:20px;color:var(--mu);">🪑 테이블 '+rm.tables+'개 남음</div>';
-h+='<div style="font-size:11px;padding:4px 10px;border:1px solid var(--brd);border-radius:20px;color:var(--mu);">🪑 하이 '+rm.highTables+'개 남음</div>';
-h+='<div style="font-size:11px;padding:4px 10px;border:1px solid var(--brd);border-radius:20px;color:var(--mu);">🔑 룸 '+(rm.room?'가능':'불가')+'</div>';
-h+='</div>';
-}
-
 // Time slots
 var slots=Object.keys(todayAvail);
 var sl={online:'Online',instagram:'Instagram',email:'Email',staff:'직원',phone:'전화',google_calendar:'GCal'};
