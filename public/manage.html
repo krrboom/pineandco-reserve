@@ -45,10 +45,14 @@
 <div id="login"><input type="password" id="pin" placeholder="PIN" maxlength="4" onkeydown="if(event.key==='Enter')doLogin()"/><button onclick="doLogin()">ENTER</button></div>
 <div id="dash" style="display:none">
 <div class="sb"><label>담당 직원:</label><select id="stSel"></select></div>
-<div class="vt"><button class="vb sel" id="tH" onclick="sv('home')">🏠 Today</button><button class="vb" id="tC" onclick="sv('cal')">📅 Calendar</button><button class="vb" id="tD" onclick="sv('day')">📋 Day View</button><button class="vb" id="tS" onclick="sv('set')">⚙️ Settings</button></div>
+<div class="vt"><button class="vb sel" id="tH" onclick="sv('home')">🏠 Today</button><button class="vb" id="tN" onclick="sv('new')">📩 New</button><button class="vb" id="tC" onclick="sv('cal')">📅 Calendar</button><button class="vb" id="tD" onclick="sv('day')">📋 Day View</button><button class="vb" id="tS" onclick="sv('set')">⚙️ Settings</button></div>
 <!-- HOME / TODAY VIEW -->
 <div id="vHome">
 <div id="todaySummary"></div>
+</div>
+<!-- NEW BOOKINGS VIEW -->
+<div id="vNew" style="display:none">
+<div id="newBookings"></div>
 </div>
 <div id="vCal" style="display:none"><div class="cn"><button onclick="sm(-1)">&larr;</button><div class="ml" id="mL"></div><button onclick="sm(1)">&rarr;</button></div><div class="cg" id="cG"></div></div>
 <div id="vDay" style="display:none">
@@ -92,7 +96,9 @@
 <h2 style="font-family:Cinzel,serif;font-size:14px;color:var(--gold);font-weight:400;margin-bottom:12px;">📅 Google Calendar 연동</h2>
 <p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:10px;">구글 캘린더에 있는 예약을 시스템으로 가져옵니다.<br>매 1시간마다 자동 동기화되며, 아래 버튼으로 수동 동기화도 가능합니다.</p>
 <button onclick="gcalSync()" style="padding:10px 20px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-size:12px;cursor:pointer;">🔄 지금 동기화</button>
+<button onclick="gcalReport()" style="padding:10px 20px;border:none;border-radius:6px;background:rgba(170,51,51,.8);color:#fff;font-size:12px;cursor:pointer;margin-left:8px;">🔍 누락 확인</button>
 <div id="gcalStatus" style="font-size:12px;color:var(--mu);margin-top:8px;"></div>
+<div id="gcalReportArea" style="margin-top:12px;"></div>
 </div>
 </div></div></div>
 <div class="toast" id="toast"></div>
@@ -115,15 +121,102 @@ loadHome();
 }
 function sv(v){
 document.getElementById('vHome').style.display=v==='home'?'block':'none';
+document.getElementById('vNew').style.display=v==='new'?'block':'none';
 document.getElementById('vCal').style.display=v==='cal'?'block':'none';
 document.getElementById('vDay').style.display=v==='day'?'block':'none';
 document.getElementById('vSet').style.display=v==='set'?'block':'none';
 document.getElementById('tH').className='vb'+(v==='home'?' sel':'');
+document.getElementById('tN').className='vb'+(v==='new'?' sel':'');
 document.getElementById('tC').className='vb'+(v==='cal'?' sel':'');
 document.getElementById('tD').className='vb'+(v==='day'?' sel':'');
 document.getElementById('tS').className='vb'+(v==='set'?' sel':'');
-if(v==='home')loadHome();if(v==='cal')lc();if(v==='day')ld();if(v==='set')loadSettings();
+if(v==='home')loadHome();if(v==='new')loadNew();if(v==='cal')lc();if(v==='day')ld();if(v==='set')loadSettings();
 }
+// ── New Bookings: Reservations received today ──
+async function loadNew(){
+var newRes=await fetch('/api/new-today').then(function(r){return r.json();}).catch(function(){return [];});
+var el=document.getElementById('newBookings');
+var today=ktd();
+var h='';
+
+h+='<div style="text-align:center;margin-bottom:16px;">';
+h+='<div style="font-family:Cinzel,serif;font-size:16px;color:var(--gold);">📩 오늘 들어온 예약</div>';
+h+='<div style="font-size:12px;color:var(--mu);margin-top:4px;">'+today+' 기준 · 총 '+newRes.length+'건</div>';
+h+='</div>';
+
+if(!newRes.length){
+h+='<div style="text-align:center;color:var(--mu);padding:40px;background:var(--card);border:1px solid var(--brd);border-radius:8px;">오늘 들어온 예약이 없습니다.</div>';
+el.innerHTML=h;return;
+}
+
+// Sort by reservation date
+newRes.sort(function(a,b){return (a.date+a.time)<(b.date+b.time)?-1:1;});
+
+var sl={online:'Online',instagram:'Instagram',email:'Email',staff:'직원',phone:'전화',google_calendar:'GCal'};
+var sc={online:'so',instagram:'si',email:'se',staff:'ss',phone:'ss',google_calendar:'so'};
+var zn={bar:'Bar',table:'Table',highTable:'High Table',room:'Room',unassigned:'미배정'};
+
+// Stats
+var withNotes=newRes.filter(function(r){return r.notes&&r.notes.trim();}).length;
+var needsAssign=newRes.filter(function(r){return r.status==='needs_assignment';}).length;
+
+if(needsAssign>0){
+h+='<div style="background:rgba(170,51,51,.06);border:1px solid rgba(170,51,51,.15);border-radius:8px;padding:12px;margin-bottom:12px;text-align:center;">';
+h+='<div style="color:var(--red);font-weight:500;font-size:13px;">🚨 좌석 미배정 '+needsAssign+'건 — 수동 배정 필요!</div></div>';
+}
+
+if(withNotes>0){
+h+='<div style="background:rgba(184,147,90,.06);border:1px solid rgba(184,147,90,.15);border-radius:8px;padding:12px;margin-bottom:12px;text-align:center;">';
+h+='<div style="color:var(--gold);font-size:13px;">📝 특이사항 있는 예약: '+withNotes+'건</div></div>';
+}
+
+newRes.forEach(function(r){
+var hasNotes=r.notes&&r.notes.trim()&&!r.notes.startsWith('📅 Google');
+var isUnassigned=r.status==='needs_assignment';
+var borderColor=isUnassigned?'var(--red)':(hasNotes?'var(--gold)':'var(--brd)');
+var bgColor=isUnassigned?'rgba(170,51,51,.03)':(hasNotes?'rgba(184,147,90,.03)':'var(--card)');
+
+h+='<div style="background:'+bgColor+';border:1px solid '+borderColor+';border-radius:8px;padding:14px;margin-bottom:8px;">';
+
+// Header row
+h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">';
+h+='<div>';
+h+='<div style="font-weight:500;font-size:14px;color:var(--ink);">'+r.name+' · '+r.partySize+'명</div>';
+h+='<div style="font-size:12px;color:var(--mu);margin-top:2px;">';
+h+='📅 <strong>'+r.date+'</strong> '+r.time+' · '+(zn[r.zone]||r.zone);
+if(r.seats&&r.seats.length)h+=' ('+r.seats.join(',')+')';
+h+=' <span class="st '+(sc[r.source]||'ss')+'">'+(sl[r.source]||r.source)+'</span>';
+h+='</div></div>';
+
+if(isUnassigned)h+='<div style="color:var(--red);font-size:11px;font-weight:500;padding:3px 8px;border:1px solid var(--red);border-radius:4px;">🚨 미배정</div>';
+h+='</div>';
+
+// Contact info
+h+='<div style="font-size:12px;color:var(--mu);margin-bottom:6px;">';
+if(r.phone)h+='📱 '+r.phone+' ';
+if(r.email)h+='📧 '+r.email+' ';
+if(r.instagram)h+='📷 '+r.instagram;
+if(!r.phone&&!r.email&&!r.instagram)h+='연락처 없음';
+h+='</div>';
+
+// Special request / Notes - PROMINENT
+if(r.notes&&r.notes.trim()){
+var displayNotes=r.notes;
+// Clean up Google Calendar prefix for readability
+displayNotes=displayNotes.replace(/^📅 Google Calendar: /,'📅 ');
+h+='<div style="background:rgba(184,147,90,.06);border-left:3px solid var(--gold);padding:8px 12px;border-radius:0 6px 6px 0;font-size:12px;line-height:1.6;color:var(--tx);white-space:pre-wrap;">'+displayNotes+'</div>';
+}
+
+// Created time
+var created=r.createdAt?r.createdAt.slice(11,16):'';
+h+='<div style="font-size:10px;color:var(--mu);margin-top:6px;text-align:right;">접수: '+created+'</div>';
+
+h+='</div>';
+});
+
+el.innerHTML=h;
+}
+
 // ── Home: Today's Overview ──
 async function loadHome(){
 var today=ktd();
@@ -419,5 +512,44 @@ if(r.ok){
   document.getElementById('gcalStatus').innerHTML=msg;
 }
 else document.getElementById('gcalStatus').innerHTML='❌ '+(r.error||'동기화 실패');
+}
+
+async function gcalReport(){
+document.getElementById('gcalReportArea').innerHTML='<div style="color:var(--mu);padding:8px;">확인 중...</div>';
+var r=await fetch('/api/gcal-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin})}).then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
+if(!r.ok){document.getElementById('gcalReportArea').innerHTML='<div style="color:var(--red);">❌ '+(r.error||'Error')+'</div>';return;}
+var h='<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;margin-top:8px;">';
+h+='<div style="font-size:13px;font-weight:500;margin-bottom:8px;">📊 Google Calendar ↔ 시스템 비교</div>';
+h+='<div style="display:flex;gap:12px;margin-bottom:12px;font-size:12px;">';
+h+='<span>캘린더: <strong>'+r.total+'</strong>건</span>';
+h+='<span style="color:var(--grn);">✅ 연동됨: <strong>'+r.imported+'</strong></span>';
+h+='<span style="color:var(--red);">❌ 미연동: <strong>'+r.missing+'</strong></span>';
+h+='</div>';
+if(r.missing>0){
+h+='<div style="background:rgba(170,51,51,.04);border:1px solid rgba(170,51,51,.12);border-radius:6px;padding:8px;margin-bottom:8px;">';
+h+='<div style="font-size:11px;color:var(--red);font-weight:500;margin-bottom:6px;">❌ 시스템에 없는 예약 (동기화 버튼을 눌러주세요!):</div>';
+r.report.filter(function(x){return !x.imported;}).forEach(function(x){
+h+='<div style="font-size:11px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.04);">';
+h+='<strong>'+x.title+'</strong> · '+x.date;
+h+=' → 이름:'+x.parsed.name+' / 시간:'+(x.parsed.time||'?')+' / '+x.parsed.partySize+'명';
+if(x.parsed.phone)h+=' / 📱'+x.parsed.phone;
+if(x.parsed.instagram)h+=' / '+x.parsed.instagram;
+h+='</div>';
+});
+h+='</div>';
+}
+h+='<div style="max-height:300px;overflow-y:auto;">';
+h+='<div style="font-size:11px;color:var(--mu);margin-bottom:4px;">전체 목록:</div>';
+r.report.forEach(function(x){
+var color=x.imported?'var(--grn)':'var(--red)';
+var icon=x.imported?'✅':'❌';
+h+='<div style="font-size:11px;padding:3px 0;border-bottom:1px solid rgba(0,0,0,.03);display:flex;gap:4px;">';
+h+='<span style="color:'+color+';">'+icon+'</span>';
+h+='<span style="flex:1;"><strong>'+x.title+'</strong> · '+x.date+'</span>';
+if(x.imported)h+='<span style="color:var(--mu);">'+(x.systemStatus||'')+'</span>';
+h+='</div>';
+});
+h+='</div></div>';
+document.getElementById('gcalReportArea').innerHTML=h;
 }
 </script></body></html>
