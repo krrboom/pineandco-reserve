@@ -64,8 +64,8 @@
 <div class="row"><input type="date" id="aD"/><select id="aTm"><option value="19:00">19:00</option><option value="20:00">20:00</option><option value="21:00">21:00</option><option value="23:00">23:00</option></select></div>
 <div class="row"><input type="text" id="aN" placeholder="Guest name"/><input type="tel" id="aPh" placeholder="Phone"/></div>
 <div class="row"><input type="text" id="aIg" placeholder="Instagram @"/><input type="email" id="aEm" placeholder="Email"/></div>
-<div class="row"><select id="aSz"></select><select id="aSrc"><option value="staff">직원 직접</option><option value="email">Email</option><option value="instagram">Instagram</option><option value="phone">전화</option></select></div>
-<div class="row"><select id="aZn"><option value="bar">Bar</option><option value="table">Table</option><option value="highTable">High Table</option><option value="room">Room</option></select><input type="text" id="aSt" placeholder="Seats (B1,B2/T1/ROOM)"/></div>
+<div class="row"><select id="aSz" onchange="autoSuggestSeats()"></select><select id="aSrc"><option value="staff">직원 직접</option><option value="email">Email</option><option value="instagram">Instagram</option><option value="phone">전화</option></select></div>
+<div class="row"><select id="aZn" onchange="autoSuggestSeats()"><option value="auto">자동 배정</option><option value="bar">Bar</option><option value="table">Table</option><option value="highTable">High Table</option><option value="room">Room</option></select><select id="aSt" style="flex:1;"></select></div>
 <textarea id="aNt" placeholder="특이사항 / Notes" rows="2"></textarea>
 <button class="asb" onclick="sadd()">ADD RESERVATION</button>
 </div></div>
@@ -108,7 +108,7 @@
 <div id="spOv" class="sp-ov" style="display:none" onclick="closePop()"></div>
 <div id="spPop" class="seat-pop" style="display:none"></div>
 <script>
-var pin='',cD='',cT='',cY,cM,aR=[],av={},evts={},exId=null;
+var pin='',cD='',cT='ALL',cY,cM,aR=[],av={},evts={},exId=null;
 var DK=['일','월','화','수','목','금','토'],MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function kst(){return new Date(Date.now()+9*3600000);}function ktd(){return kst().toISOString().slice(0,10);}
 function fl(m){var t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(function(){t.className='toast';},3000);}
@@ -336,11 +336,12 @@ var d=new Date(cD+'T12:00:00');document.getElementById('dT').textContent=cD+' ('
 av=await fetch('/api/availability/'+cD).then(function(r){return r.json();}).catch(function(){return {};});
 if(av.blocked){document.getElementById('fW').innerHTML='<div style="text-align:center;padding:40px;color:var(--red)">EVENT DAY — '+av.event+'</div>';document.getElementById('rL').innerHTML='';document.getElementById('tT').innerHTML='';return;}
 aR=await fetch('/api/reservations/'+cD).then(function(r){return r.json();}).catch(function(){return [];});
-var slots=Object.keys(av);if(!cT||!slots.includes(cT))cT=slots[0]||'19:00';
-rtb(slots);rf();rl();
+var slots=Object.keys(av);if(!cT||(!slots.includes(cT)&&cT!=='ALL'))cT='ALL';
+rtb(slots);rf();rl();autoSuggestSeats();
 }
 
-function rtb(slots){var h='';slots.forEach(function(s){var c=aR.filter(function(r){return r.time===s&&r.status!=='cancelled';}).length;
+function rtb(slots){var h='<button class="tb'+(cT==='ALL'?' sel':'')+'" onclick="pt(\'ALL\')">ALL<span class="ct">'+aR.filter(function(r){return r.status!=='cancelled';}).length+'팀</span></button>';
+slots.forEach(function(s){var c=aR.filter(function(r){return r.time===s&&r.status!=='cancelled';}).length;
 h+='<button class="tb'+(cT===s?' sel':'')+'" onclick="pt(\''+s+'\')">'+s+'<span class="ct">'+c+'팀</span></button>';});
 document.getElementById('tT').innerHTML=h;}
 function pt(t){cT=t;rf();rl();rtb(Object.keys(av));}
@@ -349,7 +350,8 @@ function rf(){
 var el=document.getElementById('fW');
 var allDateRes=aR.filter(function(r){return r.status!=='cancelled';});
 var ocAll={};allDateRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){ocAll[s]=r;});});
-var curTimeRes=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';});
+var isAllView=cT==='ALL';
+var curTimeRes=isAllView?allDateRes:aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';});
 var ocCur={};curTimeRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){ocCur[s]=r;});});
 
 function sc(id){
@@ -374,7 +376,7 @@ function bs(cx,cy,id){
   if(cur){
     var ns=cur.notifiedSeats||[];
     s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="9" font-weight="500">'+cur.name.slice(0,4)+'</text>';
-    s+='<text x="'+cx+'" y="'+(cy+7)+'" text-anchor="middle" fill="#8a7560" font-size="8">'+(cur.source==='walkin'?'W-IN':cur.partySize+'명')+'</text>';
+    s+='<text x="'+cx+'" y="'+(cy+7)+'" text-anchor="middle" fill="#8a7560" font-size="7">'+(isAllView?cur.time:cur.partySize+'명')+'</text>';
     if(cur.untilTime)s+='<text x="'+(cx+14)+'" y="'+(cy-12)+'" fill="#c33" font-size="7" font-weight="600">⏰</text>';
     if(ns.indexOf(id)>=0)s+='<text x="'+(cx-12)+'" y="'+(cy-10)+'" fill="#b8935a" font-size="9" font-weight="700">N</text>';
   }else if(other){
@@ -391,7 +393,7 @@ function zs(x,y,w,h,id){
   if(cur){
     var ns=cur.notifiedSeats||[];
     s+='<text x="'+(x+w/2)+'" y="'+(y+h/2-8)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+cur.name.slice(0,5)+'</text>';
-    s+='<text x="'+(x+w/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+(cur.source==='walkin'?'Walk-in':cur.time)+' · '+cur.partySize+'명</text>';
+    s+='<text x="'+(x+w/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+cur.time+' · '+cur.partySize+'명</text>';
     if(cur.untilTime)s+='<text x="'+(x+w-4)+'" y="'+(y+12)+'" text-anchor="end" fill="#c33" font-size="8">⏰'+cur.untilTime+'</text>';
     if(ns.indexOf(id)>=0)s+='<text x="'+(x+4)+'" y="'+(y+12)+'" fill="#b8935a" font-size="9" font-weight="700">N</text>';
   }else if(other){
@@ -520,7 +522,7 @@ if(occ){
   }
 }else{
   h+='<h4>'+seatId+' — 빈 좌석</h4>';
-  h+='<button onclick="closePop();walkinSeat(\''+seatId+'\')">🚶 워크인 배정</button>';
+  h+='<div class="si2">예약 없음</div>';
 }
 
 pop.innerHTML=h;
@@ -595,11 +597,17 @@ fetch('/api/walkin',{method:'POST',headers:{'Content-Type':'application/json'},b
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(swapFrom||moveFrom))cancelMode();});
 function td(id){exId=exId===id?null:id;rl();}
 function rl(){
-var el=document.getElementById('rL');var res=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';}).sort(function(a,b){
+var el=document.getElementById('rL');
+var res;
+if(cT==='ALL'){
+  res=aR.filter(function(r){return r.status!=='cancelled';}).sort(function(a,b){return (a.time+a.name)<(b.time+b.name)?-1:1;});
+}else{
+  res=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';}).sort(function(a,b){
   if(a.status==='needs_assignment'&&b.status!=='needs_assignment')return -1;
   if(b.status==='needs_assignment'&&a.status!=='needs_assignment')return 1;
   return a.createdAt<b.createdAt?-1:1;
 });
+}
 if(!res.length){el.innerHTML='<div style="text-align:center;color:var(--mu);padding:20px">No reservations</div>';return;}
 var sl={online:'Online',instagram:'Instagram',email:'Email',staff:'직원',phone:'전화'},sc={online:'so',instagram:'si',email:'se',staff:'ss',phone:'ss'},zn={bar:'Bar',table:'Table',highTable:'High Table',room:'Room'};
 var h='';res.forEach(function(r){var ex=exId===r.id;
@@ -678,17 +686,59 @@ fl('좌석 변경: '+seats.join(','));
 ld();
 }
 
+function autoSuggestSeats(){
+var sz=parseInt(document.getElementById('aSz').value)||2;
+var zn2=document.getElementById('aZn').value;
+var sel=document.getElementById('aSt');
+sel.innerHTML='';
+// Get occupied seats for the current date
+var occ=[];aR.filter(function(r){return r.status!=='cancelled';}).forEach(function(r){if(r.seats)occ.push.apply(occ,r.seats);});
+var isFree=function(s){return occ.indexOf(s)<0;};
+
+var options=[];
+// Bar options
+if(zn2==='auto'||zn2==='bar'){
+  if(sz===1){
+    ['B1','B3','B4','B6','B7','B8','B9','B10','B11','B12','B13','B14','B2','B5'].forEach(function(s){
+      if(isFree(s))options.push({v:s,z:'bar',l:'Bar '+s});
+    });
+  }
+  if(sz>=2){
+    var pairs=[['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B4','B5']];
+    pairs.forEach(function(p){if(p.every(isFree))options.push({v:p.join(','),z:'bar',l:'Bar '+p.join('+')});});
+  }
+}
+// High table
+if(zn2==='auto'||zn2==='highTable'){
+  ['H1','H2'].forEach(function(s){if(isFree(s))options.push({v:s,z:'highTable',l:'High '+s+' (2p)'});});
+}
+// Table
+if(zn2==='auto'||zn2==='table'){
+  ['T1','T2','T3','T4'].forEach(function(s){if(isFree(s))options.push({v:s,z:'table',l:'Table '+s+' (5p)'});});
+}
+// Room
+if(zn2==='auto'||zn2==='room'){
+  if(isFree('ROOM'))options.push({v:'ROOM',z:'room',l:'Room (10p/300K)'});
+}
+
+if(!options.length){sel.innerHTML='<option value="">빈 좌석 없음</option>';return;}
+options.forEach(function(o){sel.innerHTML+='<option value="'+o.v+'" data-zone="'+o.z+'">'+o.l+'</option>';});
+}
+
 async function sadd(){
+var seatVal=document.getElementById('aSt').value;
+var seatOpt=document.getElementById('aSt').selectedOptions[0];
+var zone=seatOpt?seatOpt.getAttribute('data-zone'):'bar';
 var d={pin:pin,name:document.getElementById('aN').value.trim(),phone:document.getElementById('aPh').value.trim(),
 instagram:document.getElementById('aIg').value.trim(),email:document.getElementById('aEm').value.trim(),
 partySize:parseInt(document.getElementById('aSz').value),date:document.getElementById('aD').value,
-time:document.getElementById('aTm').value,zone:document.getElementById('aZn').value,
-seats:document.getElementById('aSt').value.split(',').map(function(s){return s.trim();}).filter(Boolean),
+time:document.getElementById('aTm').value,zone:zone,
+seats:seatVal.split(',').map(function(s){return s.trim();}).filter(Boolean),
 source:document.getElementById('aSrc').value,notes:document.getElementById('aNt').value.trim(),staffName:gs()};
 if(!d.name){fl('이름');return;}if(!d.date){fl('날짜');return;}
 var r=await fetch('/api/staff/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(function(r){return r.json();});
 if(r.ok){fl('추가 완료!');document.getElementById('aF').classList.remove('open');
-['aN','aPh','aIg','aEm','aSt','aNt'].forEach(function(id){document.getElementById(id).value='';});cD=d.date;cT=d.time;ld();}
+['aN','aPh','aIg','aEm','aNt'].forEach(function(id){document.getElementById(id).value='';});cD=d.date;cT=d.time;ld();}
 else fl(r.error||'Error');}
 
 // ── Settings: Staff Management ──

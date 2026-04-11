@@ -66,7 +66,7 @@ textarea{resize:vertical;min-height:60px;font-size:14px;}
 </div>
 <div class="toast" id="toast"></div>
 <script>
-var DK=['일','월','화','수','목','금','토'],MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DK=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var step=1,selDate='',selTime='',partySize=0,confirmed=null,avail={},evts={},calY,calM,savedSR='';
 
 function kst(){return new Date(Date.now()+9*3600000);}
@@ -89,7 +89,7 @@ if(step<=3){h+='<div class="prog">';for(var i=1;i<=3;i++)h+='<div class="dot'+(i
 
 // ═══ STEP 1: CALENDAR ═══
 if(step===1){
-h+='<h2>1. SELECT DATE · 날짜 선택</h2>';
+h+='<h2>1. SELECT DATE</h2>';
 h+='<div class="cn2"><button onclick="shiftCal(-1)">&larr;</button><div class="ml">'+MN[calM]+' '+calY+'</div><button onclick="shiftCal(1)">&rarr;</button></div>';
 h+='<div class="cg">';
 DK.forEach(function(d){h+='<div class="ch">'+d+'</div>';});
@@ -112,7 +112,7 @@ h+='</div>';
 
 // ═══ STEP 2: TIME + PARTY SIZE + SPECIAL REQUEST ═══
 if(step===2){
-h+='<button class="back" onclick="goStep(1)">← 날짜 다시 선택</button>';
+h+='<button class="back" onclick="goStep(1)">← Back to calendar</button>';
 
 // Check if fully booked (all slots have 0 seats)
 var allFull=true;
@@ -125,24 +125,24 @@ h+='<div style="text-align:center;padding:40px 20px;">';
 h+='<div style="font-size:40px;margin-bottom:16px;">🌲</div>';
 h+='<h2 style="font-size:16px;margin-bottom:12px;letter-spacing:.08em;">FULLY BOOKED</h2>';
 h+='<div style="font-size:14px;color:var(--cream);line-height:1.8;margin-bottom:16px;">';
-h+='죄송합니다, <strong style="color:var(--gold);">'+selDate+'</strong> 예약이 마감되었습니다.<br>';
-h+='워크인(현장 방문)으로만 도와드릴 수 있습니다.</div>';
+h+='Sorry, <strong style="color:var(--gold);">'+selDate+'</strong> is fully booked.<br>';
+h+='Walk-ins are welcome!</div>';
 h+='<div style="font-size:13px;color:var(--amber);line-height:1.8;">';
 h+='Sorry, <strong>'+selDate+'</strong> is fully booked.<br>';
 h+='Walk-ins are welcome!</div>';
 h+='<div style="margin-top:20px;font-size:12px;color:var(--amber);opacity:.6;">';
-h+='영업시간: 7PM — 2AM</div>';
-h+='<button class="nbtn" style="margin-top:20px;max-width:200px;" onclick="goStep(1)">다른 날짜 선택</button>';
+h+='Open 7PM — 2AM</div>';
+h+='<button class="nbtn" style="margin-top:20px;max-width:200px;" onclick="goStep(1)">Choose another date</button>';
 h+='</div>';
 } else {
 
-h+='<h2>2. TIME &amp; DETAILS · 시간 및 인원</h2>';
+h+='<h2>2. TIME & DETAILS</h2>';
 h+='<div class="note" style="margin-bottom:12px">📅 '+selDate+'</div>';
 
-h+='<div class="ilbl">시간 선택 / Select time *</div>';
+h+='<div class="ilbl">Select time *</div>';
 h+='<div class="tg" style="margin-bottom:16px">';
 var slots=Object.keys(avail);
-if(!slots.length) h+='<div style="grid-column:1/-1;text-align:center;color:var(--amber);padding:20px;">예약 가능한 시간이 없습니다.</div>';
+if(!slots.length) h+='<div style="grid-column:1/-1;text-align:center;color:var(--amber);padding:20px;">No available time slots.</div>';
 slots.forEach(function(t){
   var a=avail[t],total=a.bar+a.tables+a.highTables+a.room,full=total===0;
   h+='<button class="tb'+(selTime===t?' sel':'')+(full?' full':'')+'" onclick="pickTime(\''+t+'\')">'+t;
@@ -153,32 +153,32 @@ slots.forEach(function(t){
 h+='</div>';
 
 if(selTime){
-  h+='<div class="ilbl">인원 / Party size *</div>';
+  h+='<div class="ilbl">Party size *</div>';
   h+='<div class="sr">';
   for(var i=1;i<=10;i++)h+='<button class="sb2'+(partySize===i?' sel':'')+'" onclick="pickSize('+i+')">'+i+'</button>';
   h+='</div>';
 
-  if(partySize>=6)h+='<div class="note">🔑 6명 이상은 프라이빗 룸 배정 (미니멈차지 30만원)</div>';
-  if(partySize>=9)h+='<div class="note">※ '+partySize+'명은 룸이 다소 좁을 수 있습니다.</div>';
+  if(partySize>=6)h+='<div class="note">🔑 6+ guests: Private room (minimum charge ₩300,000)</div>';
+  if(partySize>=9)h+='<div class="note">※ '+partySize+' guests may find the room a bit tight.</div>';
 
-  h+='<div class="ilbl" style="margin-top:12px">요구사항 / Special requests (optional)</div>';
-  h+='<textarea id="sr" placeholder="예: 바 좌석 원합니다 / 생일파티 / 조용한 자리 / Bar seat please...">'+(savedSR||'')+'</textarea>';
-  h+='<div class="hint">💡 "바", "테이블", "룸" 키워드를 적으면 자동으로 좌석이 배정됩니다.<br>💡 Keywords like "bar", "table", "room" will auto-assign seating.</div>';
+  h+='<div class="ilbl" style="margin-top:12px">Special requests (optional)</div>';
+  h+='<textarea id="sr" placeholder="e.g. Bar seat, birthday party, quiet area...">'+(savedSR||'')+'</textarea>';
+  h+='<div class="hint">💡 Keywords like "bar", "table", "room" will auto-assign seating.</div>';
 }
 
-if(selTime&&partySize>0)h+='<button class="nbtn" style="margin-top:12px" onclick="goStep(3)">NEXT → 연락처 입력</button>';
+if(selTime&&partySize>0)h+='<button class="nbtn" style="margin-top:12px" onclick="goStep(3)">NEXT → Contact info</button>';
 } // end of else (not full)
 }
 
 // ═══ STEP 3: CONTACT INFO ═══
 if(step===3){
-h+='<button class="back" onclick="goStep(2)">← 뒤로</button>';
-h+='<h2>3. CONTACT INFO · 연락처</h2>';
-h+='<div class="note" style="margin-bottom:12px">📅 '+selDate+' · ⏰ '+selTime+' · '+partySize+'명'+(savedSR?' · 📝 '+savedSR:'')+'</div>';
-h+='<div class="warn">⚠️ 예약 확인을 위해 <strong>이메일 또는 전화번호</strong>를 반드시 입력해주세요.<br>Please provide your <strong>email or phone number</strong> for confirmation.</div>';
-h+='<div class="ilbl">이름 / Name *</div>';
-h+='<input type="text" id="rn" placeholder="홍길동 / John" autocomplete="name"/>';
-h+='<div class="ilbl">전화번호 / Phone</div>';
+h+='<button class="back" onclick="goStep(2)">← Back</button>';
+h+='<h2>3. CONTACT INFO</h2>';
+h+='<div class="note" style="margin-bottom:12px">📅 '+selDate+' · ⏰ '+selTime+' · '+partySize+' guests'+(savedSR?' · 📝 '+savedSR:'')+'</div>';
+h+='<div class="warn">⚠️ Please provide your <strong>email or phone number</strong> for confirmation.</div>';
+h+='<div class="ilbl">Name *</div>';
+h+='<input type="text" id="rn" placeholder="John" autocomplete="name"/>';
+h+='<div class="ilbl">Phone</div>';
 h+='<div class="phone-row">';
 h+='<select id="rcc">';
 h+='<option value="+82">🇰🇷 +82</option>';
@@ -202,37 +202,37 @@ h+='<option value="+91">🇮🇳 +91</option>';
 h+='</select>';
 h+='<input type="tel" id="rp" placeholder="010-1234-5678" autocomplete="tel"/>';
 h+='</div>';
-h+='<div class="ilbl">이메일 / Email</div>';
+h+='<div class="ilbl">Email</div>';
 h+='<input type="email" id="re" placeholder="you@email.com" autocomplete="email"/>';
 h+='<div class="ilbl">Instagram (optional)</div>';
 h+='<input type="text" id="ri" placeholder="@your_handle"/>';
-h+='<button class="nbtn" id="sbtn" onclick="doSubmit()">RESERVE · 예약하기</button>';
-h+='<div class="note" style="margin-top:12px;text-align:center">예약 취소는 전화로만 가능합니다.<br>Cancellation by phone only.</div>';
+h+='<button class="nbtn" id="sbtn" onclick="doSubmit()">RESERVE</button>';
+h+='<div class="note" style="margin-top:12px;text-align:center">Cancellation by phone only.</div>';
 }
 
 // ═══ STEP 4: CONFIRMED ═══
 if(step===4&&confirmed){
-var zn={bar:'바 좌석',table:'테이블',highTable:'하이테이블',room:'프라이빗 룸'};
+var zn={bar:'Bar',table:'Table',highTable:'High Table',room:'Private Room'};
 h+='<div class="cbox"><div class="cic">🌲</div><h3>RESERVATION CONFIRMED</h3>';
 h+='<div class="det"><strong>'+confirmed.date+'</strong> '+confirmed.time+'<br>';
-h+='<strong>'+confirmed.partySize+'</strong>명 · '+confirmed.name+'<br>';
-h+='좌석: <strong>'+(zn[confirmed.zone]||confirmed.zone)+'</strong>';
-if(confirmed.zone==='room')h+=' (미니멈차지 30만원)';
+h+='<strong>'+confirmed.partySize+'</strong> guests · '+confirmed.name+'<br>';
+h+='Seating: <strong>'+(zn[confirmed.zone]||confirmed.zone)+'</strong>';
+if(confirmed.zone==='room')h+=' (Minimum charge ₩300,000)';
 h+='</div>';
 h+='<div class="cnn">';
-if(confirmed.email)h+='📧 확인 이메일이 발송되었습니다.<br>';
-if(confirmed.phone)h+='📱 확인 문자가 발송되었습니다.<br>';
-h+='<br>취소는 전화로만: <strong>02-XXX-XXXX</strong></div></div>';
+if(confirmed.email)h+='📧 Confirmation email sent.<br>';
+if(confirmed.phone)h+='📱 Confirmation SMS sent.<br>';
+h+='<br>Cancellation by phone: <strong>02-XXX-XXXX</strong></div></div>';
 }
 
 app.innerHTML=h;
 }
 
 async function pickDate(d){
-if(evts[d]){flash('이 날짜는 이벤트로 예약 불가합니다.');return;}
+if(evts[d]){flash('This date is not available.');return;}
 selDate=d;selTime='';partySize=0;
 var r=await fetch('/api/availability/'+d).then(function(x){return x.json();}).catch(function(){return {};});
-if(r.blocked){flash('이 날짜는 이벤트로 예약 불가합니다.');return;}
+if(r.blocked){flash('This date is not available.');return;}
 avail=r;step=2;render();
 }
 function pickTime(t){selTime=t;partySize=0;render();}
@@ -245,16 +245,16 @@ var cc=(document.getElementById('rcc')||{}).value||'+82';
 if(phone){phone=cc+phone.replace(/^0/,'');}
 var email=(document.getElementById('re')||{}).value;if(email)email=email.trim();
 var ig=(document.getElementById('ri')||{}).value;if(ig)ig=ig.trim();
-if(!name){flash('이름을 입력해주세요.');return;}
-if(!phone&&!email){flash('이메일 또는 전화번호를 입력해주세요.');return;}
+if(!name){flash('Please enter your name.');return;}
+if(!phone&&!email){flash('Please provide your email or phone number.');return;}
 var btn=document.getElementById('sbtn');if(btn){btn.disabled=true;btn.textContent='RESERVING...';}
 var body={name:name,phone:phone||'',email:email||'',instagram:ig||'',partySize:partySize,date:selDate,time:selTime,specialRequest:savedSR};
 try{
   var resp=await fetch('/api/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   var data=await resp.json();
   if(data.ok){confirmed=data.reservation;step=4;render();}
-  else{flash(data.error||'예약 실패');if(btn){btn.disabled=false;btn.textContent='RESERVE · 예약하기';}}
-}catch(e){flash('네트워크 오류');if(btn){btn.disabled=false;btn.textContent='RESERVE · 예약하기';}}
+  else{flash(data.error||'Reservation failed');if(btn){btn.disabled=false;btn.textContent='RESERVE';}}
+}catch(e){flash('Network error');if(btn){btn.disabled=false;btn.textContent='RESERVE';}}
 }
 
 // Tree-ring canvas
