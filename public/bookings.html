@@ -177,21 +177,60 @@ async function loadNew(){
 var el=document.getElementById('vNew');
 var today=ktd();
 var newRes=await fetch('/api/new-today').then(function(r){return r.json();}).catch(function(){return [];});
-var h='<div style="text-align:center;margin-bottom:12px;font-family:Cinzel,serif;font-size:14px;color:var(--gold);">📩 오늘 들어온 예약 · '+newRes.length+'건</div>';
-if(!newRes.length){h+='<div class="empty">오늘 들어온 예약이 없습니다.</div>';el.innerHTML=h;return;}
-// Group by reservation date
-var byDate={};
-newRes.forEach(function(r){if(!byDate[r.date])byDate[r.date]=[];byDate[r.date].push(r);});
-var sortedDates=Object.keys(byDate).sort();
-sortedDates.forEach(function(date){
-  var d=new Date(date+'T12:00:00');
-  var res=byDate[date];
-  h+='<div class="date-group">';
-  h+='<div class="date-header"><span>📅 '+date+' ('+DK[d.getDay()]+')</span><span>'+res.length+'건</span></div>';
-  res.forEach(function(r){h+=renderCard(r,false);});
-  h+='</div>';
+var h='<div style="text-align:center;margin-bottom:12px;font-family:Cinzel,serif;font-size:14px;color:var(--gold);">📩 오늘 들어온 예약 · 확인 대기 '+newRes.length+'건</div>';
+if(!newRes.length){h+='<div class="empty">✅ 모든 예약을 확인했습니다!</div>';el.innerHTML=h;return;}
+
+// Sort: special requests first
+newRes.sort(function(a,b){
+var aN=a.notes&&a.notes.trim()?1:0;
+var bN=b.notes&&b.notes.trim()?1:0;
+if(bN!==aN)return bN-aN;
+return (a.date+a.time)<(b.date+b.time)?-1:1;
 });
+
+var withNotes=newRes.filter(function(r){return r.notes&&r.notes.trim()&&!r.notes.startsWith('원본:')&&!r.notes.startsWith('📅');}).length;
+if(withNotes>0){
+h+='<div style="background:rgba(184,147,90,.08);border:1px solid rgba(184,147,90,.2);border-radius:8px;padding:10px;margin-bottom:12px;text-align:center;">';
+h+='<div style="color:var(--gold);font-size:13px;">📝 특이사항 있는 예약: <strong>'+withNotes+'건</strong> — 확인 필요!</div></div>';
+}
+
+newRes.forEach(function(r){
+var hasNotes=r.notes&&r.notes.trim()&&!r.notes.startsWith('원본:')&&!r.notes.startsWith('📅');
+var borderColor=hasNotes?'var(--gold)':'var(--brd)';
+var bgColor=hasNotes?'rgba(184,147,90,.03)':'var(--card)';
+
+h+='<div class="rcard" style="border-color:'+borderColor+';background:'+bgColor+';">';
+h+='<div class="ri2">';
+h+='<div class="nm">'+r.name+' · '+r.partySize+'명 · '+(zn[r.zone]||r.zone)+'</div>';
+h+='<div class="mt">📅 '+r.date+' ⏰ '+r.time;
+h+=' <span class="st '+(sc[r.source]||'ss')+'">'+(sl[r.source]||r.source)+'</span></div>';
+
+var contacts=[];
+if(r.phone)contacts.push('📱'+r.phone);
+if(r.instagram)contacts.push('📷'+r.instagram);
+if(r.email)contacts.push('📧'+r.email);
+if(contacts.length)h+='<div class="mt">'+contacts.join(' · ')+'</div>';
+
+if(hasNotes){
+var dn=r.notes.replace(/^📅 /,'');
+h+='<div class="nt">'+dn+'</div>';
+}
+
+var created=r.createdAt?r.createdAt.slice(11,16):'';
+h+='<div style="font-size:10px;color:var(--mu);margin-top:4px;">접수: '+created+'</div>';
+h+='</div>';
+
+h+='<div class="ra2"><button class="bs" onclick="checkRes(\''+r.id+'\')" style="white-space:nowrap;">✅ 확인</button></div>';
+h+='</div>';
+});
+
 el.innerHTML=h;
+}
+
+async function checkRes(id){
+await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({staffChecked:true,staffName:'Staff'})});
+fl('확인 완료!');
+loadNew();
 }
 
 async function doBulkImport(){

@@ -291,10 +291,10 @@ app.post('/api/staff/reserve', (req, res) => {
 app.get('/api/reservations/:date', (req, res) => {
   res.json(reservations.filter(r => r.date===req.params.date && r.status!=='cancelled'));
 });
-// Get all reservations created today (new bookings)
+// Get all reservations created today (new bookings) - only unchecked
 app.get('/api/new-today', (req, res) => {
   const today = kstToday();
-  const newOnes = reservations.filter(r => r.createdAt && r.createdAt.startsWith(today) && r.status!=='cancelled');
+  const newOnes = reservations.filter(r => r.createdAt && r.createdAt.startsWith(today) && r.status!=='cancelled' && !r.staffChecked);
   res.json(newOnes);
 });
 app.patch('/api/reservations/:id', (req, res) => {
@@ -312,7 +312,9 @@ app.patch('/api/reservations/:id', (req, res) => {
     if (r.status === 'needs_assignment') r.status = 'confirmed';
   }
   if (req.body.notified !== undefined) { r.notified = req.body.notified; ch.push('notified: ' + req.body.notified); }
+  if (req.body.notifiedSeats !== undefined) { r.notifiedSeats = req.body.notifiedSeats; ch.push('notified seats: ' + req.body.notifiedSeats.join(',')); }
   if (req.body.untilTime !== undefined) { r.untilTime = req.body.untilTime; ch.push('until: ' + (req.body.untilTime || 'cleared')); }
+  if (req.body.staffChecked !== undefined) { r.staffChecked = req.body.staffChecked; }
   if (ch.length) { if(!r.modLog)r.modLog=[]; r.modLog.push({ action:ch.join(', '), by:req.body.staffName||'Staff', at:new Date().toISOString() }); }
   saveRes(); res.json({ ok:true, reservation:r });
 });
