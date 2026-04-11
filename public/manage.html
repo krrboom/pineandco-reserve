@@ -39,6 +39,11 @@
 .af input,.af select,.af textarea{width:100%;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:10px;color:var(--tx);font-size:13px;margin-bottom:8px;outline:none;font-family:'Noto Sans KR',sans-serif;}
 .af .row{display:flex;gap:8px;}.af .row>*{flex:1;}
 .asb{width:100%;padding:12px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-family:Cinzel,serif;font-size:12px;letter-spacing:.1em;cursor:pointer;margin-top:4px;}
+.seat-pop{position:fixed;z-index:100;background:var(--card);border:1px solid var(--gold);border-radius:10px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:220px;}
+.seat-pop h4{font-family:Cinzel,serif;font-size:12px;color:var(--gold);font-weight:400;margin-bottom:8px;}
+.seat-pop .si2{font-size:11px;color:var(--mu);margin-bottom:8px;line-height:1.5;}
+.seat-pop button{display:block;width:100%;padding:8px;border:1px solid var(--brd);border-radius:6px;background:var(--card);color:var(--tx);font-size:12px;cursor:pointer;text-align:left;margin-bottom:4px;}.seat-pop button:hover{border-color:var(--gold);background:rgba(184,147,90,.06);}
+.sp-ov{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);border-radius:8px;font-size:12px;padding:10px 20px;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none;}.toast.show{opacity:1;}
 </style></head><body>
 <div class="w"><div class="hd"><h1>PINE &amp; CO — RESERVATIONS</h1></div>
@@ -100,6 +105,8 @@
 </div>
 </div></div></div>
 <div class="toast" id="toast"></div>
+<div id="spOv" class="sp-ov" style="display:none" onclick="closePop()"></div>
+<div id="spPop" class="seat-pop" style="display:none"></div>
 <script>
 var pin='',cD='',cT='',cY,cM,aR=[],av={},evts={},exId=null;
 var DK=['일','월','화','수','목','금','토'],MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -340,74 +347,228 @@ function pt(t){cT=t;rf();rl();rtb(Object.keys(av));}
 
 function rf(){
 var el=document.getElementById('fW');
-// All occupied seats for the date
 var allDateRes=aR.filter(function(r){return r.status!=='cancelled';});
 var ocAll={};allDateRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){ocAll[s]=r;});});
-// Only current time slot reservations (for highlighting)
 var curTimeRes=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';});
 var ocCur={};curTimeRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){ocCur[s]=r;});});
 
+function sc(id){
+  var cur=ocCur[id],other=ocAll[id]&&!ocCur[id]?ocAll[id]:null,r=cur||other;
+  // Colors: gold=current, green=walkin, gray=other time, empty=transparent
+  var isWalkin=r&&r.source==='walkin';
+  var hasUntil=r&&r.untilTime;
+  var isNotified=r&&r.notified;
+  if(cur&&isWalkin)return{f:'rgba(74,124,89,.35)',sk:'#4a7c59',sw:2};
+  if(cur)return{f:'rgba(184,147,90,.4)',sk:'#b8935a',sw:1.5};
+  if(other)return{f:'rgba(120,120,120,.15)',sk:'rgba(120,120,120,.3)',sw:1};
+  return{f:'rgba(184,147,90,.06)',sk:'rgba(184,147,90,.25)',sw:1};
+}
+
 function bs(cx,cy,id){
-  var cur=ocCur[id];var other=ocAll[id]&&!ocCur[id]?ocAll[id]:null;
-  var f,sk,sw;
-  if(cur){f='rgba(184,147,90,.4)';sk='#b8935a';sw=1.5;}
-  else if(other){f='rgba(120,120,120,.15)';sk='rgba(120,120,120,.3)';sw=1;}
-  else{f='rgba(184,147,90,.06)';sk='rgba(184,147,90,.25)';sw=1;}
-  var s='<g style="cursor:'+(cur||other?'pointer':'default')+'" '+((cur||other)?'onclick="td(\''+(cur||other).id+'\')"':'')+'><circle cx="'+cx+'" cy="'+cy+'" r="16" fill="'+f+'" stroke="'+sk+'" stroke-width="'+sw+'"/>';
-  if(cur){s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="9" font-weight="500">'+cur.name.slice(0,4)+'</text>';
-  s+='<text x="'+cx+'" y="'+(cy+7)+'" text-anchor="middle" fill="#8a7560" font-size="8">'+cur.partySize+'명</text>';}
-  else if(other){s+='<text x="'+cx+'" y="'+(cy)+'" text-anchor="middle" fill="#999" font-size="7">'+other.time+'</text>';}
+  var cur=ocCur[id],other=ocAll[id]&&!ocCur[id]?ocAll[id]:null,r=cur||other;
+  var c=sc(id);
+  var s='<g style="cursor:pointer" onclick="seatClick(event,\''+id+'\')">';
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="16" fill="'+c.f+'" stroke="'+c.sk+'" stroke-width="'+c.sw+'"/>';
+  if(cur){
+    s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="9" font-weight="500">'+cur.name.slice(0,4)+'</text>';
+    s+='<text x="'+cx+'" y="'+(cy+7)+'" text-anchor="middle" fill="#8a7560" font-size="8">'+(cur.source==='walkin'?'W-IN':cur.partySize+'명')+'</text>';
+    if(cur.untilTime)s+='<text x="'+(cx+14)+'" y="'+(cy-12)+'" fill="#c33" font-size="7" font-weight="600">⏰</text>';
+    if(cur.notified)s+='<text x="'+(cx-14)+'" y="'+(cy-12)+'" fill="#4a7c59" font-size="8">✓</text>';
+  }else if(other){
+    s+='<text x="'+cx+'" y="'+cy+'" text-anchor="middle" fill="#999" font-size="7">'+other.time+'</text>';
+  }
   return s+'</g>';}
 
 function zs(x,y,w,h,id){
-  var cur=ocCur[id];var other=ocAll[id]&&!ocCur[id]?ocAll[id]:null;
-  var f,sk,sw2;
-  if(cur){f='rgba(184,147,90,.35)';sk='#b8935a';sw2=1.5;}
-  else if(other){f='rgba(120,120,120,.1)';sk='rgba(120,120,120,.25)';sw2=1;}
-  else{f='rgba(184,147,90,.04)';sk='rgba(184,147,90,.2)';sw2=1;}
-  var s='<g style="cursor:'+(cur||other?'pointer':'default')+'" '+((cur||other)?'onclick="td(\''+(cur||other).id+'\')"':'')+'><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="'+f+'" stroke="'+sk+'" stroke-width="'+sw2+'"/>';
-  if(cur){s+='<text x="'+(x+w/2)+'" y="'+(y+h/2-8)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+cur.name.slice(0,5)+'</text>';
-  s+='<text x="'+(x+w/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+cur.time+' · '+cur.partySize+'명</text>';}
-  else if(other){s+='<text x="'+(x+w/2)+'" y="'+(y+h/2)+'" text-anchor="middle" fill="#999" font-size="9">'+other.time+' '+other.name.slice(0,4)+'</text>';}
+  var cur=ocCur[id],other=ocAll[id]&&!ocCur[id]?ocAll[id]:null,r=cur||other;
+  var c=sc(id);
+  var s='<g style="cursor:pointer" onclick="seatClick(event,\''+id+'\')">';
+  s+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="'+c.f+'" stroke="'+c.sk+'" stroke-width="'+c.sw+'"/>';
+  if(cur){
+    s+='<text x="'+(x+w/2)+'" y="'+(y+h/2-8)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+cur.name.slice(0,5)+'</text>';
+    s+='<text x="'+(x+w/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+(cur.source==='walkin'?'Walk-in':cur.time)+' · '+cur.partySize+'명</text>';
+    if(cur.untilTime)s+='<text x="'+(x+w-4)+'" y="'+(y+12)+'" text-anchor="end" fill="#c33" font-size="8">⏰'+cur.untilTime+'</text>';
+    if(cur.notified)s+='<text x="'+(x+4)+'" y="'+(y+12)+'" fill="#4a7c59" font-size="8">✓노티</text>';
+  }else if(other){
+    s+='<text x="'+(x+w/2)+'" y="'+(y+h/2)+'" text-anchor="middle" fill="#999" font-size="9">'+other.time+' '+other.name.slice(0,4)+'</text>';
+  }
   return s+'</g>';}
 
 function es(cx,cy,rx,ry,id){
-  var cur=ocCur[id];var other=ocAll[id]&&!ocCur[id]?ocAll[id]:null;
-  var f,sk,sw2;
-  if(cur){f='rgba(184,147,90,.35)';sk='#b8935a';sw2=1.5;}
-  else if(other){f='rgba(120,120,120,.1)';sk='rgba(120,120,120,.25)';sw2=1;}
-  else{f='rgba(184,147,90,.04)';sk='rgba(184,147,90,.2)';sw2=1;}
-  var s='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="'+f+'" stroke="'+sk+'" stroke-width="'+sw2+'" style="cursor:'+(cur||other?'pointer':'default')+'" '+((cur||other)?'onclick="td(\''+(cur||other).id+'\')"':'')+'/>';
-  if(cur){s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+cur.name.slice(0,5)+'</text>';
-  s+='<text x="'+cx+'" y="'+(cy+8)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+cur.partySize+'명</text>';}
-  else if(other){s+='<text x="'+cx+'" y="'+(cy)+'" text-anchor="middle" fill="#999" font-size="8">'+other.time+'</text>';}
-  return s;}
-var v='<svg width="100%" viewBox="0 0 660 500">';
-v+='<rect x="155" y="15" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
-v+='<rect x="370" y="15" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
-v+='<text x="232" y="32" text-anchor="middle" fill="#8a7560" font-size="10" font-family="Cinzel,serif">Back bar</text>';
-v+='<text x="447" y="32" text-anchor="middle" fill="#8a7560" font-size="10" font-family="Cinzel,serif">Back bar</text>';
-var bl=[178,232,286,395,449,503];for(var i=0;i<6;i++)v+='<text x="'+bl[i]+'" y="55" text-anchor="middle" fill="#b8935a" font-size="9">B'+(i+1)+'</text>';
-v+=bs(178,76,'B1');v+=bs(232,76,'B2');v+=bs(286,76,'B3');v+=bs(395,76,'B4');v+=bs(449,76,'B5');v+=bs(503,76,'B6');
-v+='<path d="M215 125 L215 310 Q215 335 240 335 L440 335 Q465 335 465 310 L465 125" fill="none" stroke="rgba(184,147,90,.3)" stroke-width="2"/>';
-v+='<text x="340" y="240" text-anchor="middle" fill="#c9a96e" font-size="11" font-family="Cinzel,serif" opacity=".35">Bartender</text>';
-v+='<text x="170" y="158" text-anchor="end" fill="#b8935a" font-size="9">B7</text>';v+='<text x="170" y="218" text-anchor="end" fill="#b8935a" font-size="9">B8</text>';v+='<text x="170" y="288" text-anchor="end" fill="#b8935a" font-size="9">B9</text>';
-v+=bs(193,155,'B7');v+=bs(193,215,'B8');v+=bs(193,285,'B9');
-v+='<text x="290" y="378" text-anchor="middle" fill="#b8935a" font-size="9">B10</text>';v+='<text x="390" y="378" text-anchor="middle" fill="#b8935a" font-size="9">B11</text>';
-v+=bs(290,355,'B10');v+=bs(390,355,'B11');
-v+='<text x="510" y="288" text-anchor="start" fill="#b8935a" font-size="9">B12</text>';v+='<text x="510" y="218" text-anchor="start" fill="#b8935a" font-size="9">B13</text>';v+='<text x="510" y="158" text-anchor="start" fill="#b8935a" font-size="9">B14</text>';
-v+=bs(487,285,'B12');v+=bs(487,215,'B13');v+=bs(487,155,'B14');
-v+='<text x="14" y="72" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T1 (5p)</text>';v+='<text x="14" y="142" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T2 (5p)</text>';
-v+='<text x="14" y="217" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T3 (5p)</text>';v+='<text x="14" y="292" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T4 (5p)</text>';
-v+=zs(18,78,90,48,'T1');v+=zs(18,148,90,48,'T2');v+=zs(18,223,90,48,'T3');v+=zs(18,298,90,48,'T4');
-v+='<text x="14" y="385" fill="#b8935a" font-size="9" font-family="Cinzel,serif">Room (10p/300K)</text>';
-v+='<rect x="10" y="390" width="125" height="90" rx="8" fill="none" stroke="rgba(184,147,90,.15)" stroke-dasharray="4 3"/>';
-v+=zs(18,398,110,74,'ROOM');
-v+='<text x="245" y="408" text-anchor="middle" fill="#b8935a" font-size="9" font-family="Cinzel,serif">H1 (2p)</text>';
-v+='<text x="520" y="418" text-anchor="middle" fill="#b8935a" font-size="9" font-family="Cinzel,serif">H2 (2p)</text>';
-v+=es(245,440,50,28,'H1');v+=es(520,450,50,28,'H2');
+  var cur=ocCur[id],other=ocAll[id]&&!ocCur[id]?ocAll[id]:null,r=cur||other;
+  var c=sc(id);
+  var s='<g style="cursor:pointer" onclick="seatClick(event,\''+id+'\')">';
+  s+='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="'+c.f+'" stroke="'+c.sk+'" stroke-width="'+c.sw+'"/>';
+  if(cur){
+    s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+cur.name.slice(0,5)+'</text>';
+    s+='<text x="'+cx+'" y="'+(cy+8)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+cur.partySize+'명</text>';
+    if(cur.untilTime)s+='<text x="'+(cx+rx-2)+'" y="'+(cy-ry+10)+'" text-anchor="end" fill="#c33" font-size="7">⏰</text>';
+    if(cur.notified)s+='<text x="'+(cx-rx+2)+'" y="'+(cy-ry+10)+'" fill="#4a7c59" font-size="7">✓</text>';
+  }else if(other){
+    s+='<text x="'+cx+'" y="'+cy+'" text-anchor="middle" fill="#999" font-size="8">'+other.time+'</text>';
+  }
+  return s+'</g>';}
+
+// Legend
+var v='<svg width="100%" viewBox="0 0 660 510">';
+v+='<rect x="10" y="0" width="640" height="18" rx="3" fill="rgba(0,0,0,.02)"/>';
+v+='<circle cx="30" cy="9" r="5" fill="rgba(184,147,90,.4)" stroke="#b8935a"/><text x="42" y="12" fill="#8a7560" font-size="8">선택시간</text>';
+v+='<circle cx="110" cy="9" r="5" fill="rgba(74,124,89,.35)" stroke="#4a7c59"/><text x="122" y="12" fill="#8a7560" font-size="8">워크인</text>';
+v+='<circle cx="180" cy="9" r="5" fill="rgba(120,120,120,.15)" stroke="rgba(120,120,120,.3)"/><text x="192" y="12" fill="#8a7560" font-size="8">다른시간</text>';
+v+='<text x="260" y="12" fill="#c33" font-size="8">⏰=시간제한</text>';
+v+='<text x="340" y="12" fill="#4a7c59" font-size="8">✓=노티완료</text>';
+
+v+='<rect x="155" y="30" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
+v+='<rect x="370" y="30" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
+v+='<text x="232" y="47" text-anchor="middle" fill="#8a7560" font-size="10" font-family="Cinzel,serif">Back bar</text>';
+v+='<text x="447" y="47" text-anchor="middle" fill="#8a7560" font-size="10" font-family="Cinzel,serif">Back bar</text>';
+var bl=[178,232,286,395,449,503];for(var i=0;i<6;i++)v+='<text x="'+bl[i]+'" y="70" text-anchor="middle" fill="#b8935a" font-size="9">B'+(i+1)+'</text>';
+v+=bs(178,91,'B1');v+=bs(232,91,'B2');v+=bs(286,91,'B3');v+=bs(395,91,'B4');v+=bs(449,91,'B5');v+=bs(503,91,'B6');
+v+='<path d="M215 140 L215 325 Q215 350 240 350 L440 350 Q465 350 465 325 L465 140" fill="none" stroke="rgba(184,147,90,.3)" stroke-width="2"/>';
+v+='<text x="340" y="255" text-anchor="middle" fill="#c9a96e" font-size="11" font-family="Cinzel,serif" opacity=".35">Bartender</text>';
+v+='<text x="170" y="173" text-anchor="end" fill="#b8935a" font-size="9">B7</text>';v+='<text x="170" y="233" text-anchor="end" fill="#b8935a" font-size="9">B8</text>';v+='<text x="170" y="303" text-anchor="end" fill="#b8935a" font-size="9">B9</text>';
+v+=bs(193,170,'B7');v+=bs(193,230,'B8');v+=bs(193,300,'B9');
+v+='<text x="290" y="393" text-anchor="middle" fill="#b8935a" font-size="9">B10</text>';v+='<text x="390" y="393" text-anchor="middle" fill="#b8935a" font-size="9">B11</text>';
+v+=bs(290,370,'B10');v+=bs(390,370,'B11');
+v+='<text x="510" y="303" text-anchor="start" fill="#b8935a" font-size="9">B12</text>';v+='<text x="510" y="233" text-anchor="start" fill="#b8935a" font-size="9">B13</text>';v+='<text x="510" y="173" text-anchor="start" fill="#b8935a" font-size="9">B14</text>';
+v+=bs(487,300,'B12');v+=bs(487,230,'B13');v+=bs(487,170,'B14');
+v+='<text x="14" y="87" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T1 (5p)</text>';v+='<text x="14" y="157" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T2 (5p)</text>';
+v+='<text x="14" y="232" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T3 (5p)</text>';v+='<text x="14" y="307" fill="#b8935a" font-size="9" font-family="Cinzel,serif">T4 (5p)</text>';
+v+=zs(18,93,90,48,'T1');v+=zs(18,163,90,48,'T2');v+=zs(18,238,90,48,'T3');v+=zs(18,313,90,48,'T4');
+v+='<text x="14" y="400" fill="#b8935a" font-size="9" font-family="Cinzel,serif">Room (10p/300K)</text>';
+v+='<rect x="10" y="405" width="125" height="90" rx="8" fill="none" stroke="rgba(184,147,90,.15)" stroke-dasharray="4 3"/>';
+v+=zs(18,413,110,74,'ROOM');
+v+='<text x="245" y="423" text-anchor="middle" fill="#b8935a" font-size="9" font-family="Cinzel,serif">H1 (2p)</text>';
+v+='<text x="520" y="433" text-anchor="middle" fill="#b8935a" font-size="9" font-family="Cinzel,serif">H2 (2p)</text>';
+v+=es(245,455,50,28,'H1');v+=es(520,465,50,28,'H2');
 v+='</svg>';el.innerHTML=v;}
 
+// ── Seat click → popup actions ──
+var swapFrom=null;
+function closePop(){document.getElementById('spOv').style.display='none';document.getElementById('spPop').style.display='none';swapFrom=null;}
+
+function seatClick(evt,seatId){
+evt.stopPropagation();
+var allDateRes=aR.filter(function(r){return r.status!=='cancelled';});
+var occ=null;allDateRes.forEach(function(r){if(r.seats&&r.seats.indexOf(seatId)>=0)occ=r;});
+
+// If in swap mode
+if(swapFrom){
+  if(occ){doSwap(swapFrom,occ.id);} else{fl('빈 좌석으로는 교환 불가. 이동하려면 좌석 변경을 사용하세요.');} closePop();return;
+}
+
+var pop=document.getElementById('spPop');
+var ov=document.getElementById('spOv');
+var h='';
+
+if(occ){
+  // Occupied seat
+  var isWalkin=occ.source==='walkin';
+  h+='<h4>'+seatId+' — '+occ.name+' ('+occ.partySize+'명)</h4>';
+  h+='<div class="si2">';
+  h+=occ.time==='walkin'?'Walk-in':'⏰ '+occ.time+' 예약';
+  if(occ.untilTime)h+=' · <strong style="color:#c33;">'+occ.untilTime+'까지</strong>';
+  if(occ.notified)h+=' · <span style="color:#4a7c59;">✓ 노티 완료</span>';
+  if(occ.phone)h+='<br>📱 '+occ.phone;
+  h+='</div>';
+
+  // Actions
+  h+='<button onclick="startSwap(\''+occ.id+'\')">🔄 다른 예약과 좌석 교환</button>';
+  h+='<button onclick="closePop();showMovePicker(\''+occ.id+'\')">📍 빈 좌석으로 이동</button>';
+  if(!occ.notified)h+='<button onclick="setNotified(\''+occ.id+'\',true)">🔔 노티 완료 표시</button>';
+  else h+='<button onclick="setNotified(\''+occ.id+'\',false)">🔕 노티 취소</button>';
+  if(!isWalkin&&!occ.untilTime){
+    h+='<button onclick="closePop();setUntilTime(\''+occ.id+'\')">⏰ 시간제한 설정 (OO시까지)</button>';
+  }
+  if(occ.untilTime){h+='<button onclick="clearUntil(\''+occ.id+'\')">⏰ 시간제한 해제</button>';}
+} else {
+  // Empty seat
+  h+='<h4>'+seatId+' — 빈 좌석</h4>';
+  h+='<button onclick="closePop();walkinSeat(\''+seatId+'\')">🚶 워크인 배정</button>';
+  // Find reservations that could move here
+  var movable=aR.filter(function(r){return r.status!=='cancelled'&&r.status!=='noshow';});
+  if(movable.length){
+    h+='<div style="font-size:10px;color:var(--mu);margin:6px 0 2px;">기존 예약 이동:</div>';
+    movable.slice(0,6).forEach(function(r){
+      h+='<button onclick="moveTo(\''+r.id+'\',\''+seatId+'\')">← '+r.name+' ('+r.time+' · '+(r.seats||[]).join(',')+')</button>';
+    });
+  }
+}
+
+pop.innerHTML=h;
+pop.style.display='block';
+pop.style.left=Math.min(evt.clientX,window.innerWidth-240)+'px';
+pop.style.top=Math.min(evt.clientY,window.innerHeight-300)+'px';
+ov.style.display='block';
+}
+
+function startSwap(id){
+swapFrom=id;
+var r=aR.find(function(x){return x.id===id;});
+closePop();
+fl('교환 모드: '+r.name+'의 좌석과 교환할 좌석을 클릭하세요');
+}
+
+async function doSwap(id1,id2){
+await fetch('/api/swap-seats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id1:id1,id2:id2,staffName:gs()})});
+fl('좌석 교환 완료!');
+swapFrom=null;ld();
+}
+
+function showMovePicker(id){
+var r=aR.find(function(x){return x.id===id;});
+var occ=[];aR.filter(function(x){return x.id!==id&&x.status!=='cancelled';}).forEach(function(x){if(x.seats)occ.push.apply(occ,x.seats);});
+var isFree=function(s){return occ.indexOf(s)<0;};
+var zone=r.zone;
+var allSeats=['B1','B2','B3','B4','B5','B6','B7','B8','B9','B10','B11','B12','B13','B14','T1','T2','T3','T4','H1','H2','ROOM'];
+var freeSeats=allSeats.filter(isFree);
+if(!freeSeats.length){fl('빈 좌석이 없습니다.');return;}
+var msg='이동할 좌석 선택:\n\n'+freeSeats.join(', ')+'\n\n좌석을 입력하세요 (예: B7 또는 B7,B8):';
+var input=prompt(msg);
+if(!input)return;
+var seats=input.toUpperCase().split(',').map(function(s){return s.trim();});
+var z=seats[0].startsWith('B')?'bar':seats[0].startsWith('T')?'table':seats[0].startsWith('H')?'highTable':'room';
+moveTo(id,seats.join(','),z);
+}
+
+async function moveTo(id,seatStr,zone){
+var seats=seatStr.split(',');
+if(!zone)zone=seats[0].startsWith('B')?'bar':seats[0].startsWith('T')?'table':seats[0].startsWith('H')?'highTable':'room';
+await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({seats:seats,zone:zone,staffName:gs()})});
+fl('좌석 이동 완료: '+seats.join(','));closePop();ld();
+}
+
+async function setNotified(id,val){
+await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({notified:val,staffName:gs()})});
+fl(val?'노티 완료 표시':'노티 취소');closePop();ld();
+}
+
+function setUntilTime(id){
+var t=prompt('몇 시까지 이용? (예: 21:00)');
+if(!t)return;
+sf(id,'notes',aR.find(function(x){return x.id===id;}).notes+'\n⏰ '+t+'까지 이용');
+fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({untilTime:t,staffName:gs()})}).then(function(){ld();});
+}
+
+function clearUntil(id){
+fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({untilTime:'',staffName:gs()})}).then(function(){fl('시간제한 해제');closePop();ld();});
+}
+
+function walkinSeat(seatId){
+var name=prompt('워크인 손님 이름:');
+if(!name)return;
+var pax=parseInt(prompt('인원:'))||1;
+var allDateRes=aR.filter(function(r){return r.status!=='cancelled';});
+// Check if this seat has a later reservation
+var laterRes=null;
+allDateRes.forEach(function(r){if(r.seats&&r.seats.indexOf(seatId)>=0&&r.time!=='walkin')laterRes=r;});
+var until='';
+if(laterRes){until=laterRes.time;if(!confirm(seatId+'는 '+laterRes.time+' '+laterRes.name+'님 예약석입니다.\n'+until+'까지만 이용하는 워크인으로 배정할까요?'))return;}
+var zone=seatId.startsWith('B')?'bar':seatId.startsWith('T')?'table':seatId.startsWith('H')?'highTable':'room';
+fetch('/api/walkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin,name:name,partySize:pax,seats:[seatId],zone:zone,untilTime:until,date:cD,staffName:gs()})}).then(function(r){return r.json();}).then(function(d){
+  if(d.ok){fl(name+' 워크인 배정: '+seatId+(until?' ('+until+'까지)':''));ld();}else fl(d.error||'Error');
+});
+}
 function td(id){exId=exId===id?null:id;rl();}
 function rl(){
 var el=document.getElementById('rL');var res=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';}).sort(function(a,b){

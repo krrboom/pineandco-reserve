@@ -311,8 +311,49 @@ app.patch('/api/reservations/:id', (req, res) => {
     ch.push('seat:'+old+'→'+req.body.seats.join(','));
     if (r.status === 'needs_assignment') r.status = 'confirmed';
   }
+  if (req.body.notified !== undefined) { r.notified = req.body.notified; ch.push('notified: ' + req.body.notified); }
+  if (req.body.untilTime !== undefined) { r.untilTime = req.body.untilTime; ch.push('until: ' + (req.body.untilTime || 'cleared')); }
   if (ch.length) { if(!r.modLog)r.modLog=[]; r.modLog.push({ action:ch.join(', '), by:req.body.staffName||'Staff', at:new Date().toISOString() }); }
   saveRes(); res.json({ ok:true, reservation:r });
+});
+
+// Swap seats between two reservations
+app.post('/api/swap-seats', (req, res) => {
+  const { id1, id2, staffName } = req.body;
+  const r1 = reservations.find(x => x.id===id1);
+  const r2 = reservations.find(x => x.id===id2);
+  if (!r1 || !r2) return res.status(404).json({ error:'Reservation not found' });
+  const s1 = r1.seats, z1 = r1.zone;
+  r1.seats = r2.seats; r1.zone = r2.zone;
+  r2.seats = s1; r2.zone = z1;
+  const ts = new Date().toISOString();
+  if(!r1.modLog)r1.modLog=[];if(!r2.modLog)r2.modLog=[];
+  r1.modLog.push({ action:'swapped with '+r2.name+': '+s1.join(',')+'→'+r1.seats.join(','), by:staffName||'Staff', at:ts });
+  r2.modLog.push({ action:'swapped with '+r1.name+': '+r2.seats.join(',')+'→'+s1.join(','), by:staffName||'Staff', at:ts });
+  saveRes();
+  res.json({ ok:true });
+});
+
+// Walk-in: temporary seat assignment (sit until a reserved time)
+app.post('/api/walkin', (req, res) => {
+  const { pin, name, partySize, seats, zone, untilTime, date, staffName } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error:'Wrong PIN' });
+  const r = {
+    id: 'wi_' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    name: name || 'Walk-in', phone:'', instagram:'', email:'',
+    partySize: partySize || 1, date: date || kstToday(),
+    time: 'walkin', preference: 'manual',
+    zone: zone || 'bar', seats: seats || [],
+    status: 'seated', source: 'walkin',
+    untilTime: untilTime || '',
+    notified: false,
+    notes: untilTime ? '⏰ ' + untilTime + '까지 이용' : 'Walk-in',
+    createdAt: new Date().toISOString(),
+    reminderD1:false, reminderD0:false,
+    modLog:[{ action:'walk-in seated', by:staffName||'Staff', at:new Date().toISOString() }],
+  };
+  reservations.push(r); saveRes();
+  res.json({ ok:true, reservation:r });
 });
 app.delete('/api/reservations/:id', (req, res) => {
   reservations = reservations.filter(r => r.id!==req.params.id); saveRes(); res.json({ ok:true });
