@@ -38,9 +38,11 @@ const CONFIG = {
   LATE_TABLE_MAX: 2,
 };
 const STAFF_FILE = path.join(__dirname, 'staff.json');
+const VISITORS_FILE = path.join(__dirname, 'visitors.json');
 const DATA_FILE = path.join(__dirname, 'reservations.json');
 const EVENTS_FILE = path.join(__dirname, 'events.json');
 let reservations = [], events = {}, staffNames = ['DuUi','Manager'];
+let visitors = [];
 let lockPromise = Promise.resolve();
 function withLock(fn) { lockPromise = lockPromise.then(fn).catch(e => { console.error(e); throw e; }); return lockPromise; }
 
@@ -48,11 +50,58 @@ function loadData() {
   try { if (fs.existsSync(DATA_FILE)) reservations = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch(e) { reservations = []; }
   try { if (fs.existsSync(EVENTS_FILE)) events = JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf8')); } catch(e) { events = {}; }
   try { if (fs.existsSync(STAFF_FILE)) staffNames = JSON.parse(fs.readFileSync(STAFF_FILE, 'utf8')); } catch(e) {}
-  console.log(`Loaded ${reservations.length} reservations, ${Object.keys(events).length} events, ${staffNames.length} staff`);
+  try { if (fs.existsSync(VISITORS_FILE)) visitors = JSON.parse(fs.readFileSync(VISITORS_FILE, 'utf8')); } catch(e) { visitors = []; }
+  console.log(`Loaded ${reservations.length} reservations, ${visitors.length} visitors`);
 }
 function saveRes() { try { fs.writeFileSync(DATA_FILE, JSON.stringify(reservations, null, 2)); } catch(e) { console.error(e); } }
 function saveEvents() { try { fs.writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2)); } catch(e) { console.error(e); } }
 function saveStaff() { try { fs.writeFileSync(STAFF_FILE, JSON.stringify(staffNames, null, 2)); } catch(e) { console.error(e); } }
+function saveVisitors() { try { fs.writeFileSync(VISITORS_FILE, JSON.stringify(visitors, null, 2)); } catch(e) { console.error(e); } }
+
+// Record a visit when guest is marked "seated"
+function recordVisit(r) {
+  if (!r.name || r.name === 'Guest') return;
+  const clean = s => (s || '').replace(/[\s\-]/g, '').toLowerCase();
+  // Find existing visitor by matching 2+ fields
+  let found = visitors.find(v => {
+    let matches = 0;
+    if (v.name && r.name && v.name.toLowerCase() === r.name.toLowerCase()) matches++;
+    if (v.phone && r.phone && clean(v.phone) === clean(r.phone)) matches++;
+    if (v.email && r.email && v.email.toLowerCase() === r.email.toLowerCase()) matches++;
+    if (v.instagram && r.instagram && v.instagram.toLowerCase() === r.instagram.toLowerCase()) matches++;
+    return matches >= 2;
+  });
+  if (found) {
+    // Update info and add visit
+    if (r.phone) found.phone = r.phone;
+    if (r.email) found.email = r.email;
+    if (r.instagram) found.instagram = r.instagram;
+    found.visits.push({ date: r.date, partySize: r.partySize, zone: r.zone });
+    found.lastVisit = r.date;
+  } else {
+    // New visitor
+    visitors.push({
+      name: r.name, phone: r.phone || '', email: r.email || '', instagram: r.instagram || '',
+      visits: [{ date: r.date, partySize: r.partySize, zone: r.zone }],
+      lastVisit: r.date, firstVisit: r.date,
+    });
+  }
+  saveVisitors();
+}
+
+// Check if a guest is a returning visitor
+function checkReturning(name, phone, email, instagram) {
+  const clean = s => (s || '').replace(/[\s\-]/g, '').toLowerCase();
+  for (const v of visitors) {
+    let matches = 0;
+    if (v.name && name && v.name.toLowerCase() === name.toLowerCase()) matches++;
+    if (v.phone && phone && clean(v.phone) === clean(phone)) matches++;
+    if (v.email && email && v.email.toLowerCase() === email.toLowerCase()) matches++;
+    if (v.instagram && instagram && v.instagram.toLowerCase() === instagram.toLowerCase()) matches++;
+    if (matches >= 2) return { returning: true, visits: v.visits.length, lastVisit: v.lastVisit, firstVisit: v.firstVisit };
+  }
+  return { returning: false };
+}
 loadData();
 
 const app = express();
@@ -289,7 +338,25 @@ app.post('/api/staff/reserve', (req, res) => {
   res.json({ ok:true, reservation:r });
 });
 app.get('/api/reservations/:date', (req, res) => {
-  res.json(reservations.filter(r => r.date===req.params.date && r.status!=='cancelled'));
+  const list = reservations.filter(r => r.date===req.params.date && r.status!=='cancelled');
+  // Enrich with returning visitor info
+  const enriched = list.map(r => {
+    const rv = checkReturning(r.name, r.phone, r.email, r.instagram);
+    return { ...r, _returning: rv.returning, _visitCount: rv.visits || 0, _lastVisit: rv.lastVisit || '' };
+  });
+  res.json(enriched);
+});
+
+// Check if a specific guest is returning
+app.post('/api/check-returning', (req, res) => {
+  const { name, phone, email, instagram } = req.body;
+  const rv = checkReturning(name, phone, email, instagram);
+  res.json(rv);
+});
+
+// Get all visitors (for export/spreadsheet)
+app.get('/api/visitors', (req, res) => {
+  res.json(visitors);
 });
 // Get all reservations created today (new bookings) - only unchecked
 app.get('/api/new-today', (req, res) => {
@@ -301,7 +368,7 @@ app.patch('/api/reservations/:id', (req, res) => {
   const r = reservations.find(x => x.id===req.params.id);
   if (!r) return res.status(404).json({ error:'Not found' });
   const ch = [];
-  if (req.body.status && req.body.status!==r.status) { ch.push('status:'+r.status+'→'+req.body.status); r.status=req.body.status; }
+  if (req.body.status && req.body.status!==r.status) { ch.push('status:'+r.status+'→'+req.body.status); r.status=req.body.status; if(r.status==='seated') recordVisit(r); }
   if (req.body.notes!==undefined && req.body.notes!==r.notes) { ch.push('notes updated'); r.notes=req.body.notes; }
   if (req.body.source && req.body.source!==r.source) { ch.push('source:'+r.source+'→'+req.body.source); r.source=req.body.source; }
   if (req.body.seats) {
