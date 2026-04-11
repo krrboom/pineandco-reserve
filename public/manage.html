@@ -292,8 +292,8 @@ if(r._returning)h+=' <span style="background:#e8f5e9;color:#2e7d32;font-size:9px
 if(isNew)h+=' <span style="font-size:9px;color:var(--grn);font-weight:500;">NEW</span>';
 if(r.notes)h+=' <span style="font-size:10px;" title="'+r.notes+'">📝</span>';
 h+='</div>';
-h+='<div style="font-size:11px;color:'+(r.status==='needs_assignment'?'var(--red)':'var(--mu)')+';">'+
-(r.status==='needs_assignment'?'🚨 좌석 미배정!':r.status)+'</div>';
+h+='<div style="font-size:11px;color:'+(r.status==='needs_assignment'?'var(--red)':r.status==='seated'?'var(--gold)':r.status==='completed'?'#3d7a5a':'var(--mu)')+';">'+
+(r.status==='needs_assignment'?'🚨 미배정':r.status==='seated'?'🪑 착석중':r.status==='completed'?'✅ 완료':r.status)+'</div>';
 h+='</div>';
 });
 }
@@ -367,6 +367,8 @@ function sc(id){
   var isWalkin=r&&r.source==='walkin';
   var hasUntil=r&&r.untilTime;
   var isNotified=r&&r.notified;
+  var isCompleted=r&&r.status==='completed';
+  if(cur&&isCompleted)return{f:'rgba(61,122,90,.2)',sk:'#3d7a5a',sw:1};
   if(cur&&isWalkin)return{f:'rgba(74,124,89,.35)',sk:'#4a7c59',sw:2};
   if(cur)return{f:'rgba(184,147,90,.4)',sk:'#b8935a',sw:1.5};
   if(other)return{f:'rgba(120,120,120,.15)',sk:'rgba(120,120,120,.3)',sw:1};
@@ -431,8 +433,9 @@ v+='<rect x="10" y="0" width="640" height="18" rx="3" fill="rgba(0,0,0,.02)"/>';
 v+='<circle cx="30" cy="9" r="5" fill="rgba(184,147,90,.4)" stroke="#b8935a"/><text x="42" y="12" fill="#8a7560" font-size="8">선택시간</text>';
 v+='<circle cx="110" cy="9" r="5" fill="rgba(74,124,89,.35)" stroke="#4a7c59"/><text x="122" y="12" fill="#8a7560" font-size="8">워크인</text>';
 v+='<circle cx="180" cy="9" r="5" fill="rgba(120,120,120,.15)" stroke="rgba(120,120,120,.3)"/><text x="192" y="12" fill="#8a7560" font-size="8">다른시간</text>';
-v+='<text x="260" y="12" fill="#c33" font-size="8">⏰=시간제한</text>';
-v+='<text x="340" y="12" fill="#FF3333" font-size="9" font-weight="900">N=노티완료</text>';
+v+='<circle cx="250" cy="9" r="5" fill="rgba(61,122,90,.2)" stroke="#3d7a5a"/><text x="262" y="12" fill="#8a7560" font-size="8">완료</text>';
+v+='<text x="300" y="12" fill="#c33" font-size="8">⏰=시간제한</text>';
+v+='<text x="380" y="12" fill="#FF3333" font-size="9" font-weight="900">N=노티완료</text>';
 
 v+='<rect x="155" y="30" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
 v+='<rect x="370" y="30" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
@@ -625,6 +628,8 @@ h+='</div>';
 h+='<div class="mt">'+r.time+'<span class="st '+(sc[r.source]||'ss')+'">'+(sl[r.source]||r.source)+'</span>';if(r.notes)h+=' · 📝';h+='</div></div>';
 h+='<div class="ra">';if(r.status==='confirmed'){h+='<button class="bs" onclick="event.stopPropagation();us(\''+r.id+'\',\'seated\')">SEATED</button>';
 h+='<button class="bn" onclick="event.stopPropagation();us(\''+r.id+'\',\'noshow\')">NO SHOW</button>';}
+if(r.status==='seated'){h+='<button style="background:#3d7a5a;color:#fff;padding:6px 10px;border:none;border-radius:4px;font-size:11px;cursor:pointer;" onclick="event.stopPropagation();us(\''+r.id+'\',\'completed\')">✅ 계산완료</button>';}
+if(r.status==='completed'){h+='<span style="font-size:11px;color:#3d7a5a;font-weight:500;">✅ 완료</span>';}
 h+='<button class="bd" onclick="event.stopPropagation();dr(\''+r.id+'\')">✕</button></div></div>';
 h+='<div class="rd'+(ex?' open':'')+'">';
 h+='<div class="dr"><label>전화</label><span>'+(r.phone||'-')+'</span></div>';
@@ -634,7 +639,7 @@ h+='<div class="dr"><label>예약경로</label><select onchange="sf(\''+r.id+'\'
 ['online','instagram','email','staff','phone'].forEach(function(s){h+='<option value="'+s+'"'+(r.source===s?' selected':'')+'>'+(sl[s])+'</option>';});
 h+='</select></div>';
 h+='<div class="dr"><label>특이사항</label><textarea onblur="sf(\''+r.id+'\',\'notes\',this.value)">'+(r.notes||'')+'</textarea></div>';
-h+='<div class="dr"><label>상태</label><span style="font-weight:500;color:'+(r.status==='needs_assignment'?'var(--red)':'inherit')+';">'+(r.status==='needs_assignment'?'🚨 좌석 미배정 — 수동 배정 필요':r.status)+'</span></div>';
+h+='<div class="dr"><label>상태</label><span style="font-weight:500;color:'+(r.status==='needs_assignment'?'var(--red)':r.status==='completed'?'#3d7a5a':r.status==='seated'?'var(--gold)':'inherit')+';">'+(r.status==='needs_assignment'?'🚨 좌석 미배정 — 수동 배정 필요':r.status==='completed'?'✅ 계산완료':r.status==='seated'?'🪑 착석중':r.status)+'</span></div>';
 if(r._returning)h+='<div class="dr"><label>방문이력</label><span style="color:#2e7d32;font-weight:500;">🔄 재방문 고객 ('+r._visitCount+'회 방문, 마지막: '+r._lastVisit+')</span></div>';
 h+='<div class="dr"><label>좌석</label><div><span style="font-weight:500;">'+(zn[r.zone]||r.zone)+' ('+(r.seats||[]).join(', ')+')</span>';
 h+=' <button onclick="event.stopPropagation();showSeatPicker(\''+r.id+'\')" style="margin-left:8px;padding:4px 10px;border:1px solid var(--gold);border-radius:4px;background:none;color:var(--gold);font-size:11px;cursor:pointer;">🔄 좌석 변경</button>';
@@ -650,6 +655,7 @@ var r=aR.find(function(x){return x.id===id;});
 var name=r?r.name:'';
 if(st==='noshow'){if(!confirm('⚠️ '+name+'님을 NO SHOW 처리할까요?\n\n이 작업은 되돌릴 수 없습니다.'))return;}
 if(st==='cancelled'){if(!confirm('⚠️ '+name+'님의 예약을 취소할까요?\n\n이 작업은 되돌릴 수 없습니다.'))return;}
+if(st==='completed'){if(!confirm(name+'님 계산완료 처리할까요?'))return;}
 await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st,staffName:gs()})});ld();}
 async function dr(id){
 var r=aR.find(function(x){return x.id===id;});
