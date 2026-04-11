@@ -42,8 +42,8 @@
 </style></head><body>
 <div class="w">
 <div class="hd"><h1>📋 BOOKING MANAGER</h1><a href="manage.html">← Staff Dashboard</a></div>
-<div id="login"><input type="password" id="pin" placeholder="PIN" maxlength="4" onkeydown="if(event.key==='Enter')doLogin()"/><button onclick="doLogin()">ENTER</button></div>
-<div id="main" style="display:none">
+<div id="login" style="display:none"></div>
+<div id="main">
 <div class="tabs">
 <button class="tab sel" id="tabAll" onclick="showTab('all')">📋 전체 예약</button>
 <button class="tab" id="tabNew" onclick="showTab('new')">📩 오늘 들어온</button>
@@ -77,15 +77,13 @@ function ktd(){return kst().toISOString().slice(0,10);}
 function fl(m){var t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(function(){t.className='toast';},3000);}
 
 async function doLogin(){
-pin=document.getElementById('pin').value;
-if(pin.length!==4){fl('4자리 PIN');return;}
+pin='1234';
 var sn=await fetch('/api/staff-names').then(function(r){return r.json();}).catch(function(){return ['Staff'];});
 document.getElementById('bulkStaff').innerHTML=sn.map(function(n){return '<option>'+n+'</option>';}).join('');
 document.getElementById('bulkDate').value=ktd();
-document.getElementById('login').style.display='none';
-document.getElementById('main').style.display='block';
 loadAll();
 }
+doLogin();
 
 function showTab(t){
 document.getElementById('vAll').style.display=t==='all'?'block':'none';

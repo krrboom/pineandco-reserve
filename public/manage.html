@@ -378,7 +378,7 @@ function bs(cx,cy,id){
     s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="9" font-weight="500">'+cur.name.slice(0,4)+'</text>';
     s+='<text x="'+cx+'" y="'+(cy+7)+'" text-anchor="middle" fill="#8a7560" font-size="7">'+(isAllView?cur.time:cur.partySize+'명')+'</text>';
     if(cur.untilTime)s+='<text x="'+(cx+14)+'" y="'+(cy-12)+'" fill="#c33" font-size="7" font-weight="600">⏰</text>';
-    if(ns.indexOf(id)>=0)s+='<text x="'+(cx-12)+'" y="'+(cy-10)+'" fill="#b8935a" font-size="9" font-weight="700">N</text>';
+    if(ns.indexOf(id)>=0)s+='<text x="'+(cx-12)+'" y="'+(cy-10)+'" fill="#FF3333" font-size="18" font-weight="900">N</text>';
   }else if(other){
     s+='<text x="'+cx+'" y="'+cy+'" text-anchor="middle" fill="#999" font-size="7">'+other.time+'</text>';
   }
@@ -395,7 +395,7 @@ function zs(x,y,w,h,id){
     s+='<text x="'+(x+w/2)+'" y="'+(y+h/2-8)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+cur.name.slice(0,5)+'</text>';
     s+='<text x="'+(x+w/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+cur.time+' · '+cur.partySize+'명</text>';
     if(cur.untilTime)s+='<text x="'+(x+w-4)+'" y="'+(y+12)+'" text-anchor="end" fill="#c33" font-size="8">⏰'+cur.untilTime+'</text>';
-    if(ns.indexOf(id)>=0)s+='<text x="'+(x+4)+'" y="'+(y+12)+'" fill="#b8935a" font-size="9" font-weight="700">N</text>';
+    if(ns.indexOf(id)>=0)s+='<text x="'+(x+4)+'" y="'+(y+12)+'" fill="#FF3333" font-size="18" font-weight="900">N</text>';
   }else if(other){
     s+='<text x="'+(x+w/2)+'" y="'+(y+h/2)+'" text-anchor="middle" fill="#999" font-size="9">'+other.time+' '+other.name.slice(0,4)+'</text>';
   }
@@ -412,7 +412,7 @@ function es(cx,cy,rx,ry,id){
     s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+cur.name.slice(0,5)+'</text>';
     s+='<text x="'+cx+'" y="'+(cy+8)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+cur.partySize+'명</text>';
     if(cur.untilTime)s+='<text x="'+(cx+rx-2)+'" y="'+(cy-ry+10)+'" text-anchor="end" fill="#c33" font-size="7">⏰</text>';
-    if(ns.indexOf(id)>=0)s+='<text x="'+(cx-rx+2)+'" y="'+(cy-ry+10)+'" fill="#b8935a" font-size="8" font-weight="700">N</text>';
+    if(ns.indexOf(id)>=0)s+='<text x="'+(cx-rx+2)+'" y="'+(cy-ry+10)+'" fill="#FF3333" font-size="16" font-weight="900">N</text>';
   }else if(other){
     s+='<text x="'+cx+'" y="'+cy+'" text-anchor="middle" fill="#999" font-size="8">'+other.time+'</text>';
   }
@@ -425,7 +425,7 @@ v+='<circle cx="30" cy="9" r="5" fill="rgba(184,147,90,.4)" stroke="#b8935a"/><t
 v+='<circle cx="110" cy="9" r="5" fill="rgba(74,124,89,.35)" stroke="#4a7c59"/><text x="122" y="12" fill="#8a7560" font-size="8">워크인</text>';
 v+='<circle cx="180" cy="9" r="5" fill="rgba(120,120,120,.15)" stroke="rgba(120,120,120,.3)"/><text x="192" y="12" fill="#8a7560" font-size="8">다른시간</text>';
 v+='<text x="260" y="12" fill="#c33" font-size="8">⏰=시간제한</text>';
-v+='<text x="340" y="12" fill="#b8935a" font-size="8" font-weight="700">N=노티완료</text>';
+v+='<text x="340" y="12" fill="#FF3333" font-size="9" font-weight="900">N=노티완료</text>';
 
 v+='<rect x="155" y="30" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
 v+='<rect x="370" y="30" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
