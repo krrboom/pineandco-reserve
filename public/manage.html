@@ -635,8 +635,17 @@ h+='</div></div>';});el.innerHTML=h;}
 async function sf(id,f,v){var b={staffName:gs()};b[f]=v;
 await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
 aR=await fetch('/api/reservations/'+cD).then(function(r){return r.json();}).catch(function(){return [];});rl();}
-async function us(id,st){await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st,staffName:gs()})});ld();}
-async function dr(id){if(!confirm('Delete?'))return;await fetch('/api/reservations/'+id,{method:'DELETE'});ld();}
+async function us(id,st){
+var r=aR.find(function(x){return x.id===id;});
+var name=r?r.name:'';
+if(st==='noshow'){if(!confirm('⚠️ '+name+'님을 NO SHOW 처리할까요?\n\n이 작업은 되돌릴 수 없습니다.'))return;}
+if(st==='cancelled'){if(!confirm('⚠️ '+name+'님의 예약을 취소할까요?\n\n이 작업은 되돌릴 수 없습니다.'))return;}
+await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st,staffName:gs()})});ld();}
+async function dr(id){
+var r=aR.find(function(x){return x.id===id;});
+var name=r?r.name:'';
+if(!confirm('⚠️ '+name+'님의 예약을 삭제할까요?\n\n삭제하면 복구할 수 없습니다.'))return;
+await fetch('/api/reservations/'+id,{method:'DELETE'});ld();}
 
 function showSeatPicker(id){
 var el=document.getElementById('sp_'+id);

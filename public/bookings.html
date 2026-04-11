@@ -258,11 +258,13 @@ if(r.ok){
 }
 
 async function us(id,status){
+if(status==='noshow'){if(!confirm('⚠️ NO SHOW 처리할까요?\n\n이 작업은 되돌릴 수 없습니다.'))return;}
+if(status==='cancelled'){if(!confirm('⚠️ 예약을 취소할까요?\n\n이 작업은 되돌릴 수 없습니다.'))return;}
 await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:status,staffName:'Staff'})});
 loadAll();loadNew();
 }
 async function dr(id){
-if(!confirm('삭제할까요?'))return;
+if(!confirm('⚠️ 예약을 삭제할까요?\n\n삭제하면 복구할 수 없습니다.'))return;
 await fetch('/api/reservations/'+id,{method:'DELETE'});
 loadAll();loadNew();
 }
