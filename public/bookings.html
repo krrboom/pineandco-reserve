@@ -108,6 +108,7 @@ var h='<div class="'+cls+'">';
 h+='<div class="ri2">';
 h+='<div class="nm">'+r.name+' · '+r.partySize+'명 · '+(zn[r.zone]||r.zone);
 if(r.seats&&r.seats.length)h+=' ('+r.seats.join(',')+')';
+if(r._returning)h+=' <span style="background:#e8f5e9;color:#2e7d32;font-size:9px;padding:1px 6px;border-radius:3px;font-weight:500;">🔄 재방문 '+r._visitCount+'회</span>';
 h+='</div>';
 h+='<div class="mt">';
 if(showDate)h+='📅 '+r.date+' ';
@@ -199,7 +200,9 @@ var bgColor=hasNotes?'rgba(184,147,90,.03)':'var(--card)';
 
 h+='<div class="rcard" style="border-color:'+borderColor+';background:'+bgColor+';">';
 h+='<div class="ri2">';
-h+='<div class="nm">'+r.name+' · '+r.partySize+'명 · '+(zn[r.zone]||r.zone)+'</div>';
+h+='<div class="nm">'+r.name+' · '+r.partySize+'명 · '+(zn[r.zone]||r.zone);
+if(r._returning)h+=' <span style="background:#e8f5e9;color:#2e7d32;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500;">🔄 재방문 ('+r._visitCount+'회 · 마지막: '+r._lastVisit+')</span>';
+h+='</div>';
 h+='<div class="mt">📅 '+r.date+' ⏰ '+r.time;
 h+=' <span class="st '+(sc[r.source]||'ss')+'">'+(sl[r.source]||r.source)+'</span></div>';
 

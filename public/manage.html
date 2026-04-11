@@ -103,6 +103,12 @@
 <div id="gcalStatus" style="font-size:12px;color:var(--mu);margin-top:8px;"></div>
 <div id="gcalReportArea" style="margin-top:12px;"></div>
 </div>
+<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:16px;margin-bottom:12px;">
+<h2 style="font-family:Cinzel,serif;font-size:14px;color:var(--gold);font-weight:400;margin-bottom:12px;">📊 Google Sheets 연동</h2>
+<p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:10px;">SEATED 누르면 자동으로 스프레드시트에 기록됩니다.<br>날짜, 시간, 이름, 인원, 연락처, 좌석, 방문유형(신규/재방문) 등.</p>
+<button onclick="sheetSetup()" style="padding:10px 20px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-size:12px;cursor:pointer;">📋 헤더 초기화</button>
+<div id="sheetStatus" style="font-size:12px;color:var(--mu);margin-top:8px;"></div>
+</div>
 </div></div></div>
 <div class="toast" id="toast"></div>
 <div id="spOv" class="sp-ov" style="display:none" onclick="closePop()"></div>
@@ -868,6 +874,13 @@ h+='<br><strong style="color:var(--red);">❌ 연결 실패: '+r.error+'</strong
 }
 h+='</div>';
 document.getElementById('gcalStatus').innerHTML=h;
+}
+
+async function sheetSetup(){
+document.getElementById('sheetStatus').innerHTML='설정 중...';
+var r=await fetch('/api/sheet-setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin})}).then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
+if(r.ok)document.getElementById('sheetStatus').innerHTML='✅ 헤더 설정 완료! 이제 SEATED 누르면 자동으로 기록됩니다.';
+else document.getElementById('sheetStatus').innerHTML='❌ '+(r.error||'실패');
 }
 
 async function gcalReport(){

@@ -20,6 +20,7 @@ const CONFIG = {
   GOOGLE_CLIENT_EMAIL: process.env.GOOGLE_CLIENT_EMAIL || '',
   GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY || '',
   GOOGLE_CALENDAR_ID: process.env.GOOGLE_CALENDAR_ID || '',
+  GOOGLE_SHEET_ID: process.env.GOOGLE_SHEET_ID || '',
   SEATS: {
     bar: ['B1','B2','B3','B4','B5','B6','B7','B8','B9','B10','B11','B12','B13','B14'],
     tables: ['T1','T2','T3','T4'],
@@ -71,15 +72,14 @@ function recordVisit(r) {
     if (v.instagram && r.instagram && v.instagram.toLowerCase() === r.instagram.toLowerCase()) matches++;
     return matches >= 2;
   });
+  const visitCount = found ? found.visits.length + 1 : 1;
   if (found) {
-    // Update info and add visit
     if (r.phone) found.phone = r.phone;
     if (r.email) found.email = r.email;
     if (r.instagram) found.instagram = r.instagram;
     found.visits.push({ date: r.date, partySize: r.partySize, zone: r.zone });
     found.lastVisit = r.date;
   } else {
-    // New visitor
     visitors.push({
       name: r.name, phone: r.phone || '', email: r.email || '', instagram: r.instagram || '',
       visits: [{ date: r.date, partySize: r.partySize, zone: r.zone }],
@@ -87,6 +87,48 @@ function recordVisit(r) {
     });
   }
   saveVisitors();
+  // Write to Google Sheets
+  appendToSheet(r, visitCount);
+}
+
+// ── Google Sheets: append visit row ──
+async function appendToSheet(r, visitCount) {
+  if (!CONFIG.GOOGLE_SHEET_ID || !CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY) return;
+  try {
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(
+      CONFIG.GOOGLE_CLIENT_EMAIL, null,
+      CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      ['https://www.googleapis.com/auth/spreadsheets']
+    );
+    const sheets = google.sheets({ version: 'v4', auth });
+    const now = new Date(Date.now() + 9 * 3600000); // KST
+    const row = [
+      r.date,                                          // A: 날짜
+      r.time || 'walkin',                              // B: 시간
+      r.name,                                          // C: 이름
+      r.partySize,                                     // D: 인원
+      r.phone || '',                                   // E: 전화번호
+      r.email || '',                                   // F: 이메일
+      r.instagram || '',                               // G: 인스타
+      r.zone || '',                                    // H: 좌석타입
+      (r.seats || []).join(','),                        // I: 좌석번호
+      r.source || '',                                  // J: 예약경로
+      visitCount > 1 ? '재방문 (' + visitCount + '회)' : '신규',  // K: 방문유형
+      r.notes || '',                                   // L: 특이사항
+      now.toISOString().slice(0, 19).replace('T', ' '), // M: 기록시간
+    ];
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+      range: 'Sheet1!A:M',
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [row] },
+    });
+    console.log('📊 [SHEETS] Added: ' + r.name + ' / ' + r.date);
+  } catch (e) {
+    console.error('📊 [SHEETS] Error:', e.message);
+  }
 }
 
 // Check if a guest is a returning visitor
@@ -358,11 +400,35 @@ app.post('/api/check-returning', (req, res) => {
 app.get('/api/visitors', (req, res) => {
   res.json(visitors);
 });
+
+// Setup Google Sheet headers
+app.post('/api/sheet-setup', async (req, res) => {
+  if (req.body.pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  if (!CONFIG.GOOGLE_SHEET_ID || !CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY) {
+    return res.json({ ok: false, error: 'GOOGLE_SHEET_ID not configured' });
+  }
+  try {
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(CONFIG.GOOGLE_CLIENT_EMAIL, null, CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'), ['https://www.googleapis.com/auth/spreadsheets']);
+    const sheets = google.sheets({ version: 'v4', auth });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+      range: 'Sheet1!A1:M1',
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [['날짜','시간','이름','인원','전화번호','이메일','인스타','좌석타입','좌석번호','예약경로','방문유형','특이사항','기록시간']] },
+    });
+    res.json({ ok: true, message: 'Headers set!' });
+  } catch (e) { res.json({ ok: false, error: e.message }); }
+});
 // Get all reservations created today (new bookings) - only unchecked
 app.get('/api/new-today', (req, res) => {
   const today = kstToday();
   const newOnes = reservations.filter(r => r.createdAt && r.createdAt.startsWith(today) && r.status!=='cancelled' && !r.staffChecked);
-  res.json(newOnes);
+  const enriched = newOnes.map(r => {
+    const rv = checkReturning(r.name, r.phone, r.email, r.instagram);
+    return { ...r, _returning: rv.returning, _visitCount: rv.visits || 0, _lastVisit: rv.lastVisit || '' };
+  });
+  res.json(enriched);
 });
 app.patch('/api/reservations/:id', (req, res) => {
   const r = reservations.find(x => x.id===req.params.id);
