@@ -151,7 +151,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 function kstToday() { return new Date(Date.now() + 9*3600000).toISOString().slice(0,10); }
-function isWeekend(d) { const day = new Date(d+'T12:00:00+09:00').getDay(); return day===0||day===5||day===6; }
+function isWeekend(d) { const day = new Date(d+'T12:00:00+09:00').getDay(); return day===5||day===6; }
 function getSlots(d) { return isWeekend(d) ? CONFIG.WEEKEND_SLOTS : CONFIG.WEEKDAY_SLOTS; }
 function getResFor(date,time) { return reservations.filter(r => r.date===date && r.time===time && r.status!=='cancelled' && r.status!=='noshow'); }
 // Get ALL occupied seats for the entire date (seat booked at 7pm = unavailable all night)
