@@ -819,6 +819,12 @@ async function syncGoogleCalendar() {
 
       const fullText = title + (desc ? ' / ' + desc : '');
 
+      // Check if this looks like a reservation
+      if (!looksLikeReservation(fullText)) {
+        console.log('📅 [GCAL] Skipped (not a reservation): ' + title);
+        return;
+      }
+
       let date, fallbackTime;
       if (ev.start && ev.start.dateTime) {
         const start = new Date(ev.start.dateTime);
@@ -881,6 +887,17 @@ async function syncGoogleCalendar() {
 }
 
 // ── Sync report: show ALL gcal events and their status ──
+// Helper: check if text looks like a reservation
+function looksLikeReservation(text) {
+  if (!text) return false;
+  const hasTime = /\d{1,2}\s*:\s*\d{2}|\d{1,2}\s*(pm|am|PM|AM)|\d{1,2}\s*시|오후/.test(text);
+  const hasPax = /\d+\s*(pax|명|people|persons|guests|PAX)|Number\s*of\s*People/i.test(text);
+  const hasPhone = /01[0-9][\-\s]?\d{3,4}[\-\s]?\d{4}|\+\d{10,}|Contact\s*:/i.test(text);
+  const hasInsta = /@\w|instagram|ig\s*:/i.test(text);
+  const hasName = /^Name\s*:/im.test(text);
+  return hasTime || hasPax || hasPhone || hasInsta || hasName;
+}
+
 app.post('/api/gcal-report', async (req, res) => {
   const { pin } = req.body;
   if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
@@ -894,7 +911,7 @@ app.post('/api/gcal-report', async (req, res) => {
     const now = new Date();
     const twoMonths = new Date(now.getTime() + 62 * 86400000);
     const r = await cal.events.list({ calendarId: CONFIG.GOOGLE_CALENDAR_ID, timeMin: todayStartUTC().toISOString(), timeMax: twoMonths.toISOString(), singleEvents: true, orderBy: 'startTime', maxResults: 500 });
-    const events = (r.data.items || []).filter(ev => ev.status !== 'cancelled' && (ev.summary || '').trim());
+    const events = (r.data.items || []).filter(ev => ev.status !== 'cancelled' && (ev.summary || '').trim() && looksLikeReservation((ev.summary||'') + ' ' + (ev.description||'')));
     const report = events.map(ev => {
       const imported = reservations.find(x => x.gcalId === ev.id);
       const title = ev.summary || '';
@@ -1001,6 +1018,8 @@ app.post('/api/gcal-test', async (req, res) => {
     events.forEach(ev => {
       if (ev.status === 'cancelled') return;
       const title = ev.summary || '(no title)';
+      const fullText = title + ' ' + (ev.description || '');
+      if (!looksLikeReservation(fullText)) return; // skip non-reservations
       let date = '';
       if (ev.start && ev.start.dateTime) date = new Date(ev.start.dateTime).toISOString().slice(0, 10);
       else if (ev.start && ev.start.date) date = ev.start.date;
