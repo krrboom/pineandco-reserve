@@ -67,17 +67,23 @@ textarea{resize:vertical;min-height:60px;font-size:14px;}
 <div class="toast" id="toast"></div>
 <script>
 var DK=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
-var step=1,selDate='',selTime='',partySize=0,confirmed=null,avail={},evts={},calY,calM,savedSR='';
+var step=1,selDate='',selTime='',partySize=0,confirmed=null,avail={},evts={},calY,calM,savedSR='',fullDates=[];
 
 function kst(){return new Date(Date.now()+9*3600000);}
 function td2(){return kst().toISOString().slice(0,10);}
 function flash(m){var t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(function(){t.className='toast';},3000);}
 
+function loadMonthData(){
+fetch('/api/month/'+calY+'/'+String(calM+1)).then(function(r){return r.json();}).then(function(d){
+fullDates=d.fullDates||[];render();
+}).catch(function(){fullDates=[];render();});
+}
+
 (function(){var n=kst();calY=n.getFullYear();calM=n.getMonth();
-fetch('/api/events').then(function(r){return r.json();}).then(function(d){evts=d;render();}).catch(function(){render();});
+fetch('/api/events').then(function(r){return r.json();}).then(function(d){evts=d;loadMonthData();}).catch(function(){loadMonthData();});
 })();
 
-function shiftCal(n){calM+=n;if(calM>11){calM=0;calY++;}if(calM<0){calM=11;calY--;}render();}
+function shiftCal(n){calM+=n;if(calM>11){calM=0;calY++;}if(calM<0){calM=11;calY--;}loadMonthData();}
 function goStep(s){
   if(step===2&&s===3){var el=document.getElementById('sr');if(el)savedSR=el.value.trim();}
   step=s;render();
@@ -98,11 +104,12 @@ var today=td2(),maxD=new Date(kst().getTime()+62*86400000).toISOString().slice(0
 for(var i=sd-1;i>=0;i--)h+='<div class="cc om"><div class="dn">'+(pd-i)+'</div></div>';
 for(var d=1;d<=dim;d++){
   var iso=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-  var dow=new Date(calY,calM,d).getDay(),past=iso<=today,beyond=iso>maxD,ev=evts[iso];
-  var cls='cc';if(iso===today)cls+=' td';if(past||beyond)cls+=' dis';if(ev)cls+=' ev';if(selDate===iso)cls+=' sel';
-  h+='<div class="'+cls+'" '+((!past&&!beyond&&!ev)?'onclick="pickDate(\''+iso+'\')"':'')+'>';
+  var dow=new Date(calY,calM,d).getDay(),past=iso<today,beyond=iso>maxD,ev=evts[iso],isFull=fullDates.indexOf(iso)>=0;
+  var cls='cc';if(iso===today)cls+=' td';if(past||beyond)cls+=' dis';if(ev)cls+=' ev';if(selDate===iso)cls+=' sel';if(isFull&&!past&&!beyond&&!ev)cls+=' ev';
+  h+='<div class="'+cls+'" '+((!past&&!beyond&&!ev&&!isFull)?'onclick="pickDate(\''+iso+'\')"':'')+'>';
   h+='<div class="dn'+(dow===0?' sun':'')+'">'+d+'</div>';
   if(ev)h+='<div class="el">EVENT</div>';
+  if(isFull&&!ev&&!past&&!beyond)h+='<div class="el" style="color:#b8935a;">FULL</div>';
   h+='</div>';
 }
 var tc=sd+dim,rem=tc%7===0?0:7-tc%7;
@@ -117,7 +124,7 @@ h+='<button class="back" onclick="goStep(1)">← Back to calendar</button>';
 // Check if fully booked (all slots have 0 seats)
 var allFull=true;
 var slots2=Object.keys(avail);
-slots2.forEach(function(t){if(t.startsWith('_'))return;var a=avail[t];if(a.bar+a.tables+a.highTables+a.room>0)allFull=false;});
+slots2.forEach(function(t){if(t.startsWith('_'))return;var a=avail[t];if((a.bar+a.tables+a.highTables+a.room>0)&&!a.closed)allFull=false;});
 if(slots2.length===0)allFull=true;
 
 if(allFull){
@@ -144,10 +151,11 @@ h+='<div class="tg" style="margin-bottom:16px">';
 var slots=Object.keys(avail);
 if(!slots.length) h+='<div style="grid-column:1/-1;text-align:center;color:var(--amber);padding:20px;">No available time slots.</div>';
 slots.forEach(function(t){
-  var a=avail[t],total=a.bar+a.tables+a.highTables+a.room,full=total===0;
+  var a=avail[t],total=a.bar+a.tables+a.highTables+a.room,full=total===0||a.closed;
   h+='<button class="tb'+(selTime===t?' sel':'')+(full?' full':'')+'" onclick="pickTime(\''+t+'\')">'+t;
   if(a.isLate)h+='<span class="sub">Late night · Limited</span>';
-  if(full)h+='<span class="sub">FULL</span>';
+  if(a.closed)h+='<span class="sub">CLOSED</span>';
+  else if(total===0)h+='<span class="sub">FULL</span>';
   h+='</button>';
 });
 h+='</div>';

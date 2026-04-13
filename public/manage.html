@@ -249,7 +249,7 @@ h+='<div style="font-size:14px;color:var(--red);font-weight:500;">🚫 EVENT DAY
 el.innerHTML=h;return;
 }
 
-var active=todayRes.filter(function(r){return r.status==='confirmed'||r.status==='seated';});
+var active=todayRes.filter(function(r){return r.status!=='cancelled'&&r.status!=='noshow';});
 var newToday=todayRes.filter(function(r){return r.createdAt&&r.createdAt.startsWith(today)&&!r.staffChecked;});
 
 // Stats cards
@@ -300,6 +300,24 @@ h+='</div>';
 h+='</div>';
 });
 
+// Show reservations not matching any time slot
+var slotted=[];slots.forEach(function(t){active.forEach(function(r){if(r.time===t)slotted.push(r.id);});});
+var unslotted=active.filter(function(r){return slotted.indexOf(r.id)<0;});
+if(unslotted.length){
+h+='<div style="background:rgba(184,147,90,.04);border:1px solid rgba(184,147,90,.15);border-radius:8px;padding:12px;margin-bottom:8px;">';
+h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+h+='<div style="font-family:Cinzel,serif;font-size:15px;color:var(--amber);">기타</div>';
+h+='<div style="font-size:12px;color:var(--mu);">'+unslotted.length+'팀</div></div>';
+unslotted.forEach(function(r){
+h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:4px;margin-bottom:4px;background:rgba(0,0,0,.02);">';
+h+='<div><span style="font-weight:500;font-size:13px;">'+r.name+'</span>';
+h+=' <span style="font-size:11px;color:var(--mu);">'+r.partySize+'명 · '+(zn[r.zone]||r.zone)+' · '+r.time+'</span>';
+h+='</div>';
+h+='<div style="font-size:11px;color:var(--mu);">'+r.status+'</div></div>';
+});
+h+='</div>';
+}
+
 // Quick action
 h+='<button onclick="sv(\'day\')" style="width:100%;padding:12px;border:1px solid var(--brd);border-radius:8px;background:var(--card);color:var(--gold);font-size:12px;cursor:pointer;margin-top:8px;font-family:Cinzel,serif;">Day View에서 상세 관리 →</button>';
 
@@ -310,7 +328,8 @@ function sm(n){cM+=n;if(cM>11){cM=0;cY++;}if(cM<0){cM=11;cY--;}lc();}
 
 async function lc(){
 document.getElementById('mL').textContent=MN[cM]+' '+cY;
-var cts=await fetch('/api/month/'+cY+'/'+String(cM+1)).then(function(r){return r.json();}).catch(function(){return {};});
+var mdata=await fetch('/api/month/'+cY+'/'+String(cM+1)).then(function(r){return r.json();}).catch(function(){return {counts:{},fullDates:[]};});
+var cts=mdata.counts||mdata;
 evts=await fetch('/api/events').then(function(r){return r.json();}).catch(function(){return {};});
 var td=ktd(),first=new Date(cY,cM,1),sd=first.getDay(),dim=new Date(cY,cM+1,0).getDate(),pd=new Date(cY,cM,0).getDate();
 var h='';['일','월','화','수','목','금','토'].forEach(function(d){h+='<div class="chd">'+d+'</div>';});

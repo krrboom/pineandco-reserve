@@ -247,6 +247,10 @@ app.get('/api/availability/:date', (req, res) => {
   const roomFree = !occ.includes('ROOM') ? 1 : 0;
 
   const result = {};
+  const kstNow = new Date(Date.now() + 9 * 3600000);
+  const isToday = date === kstToday();
+  const nowHour = kstNow.getHours() + kstNow.getMinutes() / 60;
+
   slots.forEach(time => {
     const isLate = time === CONFIG.LATE_SLOT && !isWeekend(date);
     let eBar = barFree, eTbl = tablesFree;
@@ -257,7 +261,10 @@ app.get('/api/availability/:date', (req, res) => {
       eBar = Math.max(0, CONFIG.LATE_BAR_MAX - ub);
       eTbl = Math.max(0, CONFIG.LATE_TABLE_MAX - ut);
     }
-    result[time] = { bar:eBar, tables:eTbl, highTables:highFree, room:roomFree, isLate, occupiedSeats:occ };
+    // 2-hour cutoff for today
+    const slotHour = parseInt(time.split(':')[0]);
+    const closed = isToday && nowHour >= (slotHour - 2);
+    result[time] = { bar:eBar, tables:eTbl, highTables:highFree, room:roomFree, isLate, closed, occupiedSeats:occ };
   });
   res.json(result);
 });
@@ -280,6 +287,14 @@ app.post('/api/reserve', async (req, res) => {
   if (events[date]) return res.status(400).json({ error: 'This date is not available (event).' });
   const slots = getSlots(date);
   if (!slots.includes(time)) return res.status(400).json({ error: 'Invalid time.' });
+
+  // 2-hour cutoff for today
+  if (date === kstToday()) {
+    const kstNow = new Date(Date.now() + 9 * 3600000);
+    const nowHour = kstNow.getHours() + kstNow.getMinutes() / 60;
+    const slotHour = parseInt(time.split(':')[0]);
+    if (nowHour >= slotHour - 2) return res.status(400).json({ error: 'This time slot is no longer available. Reservations close 2 hours before.' });
+  }
 
   // ── Anti-abuse checks ──
   const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
@@ -361,8 +376,19 @@ app.delete('/api/staff-names/:name', (req, res) => {
 app.get('/api/month/:year/:month', (req, res) => {
   const prefix = `${req.params.year}-${String(req.params.month).padStart(2,'0')}`;
   const counts = {};
-  reservations.forEach(r => { if (r.date.startsWith(prefix) && r.status!=='cancelled') counts[r.date]=(counts[r.date]||0)+1; });
-  res.json(counts);
+  const fullDates = [];
+  reservations.forEach(r => { if (r.date.startsWith(prefix) && r.status!=='cancelled' && r.status!=='noshow') counts[r.date]=(counts[r.date]||0)+1; });
+  // Check which dates are fully booked
+  const allSeats = CONFIG.SEATS.bar.length + CONFIG.SEATS.tables.length + CONFIG.SEATS.highTables.length + 1; // +1 for room
+  Object.keys(counts).forEach(date => {
+    const occ = getOccupiedForDate(date);
+    const barFree = CONFIG.SEATS.bar.filter(s => !occ.includes(s)).length;
+    const tblFree = CONFIG.SEATS.tables.filter(s => !occ.includes(s)).length;
+    const hiFree = CONFIG.SEATS.highTables.filter(s => !occ.includes(s)).length;
+    const rmFree = !occ.includes('ROOM') ? 1 : 0;
+    if (barFree + tblFree + hiFree + rmFree === 0) fullDates.push(date);
+  });
+  res.json({ counts, fullDates });
 });
 app.post('/api/staff/reserve', (req, res) => {
   const { pin,name,phone,instagram,email,partySize,date,time,zone,seats,source,notes,staffName } = req.body;
