@@ -167,59 +167,86 @@ function autoAssign(date, time, partySize, preference) {
   const occ = getOccupiedForDate(date);
   const free = s => !occ.includes(s);
 
-  if (preference === 'bar' || partySize === 1) {
+  // Count what's available
+  const freeBar = CONFIG.SEATS.bar.filter(free);
+  const freeTables = CONFIG.SEATS.tables.filter(free);
+  const freeHigh = CONFIG.SEATS.highTables.filter(free);
+  const freeRoom = free('ROOM');
+  const barPairs = [['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B4','B5'],['B8','B9'],['B10','B11'],['B12','B13']];
+  const freePairs = barPairs.filter(p => p.every(free));
+
+  // ── Preference: BAR ──
+  if (preference === 'bar') {
     if (partySize === 1) {
       for (const s of CONFIG.BAR_EDGE_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
       for (const s of CONFIG.BAR_MID_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
       for (const s of CONFIG.BAR_U_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
     }
     if (partySize === 2) {
-      const pairs = [['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B2','B3'],['B4','B5'],['B5','B6'],['B8','B9'],['B10','B11'],['B12','B13']];
-      for (const p of pairs) if (p.every(free)) return { zone:'bar', seats:p };
+      for (const p of freePairs) return { zone:'bar', seats:p };
     }
-    return null;
+    // Bar requested but no bar seats → fall through to auto logic below
   }
 
+  // ── Preference: TABLE ──
   if (preference === 'table') {
-    if (partySize <= 2) {
-      for (const s of CONFIG.SEATS.highTables) if (free(s)) return { zone:'highTable', seats:[s] };
-      for (const s of CONFIG.SEATS.tables) if (free(s)) return { zone:'table', seats:[s] };
+    if (partySize <= 5) {
+      for (const s of freeTables) return { zone:'table', seats:[s] };
+      for (const s of freeHigh) return { zone:'highTable', seats:[s] };
     }
-    if (partySize >= 3 && partySize <= 5) {
-      for (const s of CONFIG.SEATS.tables) if (free(s)) return { zone:'table', seats:[s] };
+    if (partySize >= 6) {
+      if (freeRoom) return { zone:'room', seats:['ROOM'], note: partySize >= 9 ? 'tight_room' : null };
     }
-    if (partySize >= 6 && partySize <= 10) {
-      if (free('ROOM')) return { zone:'room', seats:['ROOM'], note: partySize >= 9 ? 'tight_room' : null };
-    }
-    return null;
+    // Fall through to auto
   }
 
-  // auto (no preference)
+  // ── AUTO (no preference) — ALWAYS find a seat ──
+
+  // 1명: 바 엣지 → 바 U자 → 바 미들 → 하이테이블 → 테이블
   if (partySize === 1) {
     for (const s of CONFIG.BAR_EDGE_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
-    for (const s of CONFIG.BAR_MID_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
     for (const s of CONFIG.BAR_U_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+    for (const s of CONFIG.BAR_MID_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+    for (const s of freeHigh) return { zone:'highTable', seats:[s] };
+    for (const s of freeTables) return { zone:'table', seats:[s] };
   }
+
+  // 2명: 바 쌍 → 하이테이블 → (절대 테이블 차지 안함! 테이블은 3-5명용)
   if (partySize === 2) {
-    // Bar pairs first
-    const pairs = [['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B2','B3'],['B4','B5'],['B5','B6'],['B8','B9'],['B10','B11'],['B12','B13']];
-    for (const p of pairs) if (p.every(free)) return { zone:'bar', seats:p };
-    // High tables only for later times (21:00+)
-    if (time >= '21:00') {
-      for (const s of CONFIG.SEATS.highTables) if (free(s)) return { zone:'highTable', seats:[s] };
-    }
-    // Tables as fallback
-    for (const s of CONFIG.SEATS.tables) if (free(s)) return { zone:'table', seats:[s] };
-    // High tables as last resort even for early times
-    for (const s of CONFIG.SEATS.highTables) if (free(s)) return { zone:'highTable', seats:[s] };
+    for (const p of freePairs) return { zone:'bar', seats:p };
+    for (const s of freeHigh) return { zone:'highTable', seats:[s] };
+    // 바도 하이테이블도 없을 때만 테이블 (최후의 수단)
+    // 하지만 테이블에 여유가 있을 때만 (3개 이상 남아있을 때)
+    if (freeTables.length >= 3) return { zone:'table', seats:[freeTables[0]] };
+    // 그래도 안되면 남은 바 단독석이라도
+    if (freeBar.length >= 2) return { zone:'bar', seats:[freeBar[0], freeBar[1]] };
+    // 정말 마지막: 테이블 1개라도 있으면
+    if (freeTables.length > 0) return { zone:'table', seats:[freeTables[0]] };
   }
+
+  // 3-5명: 테이블 → 룸(4-5명도 가능) → 하이테이블 2개 합석(4명 이하)
   if (partySize >= 3 && partySize <= 5) {
-    for (const s of CONFIG.SEATS.tables) if (free(s)) return { zone:'table', seats:[s] };
+    for (const s of freeTables) return { zone:'table', seats:[s] };
+    // 테이블 없으면 룸에라도
+    if (freeRoom) return { zone:'room', seats:['ROOM'] };
+    // 3명이면 하이테이블이라도
+    if (partySize <= 3 && freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
   }
+
+  // 6-10명: 룸 → 테이블 2개 합석
   if (partySize >= 6 && partySize <= 10) {
-    if (free('ROOM')) return { zone:'room', seats:['ROOM'], note: partySize >= 9 ? 'tight_room' : null };
+    if (freeRoom) return { zone:'room', seats:['ROOM'], note: partySize >= 9 ? 'tight_room' : null };
+    // 룸 없으면 테이블 2개 합석
+    if (freeTables.length >= 2) return { zone:'table', seats:[freeTables[0], freeTables[1]], note: 'merged_tables' };
   }
-  return null;
+
+  // ── 최후의 수단: 어떤 좌석이든 비어있으면 배정 ──
+  if (freeTables.length > 0) return { zone:'table', seats:[freeTables[0]] };
+  if (freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
+  if (freeBar.length > 0) return { zone:'bar', seats:[freeBar[0]] };
+  if (freeRoom) return { zone:'room', seats:['ROOM'] };
+
+  return null; // 정말 모든 좌석이 꽉 찬 경우만
 }
 
 // ── Events (blocked dates) ──
@@ -321,16 +348,11 @@ app.post('/api/reserve', async (req, res) => {
   const ipCount = reservations.filter(r => r._ip === ip && r.createdAt && r.createdAt.startsWith(today)).length;
   if (ipCount >= 1) return res.status(429).json({ error: '오늘 이미 예약하셨습니다. 추가 예약은 전화로 문의해주세요. / You already made a reservation today. Please call for additional bookings.' });
 
-  // Auto-detect preference from special request or party size
+  // Auto-detect preference from special request only (not party size)
   let preference = detectPreference(specialRequest, partySize);
   if (preference === 'room_request') {
-    if (partySize < 6) preference = 'table'; // room requested but too few people
-    else preference = null; // will auto-assign to room via partySize logic
-  }
-  if (!preference) {
-    // Default: 1-2 → bar, 3+ → table
-    if (partySize <= 2) preference = null; // auto (tries highTable/bar)
-    else preference = 'table';
+    if (partySize < 6) preference = null; // too few for room, auto-assign
+    else preference = null; // auto-assign will give room for 6+
   }
 
   try {
@@ -518,6 +540,37 @@ app.post('/api/walkin', (req, res) => {
 });
 app.delete('/api/reservations/:id', (req, res) => {
   reservations = reservations.filter(r => r.id!==req.params.id); saveRes(); res.json({ ok:true });
+});
+
+// Diagnostic: check what's happening for a specific date
+app.get('/api/debug/:date', (req, res) => {
+  const date = req.params.date;
+  const occ = getOccupiedForDate(date);
+  const allRes = reservations.filter(r => r.date === date);
+  const activeRes = allRes.filter(r => r.status !== 'cancelled' && r.status !== 'noshow');
+  const slots = getSlots(date);
+  const isWknd = isWeekend(date);
+  const freeBar = CONFIG.SEATS.bar.filter(s => !occ.includes(s));
+  const freeTables = CONFIG.SEATS.tables.filter(s => !occ.includes(s));
+  const freeHigh = CONFIG.SEATS.highTables.filter(s => !occ.includes(s));
+  const freeRoom = !occ.includes('ROOM');
+
+  // Test autoAssign for each party size
+  const tests = {};
+  [1,2,3,4,5,6].forEach(ps => {
+    tests[ps+'pax'] = autoAssign(date, '19:00', ps, null);
+  });
+
+  res.json({
+    date, isWeekend: isWknd, slots,
+    totalReservations: allRes.length,
+    activeReservations: activeRes.length,
+    occupiedSeats: occ,
+    freeBar: freeBar.length, freeTables: freeTables.length, freeHigh: freeHigh.length, freeRoom,
+    events: events[date] || null,
+    autoAssignTests: tests,
+    reservationDetails: activeRes.map(r => ({ id:r.id, name:r.name, time:r.time, partySize:r.partySize, seats:r.seats, status:r.status, source:r.source })),
+  });
 });
 app.get('/api/stats/noshow', (req, res) => {
   const t=reservations.length, n=reservations.filter(r=>r.status==='noshow').length;
