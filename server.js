@@ -154,10 +154,10 @@ function kstToday() { return new Date(Date.now() + 9*3600000).toISOString().slic
 function isWeekend(d) { const day = new Date(d+'T12:00:00+09:00').getDay(); return day===5||day===6; }
 function getSlots(d) { return isWeekend(d) ? CONFIG.WEEKEND_SLOTS : CONFIG.WEEKDAY_SLOTS; }
 function getResFor(date,time) { return reservations.filter(r => r.date===date && r.time===time && r.status!=='cancelled' && r.status!=='noshow'); }
-// Get ALL occupied seats for the entire date (seat booked at 7pm = unavailable all night)
+// Get ALL occupied seats for the entire date (only confirmed + seated count)
 function getOccupiedForDate(date) {
   const s=[];
-  reservations.filter(r => r.date===date && r.status!=='cancelled' && r.status!=='noshow')
+  reservations.filter(r => r.date===date && (r.status==='confirmed'||r.status==='seated'||r.status==='needs_assignment'))
     .forEach(r => { if(r.seats) s.push(...r.seats); });
   return s;
 }
@@ -359,8 +359,10 @@ app.post('/api/reserve', async (req, res) => {
     await withLock(async () => {
       const a = autoAssign(date, time, partySize, preference);
       if (!a) throw new Error('해당 시간에 좌석이 없습니다. / No seats available.');
+      const confirmCode = 'PC' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(2,4);
       const r = {
         id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+        confirmCode,
         name, phone: phone||'', instagram: instagram||'', email: email||'',
         partySize, date, time, preference: preference||'auto',
         zone: a.zone, seats: a.seats, status: 'confirmed', source: 'online',
@@ -370,6 +372,7 @@ app.post('/api/reserve', async (req, res) => {
       };
       reservations.push(r); saveRes();
       sendConfirmation(r);
+      console.log('🎫 Reservation confirmed: ' + name + ' / ' + date + ' ' + time + ' / Code: ' + confirmCode);
       res.json({ ok: true, reservation: r });
     });
   } catch(e) { res.status(409).json({ error: e.message }); }
@@ -572,6 +575,20 @@ app.get('/api/debug/:date', (req, res) => {
     reservationDetails: activeRes.map(r => ({ id:r.id, name:r.name, time:r.time, partySize:r.partySize, seats:r.seats, status:r.status, source:r.source })),
   });
 });
+// Get history (completed + noshow) for a date range
+app.get('/api/history', (req, res) => {
+  const hist = reservations.filter(r => r.status==='completed'||r.status==='noshow')
+    .sort((a,b) => b.date < a.date ? -1 : 1);
+  res.json(hist);
+});
+
+// Verify reservation by confirmation code
+app.get('/api/verify/:code', (req, res) => {
+  const r = reservations.find(x => x.confirmCode === req.params.code);
+  if (r) res.json({ ok: true, reservation: { name: r.name, date: r.date, time: r.time, partySize: r.partySize, status: r.status } });
+  else res.json({ ok: false, error: 'Reservation not found' });
+});
+
 app.get('/api/stats/noshow', (req, res) => {
   const t=reservations.length, n=reservations.filter(r=>r.status==='noshow').length;
   res.json({ total:t, noshows:n, rate:(t?Math.round(n/t*100):0)+'%' });

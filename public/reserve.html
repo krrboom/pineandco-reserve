@@ -222,6 +222,7 @@ h+='<div class="note" style="margin-top:12px;text-align:center">Cancellation by 
 if(step===4&&confirmed){
 var zn={bar:'Bar',table:'Table',highTable:'High Table',room:'Private Room'};
 h+='<div class="cbox"><div class="cic">🌲</div><h3>RESERVATION CONFIRMED</h3>';
+if(confirmed.confirmCode)h+='<div style="background:rgba(184,147,90,.15);border:1px solid var(--gold);border-radius:8px;padding:12px;margin:12px 0;text-align:center;"><div style="font-size:10px;color:var(--amber);margin-bottom:4px;">Confirmation Code</div><div style="font-family:Cinzel,serif;font-size:22px;color:var(--gold);letter-spacing:.15em;">'+confirmed.confirmCode+'</div><div style="font-size:10px;color:var(--amber);margin-top:4px;">Please save this code for your records</div></div>';
 h+='<div class="det"><strong>'+confirmed.date+'</strong> '+confirmed.time+'<br>';
 h+='<strong>'+confirmed.partySize+'</strong> guests · '+confirmed.name+'<br>';
 h+='Seating: <strong>'+(zn[confirmed.zone]||confirmed.zone)+'</strong>';

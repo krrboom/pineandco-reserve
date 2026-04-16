@@ -47,10 +47,12 @@
 <div class="tabs">
 <button class="tab sel" id="tabAll" onclick="showTab('all')">📋 전체 예약</button>
 <button class="tab" id="tabNew" onclick="showTab('new')">📩 오늘 들어온</button>
+<button class="tab" id="tabHist" onclick="showTab('hist')">📜 히스토리</button>
 <button class="tab" id="tabImport" onclick="showTab('import')">📥 복붙 입력</button>
 </div>
 <div id="vAll"></div>
 <div id="vNew" style="display:none"></div>
+<div id="vHist" style="display:none"></div>
 <div id="vImport" style="display:none">
 <div class="bulk-box">
 <h2>📥 캘린더 복붙 일괄 입력</h2>
@@ -88,11 +90,13 @@ doLogin();
 function showTab(t){
 document.getElementById('vAll').style.display=t==='all'?'block':'none';
 document.getElementById('vNew').style.display=t==='new'?'block':'none';
+document.getElementById('vHist').style.display=t==='hist'?'block':'none';
 document.getElementById('vImport').style.display=t==='import'?'block':'none';
 document.getElementById('tabAll').className='tab'+(t==='all'?' sel':'');
 document.getElementById('tabNew').className='tab'+(t==='new'?' sel':'');
+document.getElementById('tabHist').className='tab'+(t==='hist'?' sel':'');
 document.getElementById('tabImport').className='tab'+(t==='import'?' sel':'');
-if(t==='all')loadAll();if(t==='new')loadNew();
+if(t==='all')loadAll();if(t==='new')loadNew();if(t==='hist')loadHist();
 }
 
 var sl={online:'Online',instagram:'Instagram',email:'Email',staff:'직원',phone:'전화',google_calendar:'GCal',bulk_import:'복붙'};
@@ -234,6 +238,42 @@ async function checkRes(id){
 await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({staffChecked:true,staffName:'Staff'})});
 fl('확인 완료!');
 loadNew();
+}
+
+async function loadHist(){
+var el=document.getElementById('vHist');
+el.innerHTML='<div style="color:var(--mu);padding:16px;text-align:center;">로딩 중...</div>';
+var hist=await fetch('/api/history').then(function(r){return r.json();}).catch(function(){return [];});
+var h='<div style="text-align:center;margin-bottom:12px;font-family:Cinzel,serif;font-size:14px;color:var(--gold);">📜 히스토리 · 완료/노쇼 '+hist.length+'건</div>';
+if(!hist.length){h+='<div class="empty">히스토리가 없습니다.</div>';el.innerHTML=h;return;}
+var sl={online:'Online',instagram:'Instagram',email:'Email',staff:'직원',phone:'전화',google_calendar:'GCal',bulk_import:'복붙'};
+var zn={bar:'Bar',table:'Table',highTable:'High',room:'Room',unassigned:'미배정'};
+// Group by date
+var byDate={};hist.forEach(function(r){if(!byDate[r.date])byDate[r.date]=[];byDate[r.date].push(r);});
+var sortedDates=Object.keys(byDate).sort().reverse();
+sortedDates.forEach(function(date){
+var res=byDate[date];
+var d=new Date(date+'T12:00:00');
+h+='<div class="date-group">';
+h+='<div class="date-header"><span>'+date+' ('+DK[d.getDay()]+')</span><span>'+res.length+'건</span></div>';
+res.forEach(function(r){
+var stColor=r.status==='completed'?'#3d7a5a':'var(--red)';
+var stText=r.status==='completed'?'✅ 완료':'❌ 노쇼';
+h+='<div class="rcard" style="opacity:0.8;">';
+h+='<div class="ri2">';
+h+='<div class="nm">'+r.name+' · '+r.partySize+'명 · '+(zn[r.zone]||r.zone)+' <span style="color:'+stColor+';font-size:10px;">'+stText+'</span></div>';
+h+='<div class="mt">⏰ '+r.time+' <span class="st ss">'+(sl[r.source]||r.source)+'</span></div>';
+var contacts=[];
+if(r.phone)contacts.push('📱 '+r.phone);
+if(r.email)contacts.push('📧 '+r.email);
+if(r.instagram)contacts.push('📷 '+r.instagram);
+if(contacts.length)h+='<div class="mt">'+contacts.join(' · ')+'</div>';
+if(r.confirmCode)h+='<div class="mt" style="color:var(--gold);">🎫 '+r.confirmCode+'</div>';
+h+='</div></div>';
+});
+h+='</div>';
+});
+el.innerHTML=h;
 }
 
 async function doBulkImport(){

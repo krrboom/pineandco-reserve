@@ -366,15 +366,16 @@ var slots=Object.keys(av);if(!cT||(!slots.includes(cT)&&cT!=='ALL'))cT='ALL';
 rtb(slots);rf();rl();autoSuggestSeats();
 }
 
-function rtb(slots){var h='<button class="tb'+(cT==='ALL'?' sel':'')+'" onclick="pt(\'ALL\')">ALL<span class="ct">'+aR.filter(function(r){return r.status!=='cancelled';}).length+'팀</span></button>';
-slots.forEach(function(s){var c=aR.filter(function(r){return r.time===s&&r.status!=='cancelled';}).length;
+function rtb(slots){var af=function(r){return r.status==='confirmed'||r.status==='seated'||r.status==='needs_assignment';};
+var h='<button class="tb'+(cT==='ALL'?' sel':'')+'" onclick="pt(\'ALL\')">ALL<span class="ct">'+aR.filter(af).length+'팀</span></button>';
+slots.forEach(function(s){var c=aR.filter(function(r){return r.time===s&&af(r);}).length;
 h+='<button class="tb'+(cT===s?' sel':'')+'" onclick="pt(\''+s+'\')">'+s+'<span class="ct">'+c+'팀</span></button>';});
 document.getElementById('tT').innerHTML=h;}
 function pt(t){cT=t;rf();rl();rtb(Object.keys(av));}
 
 function rf(){
 var el=document.getElementById('fW');
-var allDateRes=aR.filter(function(r){return r.status!=='cancelled';});
+var allDateRes=aR.filter(function(r){return r.status==='confirmed'||r.status==='seated'||r.status==='needs_assignment';});
 var ocAll={};allDateRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){ocAll[s]=r;});});
 var isAllView=cT==='ALL';
 var curTimeRes=isAllView?allDateRes:aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';});
@@ -479,6 +480,18 @@ v+=zs(18,413,110,74,'ROOM');
 v+='<text x="245" y="423" text-anchor="middle" fill="#b8935a" font-size="9" font-family="Cinzel,serif">H1 (2p)</text>';
 v+='<text x="520" y="433" text-anchor="middle" fill="#b8935a" font-size="9" font-family="Cinzel,serif">H2 (2p)</text>';
 v+=es(245,455,50,28,'H1');v+=es(520,465,50,28,'H2');
+// TEMP parking zones
+v+='<text x="580" y="87" fill="#999" font-size="9" font-family="Cinzel,serif">TEMP</text>';
+v+='<rect x="560" y="93" width="90" height="48" rx="6" fill="rgba(0,0,0,.03)" stroke="rgba(0,0,0,.1)" stroke-dasharray="4 3"/>';
+v+='<g style="cursor:pointer" onclick="seatClick(event,\'TEMP1\')"><rect x="565" y="98" width="80" height="38" rx="4" fill="'+(ocCur['TEMP1']?'rgba(184,147,90,.3)':'rgba(0,0,0,.02)')+'" stroke="'+(ocCur['TEMP1']?'#b8935a':'rgba(0,0,0,.08)')+'"/>';
+if(ocCur['TEMP1']){var tr=ocCur['TEMP1'];v+='<text x="605" y="114" text-anchor="middle" fill="#3d2e1f" font-size="9" font-weight="500">'+tr.name.slice(0,5)+'</text><text x="605" y="126" text-anchor="middle" fill="#8a7560" font-size="8">'+tr.partySize+'명</text>';}
+else{v+='<text x="605" y="120" text-anchor="middle" fill="#bbb" font-size="9">비어있음</text>';}
+v+='</g>';
+v+='<rect x="560" y="153" width="90" height="48" rx="6" fill="rgba(0,0,0,.03)" stroke="rgba(0,0,0,.1)" stroke-dasharray="4 3"/>';
+v+='<g style="cursor:pointer" onclick="seatClick(event,\'TEMP2\')"><rect x="565" y="158" width="80" height="38" rx="4" fill="'+(ocCur['TEMP2']?'rgba(184,147,90,.3)':'rgba(0,0,0,.02)')+'" stroke="'+(ocCur['TEMP2']?'#b8935a':'rgba(0,0,0,.08)')+'"/>';
+if(ocCur['TEMP2']){var tr2=ocCur['TEMP2'];v+='<text x="605" y="174" text-anchor="middle" fill="#3d2e1f" font-size="9" font-weight="500">'+tr2.name.slice(0,5)+'</text><text x="605" y="186" text-anchor="middle" fill="#8a7560" font-size="8">'+tr2.partySize+'명</text>';}
+else{v+='<text x="605" y="180" text-anchor="middle" fill="#bbb" font-size="9">비어있음</text>';}
+v+='</g>';
 v+='</svg>';el.innerHTML=v;}
 
 // ── Seat click → popup actions ──
@@ -491,7 +504,7 @@ function cancelMode(){swapFrom=null;moveFrom=null;closePop();fl('취소됨');rf(
 
 function seatClick(evt,seatId){
 evt.stopPropagation();
-var allDateRes=aR.filter(function(r){return r.status!=='cancelled';});
+var allDateRes=aR.filter(function(r){return r.status==='confirmed'||r.status==='seated'||r.status==='needs_assignment';});
 var occ=null;allDateRes.forEach(function(r){if(r.seats&&r.seats.indexOf(seatId)>=0)occ=r;});
 var occAll={};allDateRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){occAll[s]=r;});});
 
@@ -517,7 +530,7 @@ if(moveFrom){
   }
   // Check all target seats are free
   for(var i=0;i<targetSeats.length;i++){if(occAll[targetSeats[i]]){fl(targetSeats[i]+' 이미 사용 중');return;}}
-  var z=seatId.startsWith('B')?'bar':seatId.startsWith('T')?'table':seatId.startsWith('H')?'highTable':'room';
+  var z=seatId.startsWith('B')?'bar':seatId.startsWith('TEMP')?'temp':seatId.startsWith('T')?'table':seatId.startsWith('H')?'highTable':'room';
   doMove(moveFrom.id,targetSeats,z);
   return;
 }
@@ -611,12 +624,12 @@ function walkinSeat(seatId){
 var name=prompt('워크인 손님 이름:');
 if(!name)return;
 var pax=parseInt(prompt('인원:'))||1;
-var allDateRes=aR.filter(function(r){return r.status!=='cancelled';});
+var allDateRes=aR.filter(function(r){return r.status==='confirmed'||r.status==='seated'||r.status==='needs_assignment';});
 var laterRes=null;
 allDateRes.forEach(function(r){if(r.seats&&r.seats.indexOf(seatId)>=0&&r.time!=='walkin')laterRes=r;});
 var until='';
 if(laterRes){until=laterRes.time;if(!confirm(seatId+'는 '+laterRes.time+' '+laterRes.name+'님 예약석입니다.\n'+until+'까지만 이용하는 워크인으로 배정할까요?'))return;}
-var zone=seatId.startsWith('B')?'bar':seatId.startsWith('T')?'table':seatId.startsWith('H')?'highTable':'room';
+var zone=seatId.startsWith('B')?'bar':seatId.startsWith('TEMP')?'temp':seatId.startsWith('T')?'table':seatId.startsWith('H')?'highTable':'room';
 fetch('/api/walkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin,name:name,partySize:pax,seats:[seatId],zone:zone,untilTime:until,date:cD,staffName:gs()})}).then(function(r){return r.json();}).then(function(d){
   if(d.ok){fl(name+' 워크인 배정: '+seatId+(until?' ('+until+'까지)':''));ld();}else fl(d.error||'Error');
 });
@@ -627,11 +640,12 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(swapFrom||
 function td(id){exId=exId===id?null:id;rl();}
 function rl(){
 var el=document.getElementById('rL');
+var activeFilter=function(r){return r.status==='confirmed'||r.status==='seated'||r.status==='needs_assignment';};
 var res;
 if(cT==='ALL'){
-  res=aR.filter(function(r){return r.status!=='cancelled';}).sort(function(a,b){return (a.time+a.name)<(b.time+b.name)?-1:1;});
+  res=aR.filter(activeFilter).sort(function(a,b){return (a.time+a.name)<(b.time+b.name)?-1:1;});
 }else{
-  res=aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';}).sort(function(a,b){
+  res=aR.filter(function(r){return r.time===cT&&activeFilter(r);}).sort(function(a,b){
   if(a.status==='needs_assignment'&&b.status!=='needs_assignment')return -1;
   if(b.status==='needs_assignment'&&a.status!=='needs_assignment')return 1;
   return a.createdAt<b.createdAt?-1:1;
