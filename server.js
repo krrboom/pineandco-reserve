@@ -38,10 +38,18 @@ const CONFIG = {
   LATE_BAR_MAX: 4,
   LATE_TABLE_MAX: 2,
 };
-const STAFF_FILE = path.join(__dirname, 'staff.json');
-const VISITORS_FILE = path.join(__dirname, 'visitors.json');
-const DATA_FILE = path.join(__dirname, 'reservations.json');
-const EVENTS_FILE = path.join(__dirname, 'events.json');
+// ── Data stored on persistent disk (survives deploys) ──
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+// Create data directory if it doesn't exist
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const DATA_FILE = path.join(DATA_DIR, 'reservations.json');
+const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
+const STAFF_FILE = path.join(DATA_DIR, 'staff.json');
+const VISITORS_FILE = path.join(DATA_DIR, 'visitors.json');
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+
 let reservations = [], events = {}, staffNames = ['DuUi','Manager'];
 let visitors = [];
 let lockPromise = Promise.resolve();
@@ -52,8 +60,22 @@ function loadData() {
   try { if (fs.existsSync(EVENTS_FILE)) events = JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf8')); } catch(e) { events = {}; }
   try { if (fs.existsSync(STAFF_FILE)) staffNames = JSON.parse(fs.readFileSync(STAFF_FILE, 'utf8')); } catch(e) {}
   try { if (fs.existsSync(VISITORS_FILE)) visitors = JSON.parse(fs.readFileSync(VISITORS_FILE, 'utf8')); } catch(e) { visitors = []; }
-  console.log(`Loaded ${reservations.length} reservations, ${visitors.length} visitors`);
+  console.log(`📂 Data dir: ${DATA_DIR}`);
+  console.log(`📦 Loaded ${reservations.length} reservations, ${visitors.length} visitors, ${Object.keys(events).length} events`);
 }
+
+// Auto-backup every hour
+function autoBackup() {
+  try {
+    const ts = new Date().toISOString().slice(0,13).replace(/[-:T]/g,'');
+    fs.writeFileSync(path.join(BACKUP_DIR, 'res_'+ts+'.json'), JSON.stringify(reservations));
+    // Keep only last 48 backups
+    const files = fs.readdirSync(BACKUP_DIR).sort();
+    while (files.length > 48) { fs.unlinkSync(path.join(BACKUP_DIR, files.shift())); }
+    console.log('💾 Backup: ' + reservations.length + ' reservations');
+  } catch(e) { console.error('Backup error:', e.message); }
+}
+
 function saveRes() { try { fs.writeFileSync(DATA_FILE, JSON.stringify(reservations, null, 2)); } catch(e) { console.error(e); } }
 function saveEvents() { try { fs.writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2)); } catch(e) { console.error(e); } }
 function saveStaff() { try { fs.writeFileSync(STAFF_FILE, JSON.stringify(staffNames, null, 2)); } catch(e) { console.error(e); } }
@@ -450,6 +472,45 @@ app.post('/api/check-returning', (req, res) => {
 // Get all visitors (for export/spreadsheet)
 app.get('/api/visitors', (req, res) => {
   res.json(visitors);
+});
+
+// List backups
+app.get('/api/backups', (req, res) => {
+  try {
+    const files = fs.readdirSync(BACKUP_DIR).sort().reverse();
+    const list = files.map(f => {
+      const data = JSON.parse(fs.readFileSync(path.join(BACKUP_DIR, f), 'utf8'));
+      return { file: f, count: data.length, size: fs.statSync(path.join(BACKUP_DIR, f)).size };
+    });
+    res.json({ ok: true, backups: list, dataDir: DATA_DIR });
+  } catch(e) { res.json({ ok: false, error: e.message }); }
+});
+
+// Restore from backup
+app.post('/api/restore-backup', (req, res) => {
+  const { pin, file } = req.body;
+  if (pin !== CONFIG.ADMIN_PIN) return res.status(403).json({ error: 'Admin PIN required' });
+  try {
+    const data = JSON.parse(fs.readFileSync(path.join(BACKUP_DIR, file), 'utf8'));
+    // Save current as emergency backup first
+    fs.writeFileSync(path.join(BACKUP_DIR, 'emergency_before_restore.json'), JSON.stringify(reservations));
+    reservations = data;
+    saveRes();
+    console.log('🔄 Restored from backup: ' + file + ' (' + data.length + ' reservations)');
+    res.json({ ok: true, count: data.length });
+  } catch(e) { res.json({ ok: false, error: e.message }); }
+});
+
+// Data health check
+app.get('/api/data-health', (req, res) => {
+  res.json({
+    dataDir: DATA_DIR,
+    reservationsFile: fs.existsSync(DATA_FILE),
+    reservationCount: reservations.length,
+    activeCount: reservations.filter(r => r.status==='confirmed'||r.status==='seated').length,
+    backupCount: fs.existsSync(BACKUP_DIR) ? fs.readdirSync(BACKUP_DIR).length : 0,
+    lastSave: fs.existsSync(DATA_FILE) ? fs.statSync(DATA_FILE).mtime : null,
+  });
 });
 
 // Setup Google Sheet headers
@@ -1120,8 +1181,9 @@ function cleanup() {
 }
 
 app.listen(CONFIG.PORT, () => {
-  cleanup(); sendReminders(); syncGoogleCalendar();
+  cleanup(); sendReminders(); syncGoogleCalendar(); autoBackup();
   setInterval(sendReminders, 30*60000);
   setInterval(syncGoogleCalendar, 60*60000); // sync every hour
+  setInterval(autoBackup, 60*60000); // backup every hour
   console.log('\n🌲 PINE&CO Reserve | http://localhost:'+CONFIG.PORT+'\n');
 });

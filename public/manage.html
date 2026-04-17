@@ -109,6 +109,13 @@
 <button onclick="sheetSetup()" style="padding:10px 20px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-size:12px;cursor:pointer;">📋 헤더 초기화</button>
 <div id="sheetStatus" style="font-size:12px;color:var(--mu);margin-top:8px;"></div>
 </div>
+<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:16px;margin-bottom:12px;">
+<h2 style="font-family:Cinzel,serif;font-size:14px;color:var(--gold);font-weight:400;margin-bottom:12px;">🔒 데이터 안전</h2>
+<p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:10px;">예약 데이터는 매시간 자동 백업됩니다. 데이터가 사라진 경우 백업에서 복구할 수 있습니다.</p>
+<button onclick="checkDataHealth()" style="padding:10px 20px;border:none;border-radius:6px;background:var(--gold);color:#fff;font-size:12px;cursor:pointer;">🔍 데이터 상태 확인</button>
+<button onclick="listBackups()" style="padding:10px 20px;border:none;border-radius:6px;background:rgba(58,110,165,.8);color:#fff;font-size:12px;cursor:pointer;margin-left:4px;">💾 백업 목록</button>
+<div id="dataStatus" style="font-size:12px;color:var(--mu);margin-top:8px;"></div>
+</div>
 </div></div></div>
 <div class="toast" id="toast"></div>
 <div id="spOv" class="sp-ov" style="display:none" onclick="closePop()"></div>
@@ -920,6 +927,44 @@ document.getElementById('sheetStatus').innerHTML='설정 중...';
 var r=await fetch('/api/sheet-setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin})}).then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
 if(r.ok)document.getElementById('sheetStatus').innerHTML='✅ 헤더 설정 완료! 이제 SEATED 누르면 자동으로 기록됩니다.';
 else document.getElementById('sheetStatus').innerHTML='❌ '+(r.error||'실패');
+}
+
+async function checkDataHealth(){
+document.getElementById('dataStatus').innerHTML='확인 중...';
+var r=await fetch('/api/data-health').then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
+var h='<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;margin-top:8px;font-size:12px;line-height:1.8;">';
+h+='<strong>📂 데이터 경로:</strong> '+r.dataDir+'<br>';
+h+='<strong>📦 전체 예약:</strong> '+r.reservationCount+'건<br>';
+h+='<strong>🟢 활성 예약:</strong> '+r.activeCount+'건<br>';
+h+='<strong>💾 백업 수:</strong> '+r.backupCount+'개<br>';
+h+='<strong>🕐 마지막 저장:</strong> '+(r.lastSave||'없음')+'<br>';
+h+='</div>';
+document.getElementById('dataStatus').innerHTML=h;
+}
+
+async function listBackups(){
+var r=await fetch('/api/backups').then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
+if(!r.ok){document.getElementById('dataStatus').innerHTML='❌ '+(r.error||'Error');return;}
+var h='<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;margin-top:8px;">';
+h+='<strong style="font-size:13px;">💾 백업 목록 ('+r.backups.length+'개)</strong><br><br>';
+if(!r.backups.length)h+='백업이 없습니다.';
+r.backups.forEach(function(b){
+h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.05);font-size:11px;">';
+h+='<span>'+b.file+' ('+b.count+'건)</span>';
+h+='<button onclick="restoreBackup(\''+b.file+'\')" style="padding:3px 10px;border:1px solid var(--red);border-radius:4px;background:none;color:var(--red);font-size:10px;cursor:pointer;">복구</button>';
+h+='</div>';
+});
+h+='</div>';
+document.getElementById('dataStatus').innerHTML=h;
+}
+
+async function restoreBackup(file){
+var adminPw=prompt('⚠️ 백업 복구는 현재 데이터를 덮어씁니다.\n\nAdmin PIN을 입력하세요:');
+if(!adminPw)return;
+if(!confirm('⚠️ 정말 '+file+'에서 복구할까요?\n\n현재 예약 데이터가 백업 데이터로 교체됩니다.'))return;
+var r=await fetch('/api/restore-backup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:adminPw,file:file})}).then(function(r){return r.json();}).catch(function(){return {error:'Network error'};});
+if(r.ok){fl('✅ 복구 완료! '+r.count+'건');checkDataHealth();}
+else fl('❌ '+(r.error||'실패'));
 }
 
 async function gcalReport(){
