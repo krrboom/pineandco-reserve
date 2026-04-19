@@ -203,7 +203,22 @@ function checkReturning(name, phone, email, instagram) {
     if (v.phone && phone && clean(v.phone) === clean(phone)) matches++;
     if (v.email && email && v.email.toLowerCase() === email.toLowerCase()) matches++;
     if (v.instagram && instagram && v.instagram.toLowerCase() === instagram.toLowerCase()) matches++;
-    if (matches >= 2) return { returning: true, visits: v.visits.length, lastVisit: v.lastVisit, firstVisit: v.firstVisit };
+    if (matches >= 2) {
+      // Find most frequent zone (preferred seating)
+      const zoneCounts = {};
+      (v.visits || []).forEach(vis => { zoneCounts[vis.zone] = (zoneCounts[vis.zone]||0) + 1; });
+      const prefZone = Object.keys(zoneCounts).sort((a,b) => zoneCounts[b] - zoneCounts[a])[0] || '';
+      // Recent visits (last 5)
+      const recentVisits = (v.visits || []).slice(-5).reverse().map(vis => vis.date + ' ' + (vis.zone||''));
+      return {
+        returning: true,
+        visits: v.visits.length,
+        lastVisit: v.lastVisit,
+        firstVisit: v.firstVisit,
+        prefZone: prefZone,
+        recentVisits: recentVisits,
+      };
+    }
   }
   return { returning: false };
 }
@@ -501,7 +516,7 @@ app.get('/api/reservations/:date', (req, res) => {
   // Enrich with returning visitor info
   const enriched = list.map(r => {
     const rv = checkReturning(r.name, r.phone, r.email, r.instagram);
-    return { ...r, _returning: rv.returning, _visitCount: rv.visits || 0, _lastVisit: rv.lastVisit || '' };
+    return { ...r, _returning: rv.returning, _visitCount: rv.visits || 0, _lastVisit: rv.lastVisit || '', _firstVisit: rv.firstVisit || '', _prefZone: rv.prefZone || '', _recentVisits: rv.recentVisits || [] };
   });
   res.json(enriched);
 });
@@ -597,7 +612,7 @@ app.get('/api/new-today', (req, res) => {
   const newOnes = reservations.filter(r => r.createdAt && r.createdAt.startsWith(today) && r.status!=='cancelled' && !r.staffChecked);
   const enriched = newOnes.map(r => {
     const rv = checkReturning(r.name, r.phone, r.email, r.instagram);
-    return { ...r, _returning: rv.returning, _visitCount: rv.visits || 0, _lastVisit: rv.lastVisit || '' };
+    return { ...r, _returning: rv.returning, _visitCount: rv.visits || 0, _lastVisit: rv.lastVisit || '', _firstVisit: rv.firstVisit || '', _prefZone: rv.prefZone || '', _recentVisits: rv.recentVisits || [] };
   });
   res.json(enriched);
 });

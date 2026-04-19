@@ -291,13 +291,18 @@ if(!tRes.length){h+='<div style="font-size:12px;color:var(--mu);opacity:.5;">예
 else{
 tRes.forEach(function(r){
 var isNew=r.createdAt&&r.createdAt.startsWith(today)&&!r.staffChecked;
-h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:4px;margin-bottom:4px;background:'+(isNew?'rgba(74,124,89,.06)':'rgba(0,0,0,.02)')+';">';
+var isReturn=r._returning;
+h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 8px;border-radius:6px;margin-bottom:4px;background:'+(isReturn?'rgba(46,125,50,.06)':isNew?'rgba(74,124,89,.06)':'rgba(0,0,0,.02)')+';'+(isReturn?'border-left:3px solid #2e7d32;':'')+';">';
 h+='<div><span style="font-weight:500;font-size:13px;">'+r.name+'</span>';
 h+=' <span style="font-size:11px;color:var(--mu);">'+r.partySize+'명 · '+(zn[r.zone]||r.zone)+'</span>';
 h+=' <span class="st '+(sc[r.source]||'ss')+'" style="font-size:9px;">'+(sl[r.source]||r.source)+'</span>';
-if(r._returning)h+=' <span style="background:#e8f5e9;color:#2e7d32;font-size:9px;padding:1px 5px;border-radius:3px;">🔄'+r._visitCount+'</span>';
+if(isReturn)h+=' <span style="background:#2e7d32;color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;">⭐ '+r._visitCount+'회 단골</span>';
 if(isNew)h+=' <span style="font-size:9px;color:var(--grn);font-weight:500;">NEW</span>';
 if(r.notes)h+=' <span style="font-size:10px;" title="'+r.notes+'">📝</span>';
+if(isReturn){
+  var zl={bar:'바',table:'테이블',highTable:'하이',room:'룸'};
+  h+='<div style="font-size:10px;color:#2e7d32;margin-top:3px;">🪑 선호좌석: '+(zl[r._prefZone]||r._prefZone)+' · 첫방문: '+(r._firstVisit||'?')+' · 최근: '+(r._lastVisit||'?')+'</div>';
+}
 h+='</div>';
 h+='<div style="font-size:11px;color:'+(r.status==='needs_assignment'?'var(--red)':r.status==='seated'?'var(--gold)':r.status==='completed'?'#3d7a5a':'var(--mu)')+';">'+
 (r.status==='needs_assignment'?'🚨 미배정':r.status==='seated'?'🪑 착석중':r.status==='completed'?'✅ 완료':r.status)+'</div>';
@@ -663,7 +668,7 @@ var sl={online:'Online',instagram:'Instagram',email:'Email',staff:'직원',phone
 var h='';res.forEach(function(r){var ex=exId===r.id;
 h+='<div class="rc2" style="'+(r.status==='needs_assignment'?'border-color:var(--red);background:rgba(170,51,51,.03);':'')+'"><div class="rt" onclick="td(\''+r.id+'\')">';
 h+='<div class="ri"><div class="nm">'+r.name+' · '+r.partySize+'명 · '+(zn[r.zone]||r.zone)+' ('+(r.seats||[]).join(',')+')';
-if(r._returning)h+=' <span style="background:#e8f5e9;color:#2e7d32;font-size:9px;padding:1px 6px;border-radius:3px;font-weight:500;">🔄 재방문 ('+r._visitCount+'회)</span>';
+if(r._returning)h+=' <span style="background:#2e7d32;color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;">⭐ '+r._visitCount+'회 단골</span>';
 h+='</div>';
 h+='<div class="mt">'+r.time+'<span class="st '+(sc[r.source]||'ss')+'">'+(sl[r.source]||r.source)+'</span>';if(r.notes)h+=' · 📝';h+='</div></div>';
 h+='<div class="ra">';if(r.status==='confirmed'){h+='<button class="bs" onclick="event.stopPropagation();us(\''+r.id+'\',\'seated\')">SEATED</button>';
@@ -680,7 +685,18 @@ h+='<div class="dr"><label>예약경로</label><select onchange="sf(\''+r.id+'\'
 h+='</select></div>';
 h+='<div class="dr"><label>특이사항</label><textarea onblur="sf(\''+r.id+'\',\'notes\',this.value)">'+(r.notes||'')+'</textarea></div>';
 h+='<div class="dr"><label>상태</label><span style="font-weight:500;color:'+(r.status==='needs_assignment'?'var(--red)':r.status==='completed'?'#3d7a5a':r.status==='seated'?'var(--gold)':'inherit')+';">'+(r.status==='needs_assignment'?'🚨 좌석 미배정 — 수동 배정 필요':r.status==='completed'?'✅ 계산완료':r.status==='seated'?'🪑 착석중':r.status)+'</span></div>';
-if(r._returning)h+='<div class="dr"><label>방문이력</label><span style="color:#2e7d32;font-weight:500;">🔄 재방문 고객 ('+r._visitCount+'회 방문, 마지막: '+r._lastVisit+')</span></div>';
+if(r._returning){
+h+='<div style="background:rgba(46,125,50,.06);border:1px solid rgba(46,125,50,.2);border-radius:8px;padding:10px;margin:6px 0;">';
+h+='<div style="font-size:13px;font-weight:600;color:#2e7d32;margin-bottom:6px;">⭐ 단골 고객</div>';
+h+='<div style="font-size:11px;color:#2e7d32;line-height:1.8;">';
+h+='방문 횟수: <strong>'+r._visitCount+'회</strong><br>';
+h+='첫 방문: '+r._firstVisit+'<br>';
+h+='최근 방문: '+r._lastVisit+'<br>';
+var zl2={bar:'바 좌석',table:'테이블',highTable:'하이테이블',room:'프라이빗 룸'};
+h+='선호 좌석: <strong>'+(zl2[r._prefZone]||r._prefZone)+'</strong>';
+if(r._recentVisits&&r._recentVisits.length>1){h+='<br>최근 기록: '+r._recentVisits.join(', ');}
+h+='</div></div>';
+}
 h+='<div class="dr"><label>좌석</label><div><span style="font-weight:500;">'+(zn[r.zone]||r.zone)+' ('+(r.seats||[]).join(', ')+')</span>';
 h+=' <button onclick="event.stopPropagation();showSeatPicker(\''+r.id+'\')" style="margin-left:8px;padding:4px 10px;border:1px solid var(--gold);border-radius:4px;background:none;color:var(--gold);font-size:11px;cursor:pointer;">🔄 좌석 변경</button>';
 h+='<div id="sp_'+r.id+'" style="display:none;margin-top:8px;"></div></div></div>';
