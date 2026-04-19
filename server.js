@@ -50,6 +50,33 @@ const VISITORS_FILE = path.join(DATA_DIR, 'visitors.json');
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
+// ── Auto-migrate: if persistent disk is empty, copy from old locations ──
+function migrateData() {
+  const oldPaths = [
+    path.join(__dirname, 'data'),
+    path.join(__dirname),
+    '/opt/render/project/src/data',
+    '/opt/render/project/src',
+  ];
+  const files = ['reservations.json', 'events.json', 'staff.json', 'visitors.json'];
+  files.forEach(file => {
+    const target = path.join(DATA_DIR, file);
+    if (fs.existsSync(target) && fs.statSync(target).size > 10) return; // already has data
+    for (const old of oldPaths) {
+      const src = path.join(old, file);
+      if (old === DATA_DIR) continue; // don't copy from self
+      if (fs.existsSync(src) && fs.statSync(src).size > 10) {
+        try {
+          fs.copyFileSync(src, target);
+          console.log('📦 Migrated: ' + src + ' → ' + target);
+        } catch(e) { console.error('Migration error:', e.message); }
+        break;
+      }
+    }
+  });
+}
+if (process.env.DATA_DIR) migrateData(); // only migrate when persistent disk is configured
+
 let reservations = [], events = {}, staffNames = ['DuUi','Manager'];
 let visitors = [];
 let lockPromise = Promise.resolve();
