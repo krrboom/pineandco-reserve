@@ -153,6 +153,47 @@ async function appendToSheet(r, visitCount) {
   }
 }
 
+// ── Log every reservation creation to "예약로그" sheet (backup) ──
+async function logReservationCreation(r) {
+  if (!CONFIG.GOOGLE_SHEET_ID || !CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY) return;
+  try {
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(
+      CONFIG.GOOGLE_CLIENT_EMAIL, null,
+      CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      ['https://www.googleapis.com/auth/spreadsheets']
+    );
+    const sheets = google.sheets({ version: 'v4', auth });
+    const now = new Date(Date.now() + 9 * 3600000);
+    const row = [
+      now.toISOString().slice(0, 19).replace('T', ' '),  // A: 접수시간
+      r.confirmCode || '',                                // B: 확인코드
+      r.date,                                             // C: 예약날짜
+      r.time,                                             // D: 시간
+      r.name,                                             // E: 이름
+      r.partySize,                                        // F: 인원
+      r.phone || '',                                      // G: 전화번호
+      r.email || '',                                      // H: 이메일
+      r.instagram || '',                                  // I: 인스타
+      r.zone || '',                                       // J: 좌석타입
+      (r.seats || []).join(','),                           // K: 좌석번호
+      r.source || '',                                     // L: 예약경로
+      r.notes || '',                                      // M: 특이사항
+      r.status || 'confirmed',                            // N: 상태
+    ];
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+      range: '예약로그!A:N',
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [row] },
+    });
+    console.log('📋 [LOG] Reservation logged: ' + r.name + ' / ' + r.date + ' / ' + (r.confirmCode || 'no-code'));
+  } catch (e) {
+    console.error('📋 [LOG] Error:', e.message);
+  }
+}
+
 // Check if a guest is a returning visitor
 function checkReturning(name, phone, email, instagram) {
   const clean = s => (s || '').replace(/[\s\-]/g, '').toLowerCase();
@@ -394,6 +435,7 @@ app.post('/api/reserve', async (req, res) => {
       };
       reservations.push(r); saveRes();
       sendConfirmation(r);
+      logReservationCreation(r);
       console.log('🎫 Reservation confirmed: ' + name + ' / ' + date + ' ' + time + ' / Code: ' + confirmCode);
       res.json({ ok: true, reservation: r });
     });
@@ -446,10 +488,12 @@ app.post('/api/staff/reserve', (req, res) => {
     partySize:partySize||1, date, time, preference:'',
     zone:zone||'bar', seats:seats||[], status:'confirmed',
     source:source||'staff', notes:notes||'',
+    confirmCode: 'PC' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(2,4),
     createdAt: new Date().toISOString(), reminderD1:false, reminderD0:false,
     modLog: [{ action:'created', by:staffName||'Staff', at:new Date().toISOString() }],
   };
   reservations.push(r); saveRes();
+  logReservationCreation(r);
   res.json({ ok:true, reservation:r });
 });
 app.get('/api/reservations/:date', (req, res) => {
@@ -523,13 +567,28 @@ app.post('/api/sheet-setup', async (req, res) => {
     const { google } = require('googleapis');
     const auth = new google.auth.JWT(CONFIG.GOOGLE_CLIENT_EMAIL, null, CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'), ['https://www.googleapis.com/auth/spreadsheets']);
     const sheets = google.sheets({ version: 'v4', auth });
+    // Sheet1 headers (방문기록)
     await sheets.spreadsheets.values.update({
       spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
       range: 'Sheet1!A1:M1',
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [['날짜','시간','이름','인원','전화번호','이메일','인스타','좌석타입','좌석번호','예약경로','방문유형','특이사항','기록시간']] },
     });
-    res.json({ ok: true, message: 'Headers set!' });
+    // Create 예약로그 sheet tab (if not exists)
+    try {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+        requestBody: { requests: [{ addSheet: { properties: { title: '예약로그' } } }] },
+      });
+    } catch(e) { /* sheet already exists, ignore */ }
+    // 예약로그 headers
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+      range: '예약로그!A1:N1',
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [['접수시간','확인코드','예약날짜','시간','이름','인원','전화번호','이메일','인스타','좌석타입','좌석번호','예약경로','특이사항','상태']] },
+    });
+    res.json({ ok: true, message: 'Sheet1 + 예약로그 headers set!' });
   } catch (e) { res.json({ ok: false, error: e.message }); }
 });
 // Get all reservations created today (new bookings) - only unchecked
@@ -1001,9 +1060,11 @@ async function syncGoogleCalendar() {
         partySize: parsed.partySize, date, time, preference: pref || 'auto',
         zone: a ? a.zone : 'unassigned', seats: a ? a.seats : [],
         status, source: 'google_calendar', notes,
+        confirmCode: 'PC' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(2,4),
         createdAt: new Date().toISOString(), reminderD1: false, reminderD0: false,
         modLog: [{ action: 'Google Calendar import' + (a ? '' : ' (⚠️미배정)'), by: parsed.staffName || 'System', at: new Date().toISOString() }],
       });
+      logReservationCreation(reservations[reservations.length - 1]);
       added++;
       console.log('📅 ' + (a ? '✅' : '⚠️') + ' ' + parsed.name + ' / ' + date + ' ' + time + ' / ' + parsed.partySize + 'pax' + (parsed.phone ? ' / ' + parsed.phone : '') + (parsed.instagram ? ' / ' + parsed.instagram : ''));
     });
