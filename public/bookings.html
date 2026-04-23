@@ -136,8 +136,6 @@ h+='</div>';
 // Actions
 h+='<div class="ra2">';
 if(r.status==='confirmed')h+='<button class="bs" onclick="us(\''+r.id+'\',\'seated\')">SEATED</button><button class="bn" onclick="us(\''+r.id+'\',\'noshow\')">NO SHOW</button>';
-if(r.status==='seated')h+='<button style="background:#3d7a5a;color:#fff;padding:6px 8px;border:none;border-radius:4px;font-size:10px;cursor:pointer;" onclick="us(\''+r.id+'\',\'completed\')">✅ 계산완료</button>';
-if(r.status==='completed')h+='<span style="font-size:10px;color:#3d7a5a;font-weight:500;">✅ 완료</span>';
 h+='<button class="bd" onclick="dr(\''+r.id+'\')">✕</button>';
 h+='</div></div>';
 return h;
@@ -261,8 +259,8 @@ var d=new Date(date+'T12:00:00');
 h+='<div class="date-group">';
 h+='<div class="date-header"><span>'+date+' ('+DK[d.getDay()]+')</span><span>'+res.length+'건</span></div>';
 res.forEach(function(r){
-var stColor=r.status==='completed'?'#3d7a5a':'var(--red)';
-var stText=r.status==='completed'?'✅ 완료':'❌ 노쇼';
+var stColor=r.status==='seated'?'#3d7a5a':'var(--red)';
+var stText=r.status==='seated'?'✅ 방문':'❌ 노쇼';
 h+='<div class="rcard" style="opacity:0.8;">';
 h+='<div class="ri2">';
 h+='<div class="nm">'+r.name+' · '+r.partySize+'명 · '+(zn[r.zone]||r.zone)+' <span style="color:'+stColor+';font-size:10px;">'+stText+'</span></div>';
@@ -309,7 +307,7 @@ if(r.ok){
 async function us(id,status){
 if(status==='noshow'){if(!confirm('⚠️ NO SHOW 처리할까요?\n\n이 작업은 되돌릴 수 없습니다.'))return;}
 if(status==='cancelled'){if(!confirm('⚠️ 예약을 취소할까요?\n\n이 작업은 되돌릴 수 없습니다.'))return;}
-if(status==='completed'){if(!confirm('계산완료 처리할까요?'))return;}
+if(status==='seated'){if(!confirm('손님이 자리에 앉았습니까?'))return;}
 await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:status,staffName:'Staff'})});
 loadAll();loadNew();
 }

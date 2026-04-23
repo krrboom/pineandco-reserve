@@ -166,7 +166,7 @@ if(selTime){
   for(var i=1;i<=10;i++)h+='<button class="sb2'+(partySize===i?' sel':'')+'" onclick="pickSize('+i+')">'+i+'</button>';
   h+='</div>';
 
-  if(partySize>=6)h+='<div class="note">🔑 6+ guests: Private room (minimum charge ₩300,000)</div>';
+  if(partySize>=6)h+='<div class="note" style="background:rgba(184,147,90,.1);padding:10px;border-radius:6px;">🔑 6+ guests: <strong>Private Room only</strong><br>Minimum charge ₩300,000<br>If the room is unavailable, please call +82-10-6817-0406</div>';
   if(partySize>=9)h+='<div class="note">※ '+partySize+' guests may find the room a bit tight.</div>';
 
   h+='<div class="ilbl" style="margin-top:12px">Special requests (optional)</div>';

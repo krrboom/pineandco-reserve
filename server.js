@@ -268,90 +268,51 @@ function getOccupiedForDate(date) {
 }
 
 function autoAssign(date, time, partySize, preference) {
-  // Check ALL seats for the whole date, not just this time slot
+  // ═══ STRICT SEAT RULES — NEVER VIOLATE ═══
+  // Bar B1-B14: 1명 per seat (2명 = 2개 별도 좌석)
+  // High H1,H2: max 2명 each
+  // Table T1-T4: 3~5명 only (2명 절대 안됨!)
+  // Room: 6명+ only (30만원 개런티)
+  
   const occ = getOccupiedForDate(date);
   const free = s => !occ.includes(s);
-
-  // Count what's available
   const freeBar = CONFIG.SEATS.bar.filter(free);
-  const freeTables = CONFIG.SEATS.tables.filter(free);
   const freeHigh = CONFIG.SEATS.highTables.filter(free);
+  const freeTables = CONFIG.SEATS.tables.filter(free);
   const freeRoom = free('ROOM');
-  const barPairs = [['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B4','B5'],['B8','B9'],['B10','B11'],['B12','B13']];
-  const freePairs = barPairs.filter(p => p.every(free));
 
-  // ── Preference: BAR ──
-  if (preference === 'bar') {
-    if (partySize === 1) {
-      for (const s of CONFIG.BAR_EDGE_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
-      for (const s of CONFIG.BAR_MID_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
-      for (const s of CONFIG.BAR_U_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
-    }
-    if (partySize === 2) {
-      for (const p of freePairs) return { zone:'bar', seats:p };
-    }
-    // Bar requested but no bar seats → fall through to auto logic below
-  }
-
-  // ── Preference: TABLE ──
-  if (preference === 'table') {
-    if (partySize <= 5) {
-      for (const s of freeTables) return { zone:'table', seats:[s] };
-      for (const s of freeHigh) return { zone:'highTable', seats:[s] };
-    }
-    if (partySize >= 6) {
-      if (freeRoom) return { zone:'room', seats:['ROOM'], note: partySize >= 9 ? 'tight_room' : null };
-    }
-    // Fall through to auto
-  }
-
-  // ── AUTO (no preference) — ALWAYS find a seat ──
-
-  // 1명: 바 엣지 → 바 U자 → 바 미들 → 하이테이블 → 테이블
+  // ── 1명: 바 → 하이테이블 → 없으면 거절 ──
   if (partySize === 1) {
     for (const s of CONFIG.BAR_EDGE_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
     for (const s of CONFIG.BAR_U_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
     for (const s of CONFIG.BAR_MID_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
-    for (const s of freeHigh) return { zone:'highTable', seats:[s] };
-    for (const s of freeTables) return { zone:'table', seats:[s] };
+    if (freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
+    return null; // 바+하이 다 찼으면 거절
   }
 
-  // 2명: 바 쌍 → 하이테이블 → (절대 테이블 차지 안함! 테이블은 3-5명용)
+  // ── 2명: 바(인접 2석) → 하이테이블 → 없으면 거절 (테이블 절대 안됨!) ──
   if (partySize === 2) {
-    for (const p of freePairs) return { zone:'bar', seats:p };
-    for (const s of freeHigh) return { zone:'highTable', seats:[s] };
-    // 바도 하이테이블도 없을 때만 테이블 (최후의 수단)
-    // 하지만 테이블에 여유가 있을 때만 (3개 이상 남아있을 때)
-    if (freeTables.length >= 3) return { zone:'table', seats:[freeTables[0]] };
-    // 그래도 안되면 남은 바 단독석이라도
+    const barPairs = [['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B4','B5']];
+    for (const p of barPairs) if (p.every(free)) return { zone:'bar', seats:p };
+    if (freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
+    // 바 쌍은 없지만 개별 바 2석이 있으면
     if (freeBar.length >= 2) return { zone:'bar', seats:[freeBar[0], freeBar[1]] };
-    // 정말 마지막: 테이블 1개라도 있으면
-    if (freeTables.length > 0) return { zone:'table', seats:[freeTables[0]] };
+    return null; // 바+하이 다 찼으면 거절 — 테이블에 2명 절대 안됨!
   }
 
-  // 3-5명: 테이블 → 룸(4-5명도 가능) → 하이테이블 2개 합석(4명 이하)
+  // ── 3~5명: 테이블만 → 없으면 거절 (룸 자동 안됨) ──
   if (partySize >= 3 && partySize <= 5) {
     for (const s of freeTables) return { zone:'table', seats:[s] };
-    // 테이블 없으면 룸에라도
-    if (freeRoom) return { zone:'room', seats:['ROOM'] };
-    // 3명이면 하이테이블이라도
-    if (partySize <= 3 && freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
+    return null; // 테이블 다 찼으면 거절
   }
 
-  // 6-10명: 룸 → 테이블 2개 합석
+  // ── 6~10명: 룸만 → 없으면 거절 + 워크인/전화 안내 ──
   if (partySize >= 6 && partySize <= 10) {
-    if (freeRoom) return { zone:'room', seats:['ROOM'], note: partySize >= 9 ? 'tight_room' : null };
-    // 룸 없으면 테이블 2개 합석
-    if (freeTables.length >= 2) return { zone:'table', seats:[freeTables[0], freeTables[1]], note: 'merged_tables' };
+    if (freeRoom) return { zone:'room', seats:['ROOM'], note: '30만원 minimum charge' };
+    return null; // 룸 꽉 차면 거절
   }
 
-  // ── 최후의 수단: 어떤 좌석이든 비어있으면 배정 ──
-  if (freeTables.length > 0) return { zone:'table', seats:[freeTables[0]] };
-  if (freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
-  if (freeBar.length > 0) return { zone:'bar', seats:[freeBar[0]] };
-  if (freeRoom) return { zone:'room', seats:['ROOM'] };
-
-  return null; // 정말 모든 좌석이 꽉 찬 경우만
+  return null;
 }
 
 // ── Events (blocked dates) ──
@@ -393,9 +354,9 @@ app.get('/api/availability/:date', (req, res) => {
       eBar = Math.max(0, CONFIG.LATE_BAR_MAX - ub);
       eTbl = Math.max(0, CONFIG.LATE_TABLE_MAX - ut);
     }
-    // 2-hour cutoff for today
+    // All slots close at 17:00 (5PM) on the same day
     const slotHour = parseInt(time.split(':')[0]);
-    const closed = isToday && nowHour >= (slotHour - 2);
+    const closed = isToday && nowHour >= 17;
     result[time] = { bar:eBar, tables:eTbl, highTables:highFree, room:roomFree, isLate, closed, occupiedSeats:occ };
   });
   res.json(result);
@@ -420,12 +381,11 @@ app.post('/api/reserve', async (req, res) => {
   const slots = getSlots(date);
   if (!slots.includes(time)) return res.status(400).json({ error: 'Invalid time.' });
 
-  // 2-hour cutoff for today
+  // All slots close at 17:00 on same day
   if (date === kstToday()) {
     const kstNow = new Date(Date.now() + 9 * 3600000);
     const nowHour = kstNow.getHours() + kstNow.getMinutes() / 60;
-    const slotHour = parseInt(time.split(':')[0]);
-    if (nowHour >= slotHour - 2) return res.status(400).json({ error: 'This time slot is no longer available. Reservations close 2 hours before.' });
+    if (nowHour >= 17) return res.status(400).json({ error: 'Today\'s reservations are closed. Walk-ins welcome after 7PM!' });
   }
 
   // ── Anti-abuse checks ──
@@ -453,17 +413,18 @@ app.post('/api/reserve', async (req, res) => {
   const ipCount = reservations.filter(r => r._ip === ip && r.createdAt && r.createdAt.startsWith(today)).length;
   if (ipCount >= 1) return res.status(429).json({ error: '오늘 이미 예약하셨습니다. 추가 예약은 전화로 문의해주세요. / You already made a reservation today. Please call for additional bookings.' });
 
-  // Auto-detect preference from special request only (not party size)
-  let preference = detectPreference(specialRequest, partySize);
-  if (preference === 'room_request') {
-    if (partySize < 6) preference = null; // too few for room, auto-assign
-    else preference = null; // auto-assign will give room for 6+
-  }
+  // No preference needed — autoAssign handles strict rules
+  let preference = null;
 
   try {
     await withLock(async () => {
       const a = autoAssign(date, time, partySize, preference);
-      if (!a) throw new Error('해당 시간에 좌석이 없습니다. / No seats available.');
+      if (!a) {
+        if (partySize <= 2) throw new Error('Bar and high table seats are fully booked for this date. Please try another date or walk in.');
+        if (partySize <= 5) throw new Error('Table seats are fully booked for this date. Please try another date or walk in.');
+        if (partySize >= 6) throw new Error('The private room is fully booked. For groups of 6+, please call us at +82-10-6817-0406 or walk in.');
+        throw new Error('No seats available.');
+      }
       const confirmCode = 'PC' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(2,4);
       const r = {
         id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
@@ -737,9 +698,9 @@ app.get('/api/debug/:date', (req, res) => {
     reservationDetails: activeRes.map(r => ({ id:r.id, name:r.name, time:r.time, partySize:r.partySize, seats:r.seats, status:r.status, source:r.source })),
   });
 });
-// Get history (completed + noshow) for a date range
+// Get history (seated + noshow + completed) for viewing
 app.get('/api/history', (req, res) => {
-  const hist = reservations.filter(r => r.status==='completed'||r.status==='noshow')
+  const hist = reservations.filter(r => r.status==='seated'||r.status==='noshow'||r.status==='completed')
     .sort((a,b) => b.date < a.date ? -1 : 1);
   res.json(hist);
 });
