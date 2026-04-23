@@ -161,9 +161,14 @@ slots.forEach(function(t){
 h+='</div>';
 
 if(selTime){
+  var ap=avail[selTime]&&avail[selTime].availPax?avail[selTime].availPax:[];
   h+='<div class="ilbl">Party size *</div>';
   h+='<div class="sr">';
-  for(var i=1;i<=10;i++)h+='<button class="sb2'+(partySize===i?' sel':'')+'" onclick="pickSize('+i+')">'+i+'</button>';
+  for(var i=1;i<=10;i++){
+    var canBook=ap.indexOf(i)>=0;
+    if(canBook)h+='<button class="sb2'+(partySize===i?' sel':'')+'" onclick="pickSize('+i+')">'+i+'</button>';
+    else h+='<button class="sb2 full" style="opacity:.3;pointer-events:none;"><span>'+i+'</span><span class="sub">FULL</span></button>';
+  }
   h+='</div>';
 
   if(partySize>=6)h+='<div class="note" style="background:rgba(184,147,90,.1);padding:10px;border-radius:6px;">🔑 6+ guests: <strong>Private Room only</strong><br>Minimum charge ₩300,000<br>If the room is unavailable, please call +82-10-6817-0406</div>';

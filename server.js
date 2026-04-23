@@ -357,7 +357,12 @@ app.get('/api/availability/:date', (req, res) => {
     // All slots close at 17:00 (5PM) on the same day
     const slotHour = parseInt(time.split(':')[0]);
     const closed = isToday && nowHour >= 17;
-    result[time] = { bar:eBar, tables:eTbl, highTables:highFree, room:roomFree, isLate, closed, occupiedSeats:occ };
+    // Check which party sizes can actually book (using strict rules)
+    const availPax = [];
+    for (let ps = 1; ps <= 10; ps++) {
+      if (autoAssign(date, time, ps, null)) availPax.push(ps);
+    }
+    result[time] = { bar:eBar, tables:eTbl, highTables:highFree, room:roomFree, isLate, closed, occupiedSeats:occ, availPax };
   });
   res.json(result);
 });
@@ -469,16 +474,15 @@ app.get('/api/month/:year/:month', (req, res) => {
   const prefix = `${req.params.year}-${String(req.params.month).padStart(2,'0')}`;
   const counts = {};
   const fullDates = [];
-  reservations.forEach(r => { if (r.date.startsWith(prefix) && r.status!=='cancelled' && r.status!=='noshow') counts[r.date]=(counts[r.date]||0)+1; });
-  // Check which dates are fully booked
-  const allSeats = CONFIG.SEATS.bar.length + CONFIG.SEATS.tables.length + CONFIG.SEATS.highTables.length + 1; // +1 for room
-  Object.keys(counts).forEach(date => {
-    const occ = getOccupiedForDate(date);
-    const barFree = CONFIG.SEATS.bar.filter(s => !occ.includes(s)).length;
-    const tblFree = CONFIG.SEATS.tables.filter(s => !occ.includes(s)).length;
-    const hiFree = CONFIG.SEATS.highTables.filter(s => !occ.includes(s)).length;
-    const rmFree = !occ.includes('ROOM') ? 1 : 0;
-    if (barFree + tblFree + hiFree + rmFree === 0) fullDates.push(date);
+  reservations.forEach(r => { if (r.date.startsWith(prefix) && r.status!=='cancelled' && r.status!=='noshow' && r.status!=='seated') counts[r.date]=(counts[r.date]||0)+1; });
+  // Check which dates are fully booked using STRICT rules
+  // A date is FULLY BOOKED if autoAssign returns null for ALL party sizes
+  const datesWithRes = new Set(Object.keys(counts));
+  // Also check dates in the month even without reservations (for completeness)
+  reservations.forEach(r => { if (r.date.startsWith(prefix)) datesWithRes.add(r.date); });
+  datesWithRes.forEach(date => {
+    const canBook = [1,2,3,4,5,6].some(pax => autoAssign(date, '19:00', pax, null) !== null);
+    if (!canBook) fullDates.push(date);
   });
   res.json({ counts, fullDates });
 });

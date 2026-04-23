@@ -142,38 +142,41 @@ return h;
 }
 
 async function loadAll(){
-// Load upcoming dates
 var el=document.getElementById('vAll');
 el.innerHTML='<div style="color:var(--mu);padding:16px;text-align:center;">로딩 중...</div>';
-// Fetch next 14 days
+try{
 var today=ktd();
 var dates=[];
 for(var i=0;i<14;i++){
   var d=new Date(kst().getTime()+i*86400000);
   dates.push(d.toISOString().slice(0,10));
 }
+// Fetch all dates in parallel (much faster!)
+var results=await Promise.all(dates.map(function(date){
+  return fetch('/api/reservations/'+date).then(function(r){return r.json();}).catch(function(){return [];});
+}));
 var allByDate={};
-for(var i=0;i<dates.length;i++){
-  var res=await fetch('/api/reservations/'+dates[i]).then(function(r){return r.json();}).catch(function(){return [];});
-  if(res.length>0)allByDate[dates[i]]=res;
-}
+dates.forEach(function(date,i){if(results[i]&&results[i].length>0)allByDate[date]=results[i];});
 var h='';
 var totalRes=0;
 dates.forEach(function(date){
   var res=allByDate[date];
   if(!res||!res.length)return;
+  // Only show active reservations (confirmed, needs_assignment)
+  res=res.filter(function(r){return r.status==='confirmed'||r.status==='needs_assignment';});
+  if(!res.length)return;
   totalRes+=res.length;
   var d=new Date(date+'T12:00:00');
   var isToday=date===today;
   h+='<div class="date-group">';
   h+='<div class="date-header"><span>'+(isToday?'🔴 오늘 ':'')+''+date+' ('+DK[d.getDay()]+')</span><span>'+res.length+'팀 / '+res.reduce(function(s,r){return s+r.partySize;},0)+'명</span></div>';
-  // Sort by time
   res.sort(function(a,b){return (a.time+a.name)<(b.time+b.name)?-1:1;});
   res.forEach(function(r){h+=renderCard(r,false);});
   h+='</div>';
 });
 if(totalRes===0)h='<div class="empty">향후 2주간 예약이 없습니다.</div>';
 el.innerHTML=h;
+}catch(e){el.innerHTML='<div class="empty">로딩 실패: '+e.message+'</div>';}
 }
 
 async function loadNew(){
