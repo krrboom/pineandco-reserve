@@ -105,11 +105,13 @@ for(var i=sd-1;i>=0;i--)h+='<div class="cc om"><div class="dn">'+(pd-i)+'</div><
 for(var d=1;d<=dim;d++){
   var iso=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
   var dow=new Date(calY,calM,d).getDay(),past=iso<today,beyond=iso>maxD,ev=evts[iso],isFull=fullDates.indexOf(iso)>=0;
-  var cls='cc';if(iso===today)cls+=' td';if(past||beyond)cls+=' dis';if(ev)cls+=' ev';if(selDate===iso)cls+=' sel';if(isFull&&!past&&!beyond&&!ev)cls+=' ev';
-  h+='<div class="'+cls+'" '+((!past&&!beyond&&!ev&&!isFull)?'onclick="pickDate(\''+iso+'\')"':'')+'>';
+  var isTodayClosed=iso===today&&kst().getHours()>=17;
+  var cls='cc';if(iso===today)cls+=' td';if(past||beyond)cls+=' dis';if(ev)cls+=' ev';if(selDate===iso)cls+=' sel';if((isFull||isTodayClosed)&&!past&&!beyond&&!ev)cls+=' ev';
+  h+='<div class="'+cls+'" '+((!past&&!beyond&&!ev&&!isFull&&!isTodayClosed)?'onclick="pickDate(\''+iso+'\')"':'')+'>';
   h+='<div class="dn'+(dow===0?' sun':'')+'">'+d+'</div>';
   if(ev)h+='<div class="el">EVENT</div>';
-  if(isFull&&!ev&&!past&&!beyond)h+='<div class="el" style="color:#b8935a;">FULL</div>';
+  if(isTodayClosed&&!ev&&!past)h+='<div class="el" style="color:#999;">CLOSED</div>';
+  else if(isFull&&!ev&&!past&&!beyond)h+='<div class="el" style="color:#b8935a;">FULL</div>';
   h+='</div>';
 }
 var tc=sd+dim,rem=tc%7===0?0:7-tc%7;
@@ -121,22 +123,31 @@ h+='</div>';
 if(step===2){
 h+='<button class="back" onclick="goStep(1)">← Back to calendar</button>';
 
-// Check if fully booked (all slots have 0 seats)
-var allFull=true;
+// Check if all closed (today after 5PM) vs fully booked (no seats)
+var allFull=true,allClosed=true,hasClosed=false;
 var slots2=Object.keys(avail);
-slots2.forEach(function(t){if(t.startsWith('_'))return;var a=avail[t];if((a.bar+a.tables+a.highTables+a.room>0)&&!a.closed)allFull=false;});
-if(slots2.length===0)allFull=true;
+slots2.forEach(function(t){if(t.startsWith('_'))return;var a=avail[t];
+  if(a.closed)hasClosed=true; else allClosed=false;
+  var ap=a.availPax||[];
+  if(ap.length>0&&!a.closed)allFull=false;
+});
+if(slots2.length===0){allFull=true;allClosed=false;}
 
 if(allFull){
 h+='<div style="text-align:center;padding:40px 20px;">';
 h+='<div style="font-size:40px;margin-bottom:16px;">🌲</div>';
+if(hasClosed&&allClosed){
+// Today after 5PM — closed, not full
+h+='<h2 style="font-size:16px;margin-bottom:12px;letter-spacing:.08em;">RESERVATIONS CLOSED</h2>';
+h+='<div style="font-size:14px;color:var(--cream);line-height:1.8;margin-bottom:16px;">';
+h+='Today\'s reservations are closed.<br>Walk-ins are welcome after 7PM!</div>';
+}else{
+// Actually fully booked
 h+='<h2 style="font-size:16px;margin-bottom:12px;letter-spacing:.08em;">FULLY BOOKED</h2>';
 h+='<div style="font-size:14px;color:var(--cream);line-height:1.8;margin-bottom:16px;">';
 h+='Sorry, <strong style="color:var(--gold);">'+selDate+'</strong> is fully booked.<br>';
 h+='Walk-ins are welcome!</div>';
-h+='<div style="font-size:13px;color:var(--amber);line-height:1.8;">';
-h+='Sorry, <strong>'+selDate+'</strong> is fully booked.<br>';
-h+='Walk-ins are welcome!</div>';
+}
 h+='<div style="margin-top:20px;font-size:12px;color:var(--amber);opacity:.6;">';
 h+='Open 7PM — 2AM</div>';
 h+='<button class="nbtn" style="margin-top:20px;max-width:200px;" onclick="goStep(1)">Choose another date</button>';
@@ -151,11 +162,11 @@ h+='<div class="tg" style="margin-bottom:16px">';
 var slots=Object.keys(avail);
 if(!slots.length) h+='<div style="grid-column:1/-1;text-align:center;color:var(--amber);padding:20px;">No available time slots.</div>';
 slots.forEach(function(t){
-  var a=avail[t],total=a.bar+a.tables+a.highTables+a.room,full=total===0||a.closed;
+  var a=avail[t],ap=a.availPax||[],full=ap.length===0||a.closed;
   h+='<button class="tb'+(selTime===t?' sel':'')+(full?' full':'')+'" onclick="pickTime(\''+t+'\')">'+t;
   if(a.isLate)h+='<span class="sub">Late night · Limited</span>';
   if(a.closed)h+='<span class="sub">CLOSED</span>';
-  else if(total===0)h+='<span class="sub">FULL</span>';
+  else if(ap.length===0)h+='<span class="sub">FULL</span>';
   h+='</button>';
 });
 h+='</div>';
