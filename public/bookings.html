@@ -151,29 +151,24 @@ for(var i=0;i<14;i++){
   var d=new Date(kst().getTime()+i*86400000);
   dates.push(d.toISOString().slice(0,10));
 }
-// Fetch all dates in parallel (much faster!)
-var results=await Promise.all(dates.map(function(date){
-  return fetch('/api/reservations/'+date).then(function(r){return r.json();}).catch(function(){return [];});
-}));
-var allByDate={};
-dates.forEach(function(date,i){if(results[i]&&results[i].length>0)allByDate[date]=results[i];});
 var h='';
 var totalRes=0;
-dates.forEach(function(date){
-  var res=allByDate[date];
-  if(!res||!res.length)return;
-  // Only show active reservations (confirmed, needs_assignment)
-  res=res.filter(function(r){return r.status==='confirmed'||r.status==='needs_assignment';});
-  if(!res.length)return;
-  totalRes+=res.length;
-  var d=new Date(date+'T12:00:00');
-  var isToday=date===today;
-  h+='<div class="date-group">';
-  h+='<div class="date-header"><span>'+(isToday?'🔴 오늘 ':'')+''+date+' ('+DK[d.getDay()]+')</span><span>'+res.length+'팀 / '+res.reduce(function(s,r){return s+r.partySize;},0)+'명</span></div>';
-  res.sort(function(a,b){return (a.time+a.name)<(b.time+b.name)?-1:1;});
-  res.forEach(function(r){h+=renderCard(r,false);});
-  h+='</div>';
-});
+for(var i=0;i<dates.length;i++){
+  try{
+    var res=await fetch('/api/reservations/'+dates[i]).then(function(r){return r.json();});
+    if(!res||!Array.isArray(res)||!res.length)continue;
+    res=res.filter(function(r){return r.status==='confirmed'||r.status==='needs_assignment';});
+    if(!res.length)continue;
+    totalRes+=res.length;
+    var d2=new Date(dates[i]+'T12:00:00');
+    var isToday=dates[i]===today;
+    h+='<div class="date-group">';
+    h+='<div class="date-header"><span>'+(isToday?'🔴 오늘 ':'')+''+dates[i]+' ('+DK[d2.getDay()]+')</span><span>'+res.length+'팀</span></div>';
+    res.sort(function(a,b){return (a.time||'')<(b.time||'')?-1:1;});
+    res.forEach(function(r){h+=renderCard(r,false);});
+    h+='</div>';
+  }catch(e2){continue;}
+}
 if(totalRes===0)h='<div class="empty">향후 2주간 예약이 없습니다.</div>';
 el.innerHTML=h;
 }catch(e){el.innerHTML='<div class="empty">로딩 실패: '+e.message+'</div>';}
