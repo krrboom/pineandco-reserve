@@ -1,625 +1,1292 @@
 const express = require('express');
-const fs      = require('fs');
-const path    = require('path');
-const https   = require('https');
+const fs = require('fs');
+const path = require('path');
 
-// Google Sheets webhook (Apps Script)
-const SHEETS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbwjrCc045OGvWcHFyMXpW0yZLozPhRJgWIuimozptylSWYE9A-KS9o28PAC3NceNb7Dwg/exec';
+const CONFIG = {
+  PORT: process.env.PORT || 3001,
+  STAFF_PIN: process.env.STAFF_PIN || '1234',
+  ADMIN_PIN: process.env.ADMIN_PIN || '0000',
+  BUSINESS_PHONE: process.env.BUSINESS_PHONE || '02-XXX-XXXX',
+  PUBLIC_URL: process.env.PUBLIC_URL || 'http://localhost:3001',
+  BUSINESS_HOURS: '19:00 - 02:00',
+  ALIGO_KEY: process.env.ALIGO_KEY || '',
+  ALIGO_USER_ID: process.env.ALIGO_USER_ID || '',
+  ALIGO_SENDER: process.env.ALIGO_SENDER || '',
+  TWILIO_SID: process.env.TWILIO_SID || '',
+  TWILIO_AUTH: process.env.TWILIO_AUTH || '',
+  TWILIO_FROM: process.env.TWILIO_FROM || '',
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  RESEND_FROM: process.env.RESEND_FROM || 'Pine & Co <noreply@pineandco.shop>',
+  GOOGLE_CLIENT_EMAIL: process.env.GOOGLE_CLIENT_EMAIL || '',
+  GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY || '',
+  GOOGLE_CALENDAR_ID: process.env.GOOGLE_CALENDAR_ID || '',
+  GOOGLE_SHEET_ID: process.env.GOOGLE_SHEET_ID || '',
+  SEATS: {
+    bar: ['B1','B2','B3','B4','B5','B6','B7','B8','B9','B10','B11','B12','B13','B14'],
+    tables: ['T1','T2','T3','T4'],
+    highTables: ['H1','H2'],
+    room: ['ROOM'],
+  },
+  CAPACITY: { T1:5,T2:5,T3:5,T4:5,H1:2,H2:2,ROOM:10,B1:1,B2:1,B3:1,B4:1,B5:1,B6:1,B7:1,B8:1,B9:1,B10:1,B11:1,B12:1,B13:1,B14:1 },
+  ROOM_MIN_CHARGE: 300000,
+  BAR_EDGE_SEATS: ['B1','B3','B4','B6'],
+  BAR_MID_SEATS: ['B2','B5'],
+  BAR_U_SEATS: ['B7','B8','B9','B10','B11','B12','B13','B14'],
+  WEEKDAY_SLOTS: ['19:00','20:00','21:00','23:00'],
+  WEEKEND_SLOTS: ['19:00','20:00','21:00'],
+  LATE_SLOT: '23:00',
+  LATE_BAR_MAX: 4,
+  LATE_TABLE_MAX: 2,
+};
+// ── Data stored on persistent disk (survives deploys) ──
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+// Create data directory if it doesn't exist
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-// POST with redirect follow (Google Apps Script returns 302)
-function postWithRedirect(targetUrl, body) {
-  const url = new URL(targetUrl);
-  const data = typeof body === 'string' ? body : JSON.stringify(body);
-  const options = {
-    hostname: url.hostname,
-    path: url.pathname + url.search,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
-  };
-  const req = https.request(options, (res) => {
-    if (res.statusCode === 302 || res.statusCode === 301) {
-      const loc = res.headers.location;
-      if (loc) {
-        https.get(loc, (r2) => {
-          let b = ''; r2.on('data', d => b += d);
-          r2.on('end', () => console.log(`📊 Sheets (reserve): ${b.slice(0, 80)}`));
-        }).on('error', e => console.error('Sheets redirect error:', e.message));
+const DATA_FILE = path.join(DATA_DIR, 'reservations.json');
+const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
+const STAFF_FILE = path.join(DATA_DIR, 'staff.json');
+const VISITORS_FILE = path.join(DATA_DIR, 'visitors.json');
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+
+// ── Auto-migrate: if persistent disk is empty, copy from old locations ──
+function migrateData() {
+  const oldPaths = [
+    path.join(__dirname, 'data'),
+    path.join(__dirname),
+    '/opt/render/project/src/data',
+    '/opt/render/project/src',
+  ];
+  const files = ['reservations.json', 'events.json', 'staff.json', 'visitors.json'];
+  files.forEach(file => {
+    const target = path.join(DATA_DIR, file);
+    if (fs.existsSync(target) && fs.statSync(target).size > 10) return; // already has data
+    for (const old of oldPaths) {
+      const src = path.join(old, file);
+      if (old === DATA_DIR) continue; // don't copy from self
+      if (fs.existsSync(src) && fs.statSync(src).size > 10) {
+        try {
+          fs.copyFileSync(src, target);
+          console.log('📦 Migrated: ' + src + ' → ' + target);
+        } catch(e) { console.error('Migration error:', e.message); }
+        break;
       }
-    } else {
-      let b = ''; res.on('data', d => b += d);
-      res.on('end', () => console.log(`📊 Sheets (reserve): ${b.slice(0, 80)}`));
     }
   });
-  req.on('error', e => console.error('Sheets error:', e.message));
-  req.write(data);
-  req.end();
+}
+if (process.env.DATA_DIR) migrateData(); // only migrate when persistent disk is configured
+
+let reservations = [], events = {}, staffNames = ['DuUi','Manager'];
+let visitors = [];
+let lockPromise = Promise.resolve();
+function withLock(fn) { lockPromise = lockPromise.then(fn).catch(e => { console.error(e); throw e; }); return lockPromise; }
+
+function loadData() {
+  try { if (fs.existsSync(DATA_FILE)) reservations = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch(e) { reservations = []; }
+  try { if (fs.existsSync(EVENTS_FILE)) events = JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf8')); } catch(e) { events = {}; }
+  try { if (fs.existsSync(STAFF_FILE)) staffNames = JSON.parse(fs.readFileSync(STAFF_FILE, 'utf8')); } catch(e) {}
+  try { if (fs.existsSync(VISITORS_FILE)) visitors = JSON.parse(fs.readFileSync(VISITORS_FILE, 'utf8')); } catch(e) { visitors = []; }
+  console.log(`📂 Data dir: ${DATA_DIR}`);
+  console.log(`📦 Loaded ${reservations.length} reservations, ${visitors.length} visitors, ${Object.keys(events).length} events`);
 }
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║                    ⚙️  CONFIG                                ║
-// ╚══════════════════════════════════════════════════════════════╝
-const CONFIG = {
-  PORT           : process.env.PORT || 3001,
-  STAFF_PIN      : process.env.STAFF_PIN || "1234",
-  BUSINESS_PHONE : "010-6817-0406",
+// Auto-backup every hour
+function autoBackup() {
+  try {
+    const ts = new Date().toISOString().slice(0,13).replace(/[-:T]/g,'');
+    fs.writeFileSync(path.join(BACKUP_DIR, 'res_'+ts+'.json'), JSON.stringify(reservations));
+    // Keep only last 48 backups
+    const files = fs.readdirSync(BACKUP_DIR).sort();
+    while (files.length > 48) { fs.unlinkSync(path.join(BACKUP_DIR, files.shift())); }
+    console.log('💾 Backup: ' + reservations.length + ' reservations');
+  } catch(e) { console.error('Backup error:', e.message); }
+}
 
-  // Seat inventory
-  SEATS: {
-    tables:     ['T1','T2','T3','T4'],       // 4-person tables
-    highTables: ['H1','H2'],                  // 2-person high tables
-    bar:        Array.from({length:14},(_,i)=>`B${i+1}`), // B1-B14
-    room:       ['ROOM'],                     // 1 room, max 8pax, 300K min charge
-  },
+function saveRes() { try { fs.writeFileSync(DATA_FILE, JSON.stringify(reservations, null, 2)); } catch(e) { console.error(e); } }
+function saveEvents() { try { fs.writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2)); } catch(e) { console.error(e); } }
+function saveStaff() { try { fs.writeFileSync(STAFF_FILE, JSON.stringify(staffNames, null, 2)); } catch(e) { console.error(e); } }
+function saveVisitors() { try { fs.writeFileSync(VISITORS_FILE, JSON.stringify(visitors, null, 2)); } catch(e) { console.error(e); } }
 
-  CAPACITY: {
-    T1:5, T2:5, T3:5, T4:5,   // tables: max 5 each
-    H1:2, H2:2,                 // high tables: max 2 each
-    B1:1,B2:1,B3:1,B4:1,B5:1,B6:1,B7:1,B8:1,B9:1,B10:1,B11:1,B12:1,B13:1,B14:1,
-    ROOM:10,                    // room: 6-10 people
-  },
+// Record a visit when guest is marked "seated"
+function recordVisit(r) {
+  if (!r.name || r.name === 'Guest') return;
+  const clean = s => (s || '').replace(/[\s\-]/g, '').toLowerCase();
+  // Find existing visitor by matching 2+ fields
+  let found = visitors.find(v => {
+    let matches = 0;
+    if (v.name && r.name && v.name.toLowerCase() === r.name.toLowerCase()) matches++;
+    if (v.phone && r.phone && clean(v.phone) === clean(r.phone)) matches++;
+    if (v.email && r.email && v.email.toLowerCase() === r.email.toLowerCase()) matches++;
+    if (v.instagram && r.instagram && v.instagram.toLowerCase() === r.instagram.toLowerCase()) matches++;
+    return matches >= 2;
+  });
+  const visitCount = found ? found.visits.length + 1 : 1;
+  if (found) {
+    if (r.phone) found.phone = r.phone;
+    if (r.email) found.email = r.email;
+    if (r.instagram) found.instagram = r.instagram;
+    found.visits.push({ date: r.date, partySize: r.partySize, zone: r.zone });
+    found.lastVisit = r.date;
+  } else {
+    visitors.push({
+      name: r.name, phone: r.phone || '', email: r.email || '', instagram: r.instagram || '',
+      visits: [{ date: r.date, partySize: r.partySize, zone: r.zone }],
+      lastVisit: r.date, firstVisit: r.date,
+    });
+  }
+  saveVisitors();
+  // Write to Google Sheets
+  appendToSheet(r, visitCount);
+}
 
-  ROOM_MIN_GUESTS: 6,          // room requires minimum 6 guests
+// ── Google Sheets: append visit row ──
+async function appendToSheet(r, visitCount) {
+  if (!CONFIG.GOOGLE_SHEET_ID || !CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY) return;
+  try {
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(
+      CONFIG.GOOGLE_CLIENT_EMAIL, null,
+      CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      ['https://www.googleapis.com/auth/spreadsheets']
+    );
+    const sheets = google.sheets({ version: 'v4', auth });
+    const now = new Date(Date.now() + 9 * 3600000); // KST
+    const row = [
+      r.date,                                          // A: 날짜
+      r.time || 'walkin',                              // B: 시간
+      r.name,                                          // C: 이름
+      r.partySize,                                     // D: 인원
+      r.phone || '',                                   // E: 전화번호
+      r.email || '',                                   // F: 이메일
+      r.instagram || '',                               // G: 인스타
+      r.zone || '',                                    // H: 좌석타입
+      (r.seats || []).join(','),                        // I: 좌석번호
+      r.source || '',                                  // J: 예약경로
+      visitCount > 1 ? '재방문 (' + visitCount + '회)' : '신규',  // K: 방문유형
+      r.notes || '',                                   // L: 특이사항
+      now.toISOString().slice(0, 19).replace('T', ' '), // M: 기록시간
+    ];
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+      range: 'Sheet1!A:M',
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [row] },
+    });
+    console.log('📊 [SHEETS] Added: ' + r.name + ' / ' + r.date);
+  } catch (e) {
+    console.error('📊 [SHEETS] Error:', e.message);
+  }
+}
 
-  ROOM_MIN_CHARGE: 300000,  // KRW
+// ── Log every reservation creation to "예약로그" sheet (backup) ──
+async function logReservationCreation(r) {
+  if (!CONFIG.GOOGLE_SHEET_ID || !CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY) return;
+  try {
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(
+      CONFIG.GOOGLE_CLIENT_EMAIL, null,
+      CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      ['https://www.googleapis.com/auth/spreadsheets']
+    );
+    const sheets = google.sheets({ version: 'v4', auth });
+    const now = new Date(Date.now() + 9 * 3600000);
+    const row = [
+      now.toISOString().slice(0, 19).replace('T', ' '),  // A: 접수시간
+      r.confirmCode || '',                                // B: 확인코드
+      r.date,                                             // C: 예약날짜
+      r.time,                                             // D: 시간
+      r.name,                                             // E: 이름
+      r.partySize,                                        // F: 인원
+      r.phone || '',                                      // G: 전화번호
+      r.email || '',                                      // H: 이메일
+      r.instagram || '',                                  // I: 인스타
+      r.zone || '',                                       // J: 좌석타입
+      (r.seats || []).join(','),                           // K: 좌석번호
+      r.source || '',                                     // L: 예약경로
+      r.notes || '',                                      // M: 특이사항
+      r.status || 'confirmed',                            // N: 상태
+    ];
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+      range: '예약로그!A:N',
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [row] },
+    });
+    console.log('📋 [LOG] Reservation logged: ' + r.name + ' / ' + r.date + ' / ' + (r.confirmCode || 'no-code'));
+  } catch (e) {
+    console.error('📋 [LOG] Error:', e.message);
+  }
+}
 
-  // Reservation time slots (1-hour units)
-  // Weekday (Sun-Thu): 19:00, 20:00, 21:00
-  // Weekend (Fri, Sat): 19:00, 20:00
-  SLOTS_WEEKDAY: ['19:00','20:00','21:00'],
-  SLOTS_WEEKEND: ['19:00','20:00'],
-};
+// Check if a guest is a returning visitor
+function checkReturning(name, phone, email, instagram) {
+  const clean = s => (s || '').replace(/[\s\-]/g, '').toLowerCase();
+  for (const v of visitors) {
+    let matches = 0;
+    if (v.name && name && v.name.toLowerCase() === name.toLowerCase()) matches++;
+    if (v.phone && phone && clean(v.phone) === clean(phone)) matches++;
+    if (v.email && email && v.email.toLowerCase() === email.toLowerCase()) matches++;
+    if (v.instagram && instagram && v.instagram.toLowerCase() === instagram.toLowerCase()) matches++;
+    if (matches >= 2) {
+      // Find most frequent zone (preferred seating)
+      const zoneCounts = {};
+      (v.visits || []).forEach(vis => { zoneCounts[vis.zone] = (zoneCounts[vis.zone]||0) + 1; });
+      const prefZone = Object.keys(zoneCounts).sort((a,b) => zoneCounts[b] - zoneCounts[a])[0] || '';
+      // Recent visits (last 5)
+      const recentVisits = (v.visits || []).slice(-5).reverse().map(vis => vis.date + ' ' + (vis.zone||''));
+      return {
+        returning: true,
+        visits: v.visits.length,
+        lastVisit: v.lastVisit,
+        firstVisit: v.firstVisit,
+        prefZone: prefZone,
+        recentVisits: recentVisits,
+      };
+    }
+  }
+  return { returning: false };
+}
+loadData();
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-/* ═══════════════════════════════════════════════════════════
-   DATA LAYER — persistent disk support
-   Set DATA_DIR environment variable in Render to persist data
-   across deployments (e.g. DATA_DIR=/var/data)
-   ═══════════════════════════════════════════════════════════ */
-const DATA_DIR    = process.env.DATA_DIR || __dirname;
-const DATA_FILE   = path.join(DATA_DIR, 'reservations.json');
-const BACKUP_FILE = path.join(DATA_DIR, 'reservations.backup.json');
-
-// Ensure DATA_DIR exists
-try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
-
-let reservations = [];
-let opLock = false;
-
-function saveData () {
-  const tmp = DATA_FILE + '.tmp';
-  const data = JSON.stringify(reservations, null, 2);
-  try {
-    fs.writeFileSync(tmp, data, 'utf8');
-    fs.renameSync(tmp, DATA_FILE);
-    fs.writeFileSync(BACKUP_FILE, data, 'utf8');
-  } catch (e) {
-    console.error('⚠️  SAVE ERROR:', e.message);
-    try { fs.writeFileSync(DATA_FILE, data, 'utf8'); } catch {}
-  }
+function kstToday() { return new Date(Date.now() + 9*3600000).toISOString().slice(0,10); }
+function isWeekend(d) { const day = new Date(d+'T12:00:00+09:00').getDay(); return day===5||day===6; }
+function getSlots(d) { return isWeekend(d) ? CONFIG.WEEKEND_SLOTS : CONFIG.WEEKDAY_SLOTS; }
+function getResFor(date,time) { return reservations.filter(r => r.date===date && r.time===time && r.status!=='cancelled' && r.status!=='noshow'); }
+// Get ALL occupied seats for the entire date (only confirmed + seated count)
+function getOccupiedForDate(date) {
+  const s=[];
+  reservations.filter(r => r.date===date && (r.status==='confirmed'||r.status==='seated'||r.status==='needs_assignment'))
+    .forEach(r => { if(r.seats) s.push(...r.seats); });
+  return s;
 }
 
-function loadData () {
-  let raw = null;
-  try { if (fs.existsSync(DATA_FILE)) raw = fs.readFileSync(DATA_FILE, 'utf8'); } catch {}
-  if (!raw) { try { if (fs.existsSync(BACKUP_FILE)) raw = fs.readFileSync(BACKUP_FILE, 'utf8'); } catch {} }
-  if (!raw) { reservations = []; return; }
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) throw new Error('Not array');
-    reservations = parsed.filter(r =>
-      r && typeof r.id === 'string' && typeof r.name === 'string'
-      && typeof r.date === 'string' && typeof r.time === 'string'
-    );
-  } catch (e) {
-    console.error('⚠️  CORRUPT data, starting fresh:', e.message);
-    reservations = []; saveData();
-  }
-}
-loadData();
+function autoAssign(date, time, partySize, preference) {
+  // Check ALL seats for the whole date, not just this time slot
+  const occ = getOccupiedForDate(date);
+  const free = s => !occ.includes(s);
 
-async function withLock (fn) {
-  let waited = 0;
-  while (opLock) { await new Promise(r => setTimeout(r, 10)); waited += 10; if (waited > 3000) { opLock = false; break; } }
-  opLock = true;
-  try { return await fn(); } finally { opLock = false; }
-}
+  // Count what's available
+  const freeBar = CONFIG.SEATS.bar.filter(free);
+  const freeTables = CONFIG.SEATS.tables.filter(free);
+  const freeHigh = CONFIG.SEATS.highTables.filter(free);
+  const freeRoom = free('ROOM');
+  const barPairs = [['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B4','B5'],['B8','B9'],['B10','B11'],['B12','B13']];
+  const freePairs = barPairs.filter(p => p.every(free));
 
-function uid () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
-
-/* ═══════════════════════════════════════════════════════════
-   AUTO-ASSIGNMENT ALGORITHM
-   ═══════════════════════════════════════════════════════════ */
-
-function getOccupiedSeats (date, time) {
-  // ══════════════════════════════════════════════════════════
-  // OVERBOOKING PREVENTION:
-  // 1. Same time slot: all confirmed + seated reservations
-  // 2. Earlier time slots: only 'seated' (guest physically there)
-  //    → prevents double-booking when guests stay longer
-  // ══════════════════════════════════════════════════════════
-  const seats = [];
-
-  // Helper: convert "HH:MM" to minutes for comparison
-  function toMin(t) {
-    const [h, m] = t.split(':').map(Number);
-    return (h < 6 ? h + 24 : h) * 60 + m;  // 00:00-05:59 → next day
-  }
-  const reqMin = toMin(time);
-
-  reservations
-    .filter(r => r.date === date && r.status !== 'cancelled' && r.status !== 'noshow')
-    .forEach(r => {
-      const rMin = toMin(r.time);
-      if (rMin === reqMin) {
-        // Same time: include confirmed + seated
-        (r.assignedSeats || []).forEach(s => seats.push(s));
-      } else if (rMin < reqMin && r.status === 'seated') {
-        // Earlier time, still seated: include (guest still there)
-        (r.assignedSeats || []).forEach(s => seats.push(s));
-      }
-    });
-
-  return seats;
-}
-
-function getAvailableSlots (date) {
-  const d = new Date(date + 'T00:00:00+09:00'); // KST
-  const day = d.getDay(); // 0=Sun ... 5=Fri, 6=Sat
-  return (day === 5 || day === 6) ? CONFIG.SLOTS_WEEKEND : CONFIG.SLOTS_WEEKDAY;
-}
-
-function autoAssign (zone, partySize, date, time) {
-  const occupied = new Set(getOccupiedSeats(date, time));
-
-  // ══════════════════════════════════════════════
-  // STRICT SEATING RULES — DO NOT MODIFY
-  // Bar (B1-B14): 1 person per seat
-  // High table (H1, H2): max 2 people
-  // Table (T1-T4): 3-5 people (NEVER seat 2 at table)
-  // Room: 6-10 people only
-  // ══════════════════════════════════════════════
-
-  if (zone === 'room') {
-    if (partySize < CONFIG.ROOM_MIN_GUESTS) return { error: `The private room is for parties of ${CONFIG.ROOM_MIN_GUESTS} or more.` };
-    if (partySize > 10) return { error: 'Room accommodates up to 10 guests.' };
-    if (occupied.has('ROOM')) return { error: 'Room is fully booked for this time slot.' };
-    return { seats: ['ROOM'] };
-  }
-
-  if (zone === 'bar') {
-    // Bar seats: ALWAYS 1 person per seat
-    // 1 person = 1 bar seat, 2 people = 2 consecutive bar seats, etc.
-    const barSeats = CONFIG.SEATS.bar;
-    const freeBar = barSeats.filter(s => !occupied.has(s));
-
-    if (partySize > 2) {
-      return { error: 'Bar seating is for 1-2 guests only. For larger parties, please choose Table or Room.' };
-    }
-    if (freeBar.length < partySize) {
-      return { error: 'No bar seats available for this time slot.' };
-    }
-
+  // ── Preference: BAR ──
+  if (preference === 'bar') {
     if (partySize === 1) {
-      // 1 person: prefer edge seats first (B1, B14, then B2, B13...)
-      const edgeOrder = [0,13,1,12,2,11,3,10,4,9,5,8,6,7];
-      for (const idx of edgeOrder) {
-        if (!occupied.has(barSeats[idx])) return { seats: [barSeats[idx]] };
-      }
+      for (const s of CONFIG.BAR_EDGE_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+      for (const s of CONFIG.BAR_MID_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+      for (const s of CONFIG.BAR_U_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
     }
-
     if (partySize === 2) {
-      // 2 people: prefer high tables first, then consecutive bar seats
-      const freeHigh = CONFIG.SEATS.highTables.filter(s => !occupied.has(s));
-      if (freeHigh.length > 0) return { seats: [freeHigh[0]] };
-
-      // Find consecutive bar seats
-      for (let i = 0; i < barSeats.length - 1; i++) {
-        if (!occupied.has(barSeats[i]) && !occupied.has(barSeats[i+1])) {
-          return { seats: [barSeats[i], barSeats[i+1]] };
-        }
-      }
-      // No consecutive? Still assign 2 separate seats
-      if (freeBar.length >= 2) return { seats: freeBar.slice(0, 2) };
-      return { error: 'Not enough bar seats available for this time slot.' };
+      for (const p of freePairs) return { zone:'bar', seats:p };
     }
-
-    return { seats: freeBar.slice(0, partySize) };
+    // Bar requested but no bar seats → fall through to auto logic below
   }
 
-  if (zone === 'table') {
-    // 1-2 people: high table ONLY, or redirect to bar
-    if (partySize <= 2) {
-      const freeHigh = CONFIG.SEATS.highTables.filter(s => !occupied.has(s));
-      if (freeHigh.length > 0) return { seats: [freeHigh[0]] };
-      // NO tables for 2 people — redirect
-      return { error: 'High tables are fully booked. Bar seating is available — would you like a bar seat instead?' };
+  // ── Preference: TABLE ──
+  if (preference === 'table') {
+    if (partySize <= 5) {
+      for (const s of freeTables) return { zone:'table', seats:[s] };
+      for (const s of freeHigh) return { zone:'highTable', seats:[s] };
     }
-
-    // 3-5 people: table (T1-T4, capacity 5 each)
-    if (partySize >= 3 && partySize <= 5) {
-      const freeTable = CONFIG.SEATS.tables.filter(s => !occupied.has(s));
-      if (freeTable.length > 0) return { seats: [freeTable[0]] };
-      return { error: 'No tables available for this time slot.' };
-    }
-
-    // 6+ people: must use room
     if (partySize >= 6) {
-      return { error: `For parties of ${partySize}, please select the Private Room.` };
+      if (freeRoom) return { zone:'room', seats:['ROOM'], note: partySize >= 9 ? 'tight_room' : null };
     }
-
-    return { error: 'No seats available for this party size.' };
+    // Fall through to auto
   }
 
-  return { error: 'Invalid zone.' };
+  // ── AUTO (no preference) — ALWAYS find a seat ──
+
+  // 1명: 바 엣지 → 바 U자 → 바 미들 → 하이테이블 → 테이블
+  if (partySize === 1) {
+    for (const s of CONFIG.BAR_EDGE_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+    for (const s of CONFIG.BAR_U_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+    for (const s of CONFIG.BAR_MID_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+    for (const s of freeHigh) return { zone:'highTable', seats:[s] };
+    for (const s of freeTables) return { zone:'table', seats:[s] };
+  }
+
+  // 2명: 바 쌍 → 하이테이블 → (절대 테이블 차지 안함! 테이블은 3-5명용)
+  if (partySize === 2) {
+    for (const p of freePairs) return { zone:'bar', seats:p };
+    for (const s of freeHigh) return { zone:'highTable', seats:[s] };
+    // 바도 하이테이블도 없을 때만 테이블 (최후의 수단)
+    // 하지만 테이블에 여유가 있을 때만 (3개 이상 남아있을 때)
+    if (freeTables.length >= 3) return { zone:'table', seats:[freeTables[0]] };
+    // 그래도 안되면 남은 바 단독석이라도
+    if (freeBar.length >= 2) return { zone:'bar', seats:[freeBar[0], freeBar[1]] };
+    // 정말 마지막: 테이블 1개라도 있으면
+    if (freeTables.length > 0) return { zone:'table', seats:[freeTables[0]] };
+  }
+
+  // 3-5명: 테이블 → 룸(4-5명도 가능) → 하이테이블 2개 합석(4명 이하)
+  if (partySize >= 3 && partySize <= 5) {
+    for (const s of freeTables) return { zone:'table', seats:[s] };
+    // 테이블 없으면 룸에라도
+    if (freeRoom) return { zone:'room', seats:['ROOM'] };
+    // 3명이면 하이테이블이라도
+    if (partySize <= 3 && freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
+  }
+
+  // 6-10명: 룸 → 테이블 2개 합석
+  if (partySize >= 6 && partySize <= 10) {
+    if (freeRoom) return { zone:'room', seats:['ROOM'], note: partySize >= 9 ? 'tight_room' : null };
+    // 룸 없으면 테이블 2개 합석
+    if (freeTables.length >= 2) return { zone:'table', seats:[freeTables[0], freeTables[1]], note: 'merged_tables' };
+  }
+
+  // ── 최후의 수단: 어떤 좌석이든 비어있으면 배정 ──
+  if (freeTables.length > 0) return { zone:'table', seats:[freeTables[0]] };
+  if (freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
+  if (freeBar.length > 0) return { zone:'bar', seats:[freeBar[0]] };
+  if (freeRoom) return { zone:'room', seats:['ROOM'] };
+
+  return null; // 정말 모든 좌석이 꽉 찬 경우만
 }
 
-/* ═══════════════════════════════════════════════════════════
-   API ROUTES
-   ═══════════════════════════════════════════════════════════ */
-
-// Public config
-app.get('/api/config', (_req, res) => {
-  res.json({
-    staffPin      : CONFIG.STAFF_PIN,
-    businessPhone : CONFIG.BUSINESS_PHONE,
-    roomMinCharge : CONFIG.ROOM_MIN_CHARGE,
-    seats         : CONFIG.SEATS,
-    capacity      : CONFIG.CAPACITY,
-  });
+// ── Events (blocked dates) ──
+app.get('/api/events', (req, res) => res.json(events));
+app.post('/api/events/:date', (req, res) => {
+  const { date } = req.params;
+  const { pin, label } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  if (label) events[date] = label;
+  else delete events[date];
+  saveEvents();
+  res.json({ ok: true, events });
 });
 
-// Get available slots for a date
+// ── Availability ──
 app.get('/api/availability/:date', (req, res) => {
   const { date } = req.params;
-  const slots = getAvailableSlots(date);
+  if (events[date]) return res.json({ blocked: true, event: events[date] });
+  const slots = getSlots(date);
+  const occ = getOccupiedForDate(date); // whole-date occupancy
 
-  // Same-day cutoff: if today and past 5 PM KST, return empty
-  const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const todayKST = nowKST.toISOString().slice(0, 10);
-  if (date === todayKST && nowKST.getUTCHours() * 60 + nowKST.getUTCMinutes() >= 8 * 60) {
-    return res.json({ date, slots: [], availability: {}, occupied: {}, closed: true,
-      message: 'Same-day reservations are closed after 5 PM.\n당일 예약은 오후 5시에 마감됩니다.' });
-  }
+  const barFree = CONFIG.SEATS.bar.filter(s => !occ.includes(s)).length;
+  const tablesFree = CONFIG.SEATS.tables.filter(s => !occ.includes(s)).length;
+  const highFree = CONFIG.SEATS.highTables.filter(s => !occ.includes(s)).length;
+  const roomFree = !occ.includes('ROOM') ? 1 : 0;
 
-  const occupied = {};
+  const result = {};
+  const kstNow = new Date(Date.now() + 9 * 3600000);
+  const isToday = date === kstToday();
+  const nowHour = kstNow.getHours() + kstNow.getMinutes() / 60;
 
   slots.forEach(time => {
-    const taken = getOccupiedSeats(date, time);
-    occupied[time] = taken;
+    const isLate = time === CONFIG.LATE_SLOT && !isWeekend(date);
+    let eBar = barFree, eTbl = tablesFree;
+    if (isLate) {
+      const ex = getResFor(date, time);
+      const ub = ex.filter(r => r.zone==='bar').reduce((s,r) => s+r.partySize, 0);
+      const ut = ex.filter(r => r.zone==='table'||r.zone==='highTable').length;
+      eBar = Math.max(0, CONFIG.LATE_BAR_MAX - ub);
+      eTbl = Math.max(0, CONFIG.LATE_TABLE_MAX - ut);
+    }
+    // 2-hour cutoff for today
+    const slotHour = parseInt(time.split(':')[0]);
+    const closed = isToday && nowHour >= (slotHour - 2);
+    result[time] = { bar:eBar, tables:eTbl, highTables:highFree, room:roomFree, isLate, closed, occupiedSeats:occ };
   });
-
-  // Calculate availability per zone per slot
-  const availability = {};
-  slots.forEach(time => {
-    const taken = new Set(occupied[time]);
-    availability[time] = {
-      bar:   CONFIG.SEATS.bar.filter(s => !taken.has(s)).length,
-      table: CONFIG.SEATS.tables.filter(s => !taken.has(s)).length
-           + CONFIG.SEATS.highTables.filter(s => !taken.has(s)).length,
-      room:  taken.has('ROOM') ? 0 : 1,
-    };
-  });
-
-  res.json({ date, slots, availability, occupied });
+  res.json(result);
 });
 
-// Get all reservations for a date (staff)
-app.get('/api/reservations/:date', (req, res) => {
-  const dayRes = reservations.filter(r => r.date === req.params.date && r.status !== 'cancelled');
-  res.json(dayRes);
-});
+// ── Detect preference from special request text ──
+function detectPreference(text, partySize) {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  if (/\b(bar|바|바좌석|바석)\b/.test(t)) return 'bar';
+  if (/\b(room|룸|프라이빗|private)\b/.test(t)) return 'room_request';
+  if (/\b(table|테이블|테이블석)\b/.test(t)) return 'table';
+  return null;
+}
 
-// Get all reservations (staff - for date range)
-app.get('/api/reservations', (_req, res) => {
-  res.json(reservations.filter(r => r.status !== 'cancelled'));
-});
-
-// ── Guest/Staff: make a reservation ──
+// ── Guest reserve ──
 app.post('/api/reserve', async (req, res) => {
+  const { name, phone, instagram, email, partySize, date, time, specialRequest } = req.body;
+  if (!name || !partySize || !date || !time) return res.status(400).json({ error: 'Required fields missing.' });
+  if (partySize < 1 || partySize > 10) return res.status(400).json({ error: 'Party size 1-10.' });
+  if (events[date]) return res.status(400).json({ error: 'This date is not available (event).' });
+  const slots = getSlots(date);
+  if (!slots.includes(time)) return res.status(400).json({ error: 'Invalid time.' });
+
+  // 2-hour cutoff for today
+  if (date === kstToday()) {
+    const kstNow = new Date(Date.now() + 9 * 3600000);
+    const nowHour = kstNow.getHours() + kstNow.getMinutes() / 60;
+    const slotHour = parseInt(time.split(':')[0]);
+    if (nowHour >= slotHour - 2) return res.status(400).json({ error: 'This time slot is no longer available. Reservations close 2 hours before.' });
+  }
+
+  // ── Anti-abuse checks ──
+  const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+
+  // 1. Same phone/email can't book same date twice
+  if (phone) {
+    const cleanPhone = phone.replace(/[^0-9+]/g, '');
+    const dup = reservations.find(r => r.date === date && r.phone && r.phone.replace(/[^0-9+]/g, '') === cleanPhone && r.status !== 'cancelled');
+    if (dup) return res.status(400).json({ error: '이미 해당 날짜에 예약이 있습니다. 변경은 전화로 문의해주세요. / You already have a reservation on this date.' });
+  }
+  if (email) {
+    const dup = reservations.find(r => r.date === date && r.email && r.email.toLowerCase() === email.toLowerCase() && r.status !== 'cancelled');
+    if (dup) return res.status(400).json({ error: '이미 해당 날짜에 예약이 있습니다. / You already have a reservation on this date.' });
+  }
+
+  // 2. Max 3 active reservations per phone/email total
+  if (phone) {
+    const activeCount = reservations.filter(r => r.phone && r.phone.replace(/[^0-9+]/g, '') === phone.replace(/[^0-9+]/g, '') && r.status === 'confirmed').length;
+    if (activeCount >= 3) return res.status(400).json({ error: '예약 가능 횟수를 초과했습니다. 기존 예약을 확인해주세요. / Maximum reservation limit reached.' });
+  }
+
+  // 3. Max 5 reservations per IP per day
+  const today = kstToday();
+  const ipCount = reservations.filter(r => r._ip === ip && r.createdAt && r.createdAt.startsWith(today)).length;
+  if (ipCount >= 1) return res.status(429).json({ error: '오늘 이미 예약하셨습니다. 추가 예약은 전화로 문의해주세요. / You already made a reservation today. Please call for additional bookings.' });
+
+  // Auto-detect preference from special request only (not party size)
+  let preference = detectPreference(specialRequest, partySize);
+  if (preference === 'room_request') {
+    if (partySize < 6) preference = null; // too few for room, auto-assign
+    else preference = null; // auto-assign will give room for 6+
+  }
+
   try {
-    const result = await withLock(async () => {
-      const { name, phone, partySize, zone, date, time } = req.body;
-
-      if (!name?.trim()) return { status: 400, body: { error: 'Please enter your name.' } };
-      if (!phone?.trim()) return { status: 400, body: { error: 'Please enter your phone number.' } };
-      if (!date || !time) return { status: 400, body: { error: 'Please select a date and time.' } };
-      if (!['bar','table','room'].includes(zone)) return { status: 400, body: { error: 'Please select a zone.' } };
-
-      const size = Math.max(1, Math.min(20, parseInt(partySize) || 2));
-
-      // Validate time slot
-      const validSlots = getAvailableSlots(date);
-      if (!validSlots.includes(time))
-        return { status: 400, body: { error: 'This time slot is not available for the selected date.' } };
-
-      // Same-day cutoff: no reservations after 5 PM KST on the same day
-      const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000);
-      const todayKST = nowKST.toISOString().slice(0, 10);
-      if (date === todayKST && nowKST.getUTCHours() * 60 + nowKST.getUTCMinutes() >= 8 * 60) {
-        // 5 PM KST = 08:00 UTC
-        return { status: 400, body: { error: 'Same-day reservations are closed after 5 PM. Please call us or walk in.\n당일 예약은 오후 5시에 마감됩니다. 전화 또는 방문 부탁드립니다.' } };
-      }
-
-      // Prevent duplicate: same phone + same date
-      const existing = reservations.find(r =>
-        r.phone.replace(/-/g,'') === phone.trim().replace(/-/g,'')
-        && r.date === date && r.status !== 'cancelled' && r.status !== 'noshow'
-      );
-      if (existing)
-        return { status: 409, body: { error: 'You already have a reservation for this date.', existing } };
-
-      // Auto-assign seats
-      const assignment = autoAssign(zone, size, date, time);
-      if (assignment.error)
-        return { status: 409, body: { error: assignment.error, suggestRoom: assignment.suggestRoom } };
-
-      const entry = {
-        id: uid(),
-        name: name.trim(),
-        phone: phone.trim(),
-        partySize: size,
-        zone,
-        date,
-        time,
-        assignedSeats: assignment.seats,
-        status: 'confirmed',
-        createdAt: Date.now(),
+    await withLock(async () => {
+      const a = autoAssign(date, time, partySize, preference);
+      if (!a) throw new Error('해당 시간에 좌석이 없습니다. / No seats available.');
+      const confirmCode = 'PC' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(2,4);
+      const r = {
+        id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+        confirmCode,
+        name, phone: phone||'', instagram: instagram||'', email: email||'',
+        partySize, date, time, preference: preference||'auto',
+        zone: a.zone, seats: a.seats, status: 'confirmed', source: 'online',
+        notes: specialRequest||'', createdAt: new Date().toISOString(),
+        _ip: ip,
+        reminderD1: false, reminderD0: false, modLog: [],
       };
-
-      reservations.push(entry);
-      saveData();
-
-      // Save to Google Sheets (예약로그 tab)
-      const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
-      postWithRedirect(SHEETS_WEBHOOK, {
-        type: 'reservation',
-        접수시간: kst.toISOString().replace('T',' ').slice(0,19),
-        확인코드: entry.id,
-        예약날짜: entry.date,
-        시간: entry.time,
-        이름: entry.name,
-        인원: entry.partySize,
-        전화번호: entry.phone || '',
-        이메일: entry.email || '',
-        인스타: entry.instagram || '',
-        좌석타입: entry.zone,
-        좌석번호: (entry.assignedSeats || []).join(','),
-        예약경로: req.body.source || 'online',
-        특이사항: req.body.notes || '',
-        상태: 'confirmed',
-      });
-
-      return { status: 200, body: entry };
+      reservations.push(r); saveRes();
+      sendConfirmation(r);
+      logReservationCreation(r);
+      console.log('🎫 Reservation confirmed: ' + name + ' / ' + date + ' ' + time + ' / Code: ' + confirmCode);
+      res.json({ ok: true, reservation: r });
     });
-
-    res.status(result.status).json(result.body);
-  } catch (e) {
-    console.error('RESERVE error:', e);
-    res.status(500).json({ error: 'Server error. Please try again.' });
-  }
+  } catch(e) { res.status(409).json({ error: e.message }); }
 });
 
-// ── Staff: update reservation status (seated/noshow → remove from active) ──
-app.post('/api/reservations/:id/status', async (req, res) => {
-  try {
-    await withLock(async () => {
-      const entry = reservations.find(r => r.id === req.params.id);
-      if (!entry) return;
-      const { status } = req.body;
-      if (['seated','noshow'].includes(status)) {
-        entry.status = status;
-        if (status === 'seated') entry.seatedAt = Date.now();
-        if (status === 'noshow') entry.noshowAt = Date.now();
-        saveData();
-      }
-    });
-    res.json({ ok: true });
-  } catch (e) {
-    console.error('STATUS error:', e);
-    res.status(500).json({ error: 'Server error.' });
-  }
+// ── Staff routes ──
+app.get('/api/staff-names', (req, res) => res.json(staffNames));
+app.post('/api/staff-names', (req, res) => {
+  const { pin, name } = req.body;
+  if (pin !== CONFIG.ADMIN_PIN) return res.status(403).json({ error: 'Admin PIN required' });
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Name required' });
+  const n = name.trim();
+  if (staffNames.includes(n)) return res.status(400).json({ error: 'Already exists' });
+  staffNames.push(n);
+  saveStaff();
+  res.json({ ok: true, staffNames });
 });
-
-// ── Staff: edit reservation (time + party size) ──
-app.post('/api/reservations/:id/edit', async (req, res) => {
-  try {
-    const result = await withLock(async () => {
-      const entry = reservations.find(r => r.id === req.params.id);
-      if (!entry) return { status: 404, body: { error: 'Reservation not found.' } };
-
-      const { time, partySize } = req.body;
-      const newSize = partySize ? Math.max(1, Math.min(10, parseInt(partySize))) : entry.partySize;
-      const newTime = time || entry.time;
-
-      // If size changed, re-assign seats
-      if (newSize !== entry.partySize || newTime !== entry.time) {
-        // Remove this reservation's seats from occupied calculation
-        const oldSeats = entry.assignedSeats || [];
-        const occupied = new Set(getOccupiedSeats(entry.date, newTime).filter(s => !oldSeats.includes(s)));
-
-        // Re-assign based on new size
-        let newSeats = oldSeats;
-        if (newSize !== entry.partySize) {
-          const assignment = autoAssign(entry.zone, newSize, entry.date, newTime);
-          if (assignment.error) return { status: 409, body: { error: assignment.error } };
-          newSeats = assignment.seats;
-        }
-
-        entry.time = newTime;
-        entry.partySize = newSize;
-        entry.assignedSeats = newSeats;
-      } else {
-        entry.time = newTime;
-      }
-
-      saveData();
-      return { status: 200, body: { ok: true, entry } };
-    });
-    res.status(result.status).json(result.body);
-  } catch (e) {
-    console.error('EDIT error:', e);
-    res.status(500).json({ error: 'Server error.' });
-  }
+app.delete('/api/staff-names/:name', (req, res) => {
+  const { pin } = req.body || {};
+  if (pin !== CONFIG.ADMIN_PIN) return res.status(403).json({ error: 'Admin PIN required' });
+  const n = decodeURIComponent(req.params.name);
+  staffNames = staffNames.filter(s => s !== n);
+  saveStaff();
+  res.json({ ok: true, staffNames });
 });
-
-// ── Staff: delete reservation ──
-app.delete('/api/reservations/:id', async (req, res) => {
-  try {
-    await withLock(async () => {
-      reservations = reservations.filter(r => r.id !== req.params.id);
-      saveData();
-    });
-    res.json({ ok: true });
-  } catch (e) {
-    console.error('DELETE error:', e);
-    res.status(500).json({ error: 'Server error.' });
-  }
-});
-
-// ── Auto-cleanup: remove old reservations (older than 30 days) ──
-function cleanup () {
-  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const before = reservations.length;
-  reservations = reservations.filter(r => {
-    const rDate = new Date(r.date + 'T23:59:59+09:00').getTime();
-    return rDate > cutoff;
+app.get('/api/month/:year/:month', (req, res) => {
+  const prefix = `${req.params.year}-${String(req.params.month).padStart(2,'0')}`;
+  const counts = {};
+  const fullDates = [];
+  reservations.forEach(r => { if (r.date.startsWith(prefix) && r.status!=='cancelled' && r.status!=='noshow') counts[r.date]=(counts[r.date]||0)+1; });
+  // Check which dates are fully booked
+  const allSeats = CONFIG.SEATS.bar.length + CONFIG.SEATS.tables.length + CONFIG.SEATS.highTables.length + 1; // +1 for room
+  Object.keys(counts).forEach(date => {
+    const occ = getOccupiedForDate(date);
+    const barFree = CONFIG.SEATS.bar.filter(s => !occ.includes(s)).length;
+    const tblFree = CONFIG.SEATS.tables.filter(s => !occ.includes(s)).length;
+    const hiFree = CONFIG.SEATS.highTables.filter(s => !occ.includes(s)).length;
+    const rmFree = !occ.includes('ROOM') ? 1 : 0;
+    if (barFree + tblFree + hiFree + rmFree === 0) fullDates.push(date);
   });
-  if (reservations.length !== before) {
-    console.log(`🧹 Cleaned ${before - reservations.length} old reservations`);
-    saveData();
+  res.json({ counts, fullDates });
+});
+app.post('/api/staff/reserve', (req, res) => {
+  const { pin,name,phone,instagram,email,partySize,date,time,zone,seats,source,notes,staffName } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  const r = {
+    id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    name, phone:phone||'', instagram:instagram||'', email:email||'',
+    partySize:partySize||1, date, time, preference:'',
+    zone:zone||'bar', seats:seats||[], status:'confirmed',
+    source:source||'staff', notes:notes||'',
+    confirmCode: 'PC' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(2,4),
+    createdAt: new Date().toISOString(), reminderD1:false, reminderD0:false,
+    modLog: [{ action:'created', by:staffName||'Staff', at:new Date().toISOString() }],
+  };
+  reservations.push(r); saveRes();
+  logReservationCreation(r);
+  res.json({ ok:true, reservation:r });
+});
+app.get('/api/reservations/:date', (req, res) => {
+  const list = reservations.filter(r => r.date===req.params.date && r.status!=='cancelled');
+  // Enrich with returning visitor info
+  const enriched = list.map(r => {
+    const rv = checkReturning(r.name, r.phone, r.email, r.instagram);
+    return { ...r, _returning: rv.returning, _visitCount: rv.visits || 0, _lastVisit: rv.lastVisit || '', _firstVisit: rv.firstVisit || '', _prefZone: rv.prefZone || '', _recentVisits: rv.recentVisits || [] };
+  });
+  res.json(enriched);
+});
+
+// Check if a specific guest is returning
+app.post('/api/check-returning', (req, res) => {
+  const { name, phone, email, instagram } = req.body;
+  const rv = checkReturning(name, phone, email, instagram);
+  res.json(rv);
+});
+
+// Get all visitors (for export/spreadsheet)
+app.get('/api/visitors', (req, res) => {
+  res.json(visitors);
+});
+
+// List backups
+app.get('/api/backups', (req, res) => {
+  try {
+    const files = fs.readdirSync(BACKUP_DIR).sort().reverse();
+    const list = files.map(f => {
+      const data = JSON.parse(fs.readFileSync(path.join(BACKUP_DIR, f), 'utf8'));
+      return { file: f, count: data.length, size: fs.statSync(path.join(BACKUP_DIR, f)).size };
+    });
+    res.json({ ok: true, backups: list, dataDir: DATA_DIR });
+  } catch(e) { res.json({ ok: false, error: e.message }); }
+});
+
+// Restore from backup
+app.post('/api/restore-backup', (req, res) => {
+  const { pin, file } = req.body;
+  if (pin !== CONFIG.ADMIN_PIN) return res.status(403).json({ error: 'Admin PIN required' });
+  try {
+    const data = JSON.parse(fs.readFileSync(path.join(BACKUP_DIR, file), 'utf8'));
+    // Save current as emergency backup first
+    fs.writeFileSync(path.join(BACKUP_DIR, 'emergency_before_restore.json'), JSON.stringify(reservations));
+    reservations = data;
+    saveRes();
+    console.log('🔄 Restored from backup: ' + file + ' (' + data.length + ' reservations)');
+    res.json({ ok: true, count: data.length });
+  } catch(e) { res.json({ ok: false, error: e.message }); }
+});
+
+// Data health check
+app.get('/api/data-health', (req, res) => {
+  res.json({
+    dataDir: DATA_DIR,
+    reservationsFile: fs.existsSync(DATA_FILE),
+    reservationCount: reservations.length,
+    activeCount: reservations.filter(r => r.status==='confirmed'||r.status==='seated').length,
+    backupCount: fs.existsSync(BACKUP_DIR) ? fs.readdirSync(BACKUP_DIR).length : 0,
+    lastSave: fs.existsSync(DATA_FILE) ? fs.statSync(DATA_FILE).mtime : null,
+  });
+});
+
+// Setup Google Sheet headers
+app.post('/api/sheet-setup', async (req, res) => {
+  if (req.body.pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  if (!CONFIG.GOOGLE_SHEET_ID || !CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY) {
+    return res.json({ ok: false, error: 'GOOGLE_SHEET_ID not configured' });
+  }
+  try {
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(CONFIG.GOOGLE_CLIENT_EMAIL, null, CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'), ['https://www.googleapis.com/auth/spreadsheets']);
+    const sheets = google.sheets({ version: 'v4', auth });
+    // Sheet1 headers (방문기록)
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+      range: 'Sheet1!A1:M1',
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [['날짜','시간','이름','인원','전화번호','이메일','인스타','좌석타입','좌석번호','예약경로','방문유형','특이사항','기록시간']] },
+    });
+    // Create 예약로그 sheet tab (if not exists)
+    try {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+        requestBody: { requests: [{ addSheet: { properties: { title: '예약로그' } } }] },
+      });
+    } catch(e) { /* sheet already exists, ignore */ }
+    // 예약로그 headers
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+      range: '예약로그!A1:N1',
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [['접수시간','확인코드','예약날짜','시간','이름','인원','전화번호','이메일','인스타','좌석타입','좌석번호','예약경로','특이사항','상태']] },
+    });
+    res.json({ ok: true, message: 'Sheet1 + 예약로그 headers set!' });
+  } catch (e) { res.json({ ok: false, error: e.message }); }
+});
+// Get all reservations created today (new bookings) - only unchecked
+app.get('/api/new-today', (req, res) => {
+  const today = kstToday();
+  const newOnes = reservations.filter(r => r.createdAt && r.createdAt.startsWith(today) && r.status!=='cancelled' && !r.staffChecked);
+  const enriched = newOnes.map(r => {
+    const rv = checkReturning(r.name, r.phone, r.email, r.instagram);
+    return { ...r, _returning: rv.returning, _visitCount: rv.visits || 0, _lastVisit: rv.lastVisit || '', _firstVisit: rv.firstVisit || '', _prefZone: rv.prefZone || '', _recentVisits: rv.recentVisits || [] };
+  });
+  res.json(enriched);
+});
+app.patch('/api/reservations/:id', (req, res) => {
+  const r = reservations.find(x => x.id===req.params.id);
+  if (!r) return res.status(404).json({ error:'Not found' });
+  const ch = [];
+  if (req.body.status && req.body.status!==r.status) { ch.push('status:'+r.status+'→'+req.body.status); r.status=req.body.status; if(r.status==='seated') recordVisit(r); }
+  if (req.body.notes!==undefined && req.body.notes!==r.notes) { ch.push('notes updated'); r.notes=req.body.notes; }
+  if (req.body.source && req.body.source!==r.source) { ch.push('source:'+r.source+'→'+req.body.source); r.source=req.body.source; }
+  if (req.body.seats) {
+    const old = r.seats ? r.seats.join(',') : 'none';
+    r.seats = req.body.seats;
+    if (req.body.zone) r.zone = req.body.zone;
+    ch.push('seat:'+old+'→'+req.body.seats.join(','));
+    if (r.status === 'needs_assignment') r.status = 'confirmed';
+  }
+  if (req.body.notified !== undefined) { r.notified = req.body.notified; ch.push('notified: ' + req.body.notified); }
+  if (req.body.notifiedSeats !== undefined) { r.notifiedSeats = req.body.notifiedSeats; ch.push('notified seats: ' + req.body.notifiedSeats.join(',')); }
+  if (req.body.untilTime !== undefined) { r.untilTime = req.body.untilTime; ch.push('until: ' + (req.body.untilTime || 'cleared')); }
+  if (req.body.staffChecked !== undefined) { r.staffChecked = req.body.staffChecked; }
+  if (ch.length) { if(!r.modLog)r.modLog=[]; r.modLog.push({ action:ch.join(', '), by:req.body.staffName||'Staff', at:new Date().toISOString() }); }
+  saveRes(); res.json({ ok:true, reservation:r });
+});
+
+// Swap seats between two reservations
+app.post('/api/swap-seats', (req, res) => {
+  const { id1, id2, staffName } = req.body;
+  const r1 = reservations.find(x => x.id===id1);
+  const r2 = reservations.find(x => x.id===id2);
+  if (!r1 || !r2) return res.status(404).json({ error:'Reservation not found' });
+  const s1 = r1.seats, z1 = r1.zone;
+  r1.seats = r2.seats; r1.zone = r2.zone;
+  r2.seats = s1; r2.zone = z1;
+  const ts = new Date().toISOString();
+  if(!r1.modLog)r1.modLog=[];if(!r2.modLog)r2.modLog=[];
+  r1.modLog.push({ action:'swapped with '+r2.name+': '+s1.join(',')+'→'+r1.seats.join(','), by:staffName||'Staff', at:ts });
+  r2.modLog.push({ action:'swapped with '+r1.name+': '+r2.seats.join(',')+'→'+s1.join(','), by:staffName||'Staff', at:ts });
+  saveRes();
+  res.json({ ok:true });
+});
+
+// Walk-in: temporary seat assignment (sit until a reserved time)
+app.post('/api/walkin', (req, res) => {
+  const { pin, name, partySize, seats, zone, untilTime, date, staffName } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error:'Wrong PIN' });
+  const r = {
+    id: 'wi_' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    name: name || 'Walk-in', phone:'', instagram:'', email:'',
+    partySize: partySize || 1, date: date || kstToday(),
+    time: 'walkin', preference: 'manual',
+    zone: zone || 'bar', seats: seats || [],
+    status: 'seated', source: 'walkin',
+    untilTime: untilTime || '',
+    notified: false,
+    notes: untilTime ? '⏰ ' + untilTime + '까지 이용' : 'Walk-in',
+    createdAt: new Date().toISOString(),
+    reminderD1:false, reminderD0:false,
+    modLog:[{ action:'walk-in seated', by:staffName||'Staff', at:new Date().toISOString() }],
+  };
+  reservations.push(r); saveRes();
+  res.json({ ok:true, reservation:r });
+});
+app.delete('/api/reservations/:id', (req, res) => {
+  reservations = reservations.filter(r => r.id!==req.params.id); saveRes(); res.json({ ok:true });
+});
+
+// Diagnostic: check what's happening for a specific date
+app.get('/api/debug/:date', (req, res) => {
+  const date = req.params.date;
+  const occ = getOccupiedForDate(date);
+  const allRes = reservations.filter(r => r.date === date);
+  const activeRes = allRes.filter(r => r.status !== 'cancelled' && r.status !== 'noshow');
+  const slots = getSlots(date);
+  const isWknd = isWeekend(date);
+  const freeBar = CONFIG.SEATS.bar.filter(s => !occ.includes(s));
+  const freeTables = CONFIG.SEATS.tables.filter(s => !occ.includes(s));
+  const freeHigh = CONFIG.SEATS.highTables.filter(s => !occ.includes(s));
+  const freeRoom = !occ.includes('ROOM');
+
+  // Test autoAssign for each party size
+  const tests = {};
+  [1,2,3,4,5,6].forEach(ps => {
+    tests[ps+'pax'] = autoAssign(date, '19:00', ps, null);
+  });
+
+  res.json({
+    date, isWeekend: isWknd, slots,
+    totalReservations: allRes.length,
+    activeReservations: activeRes.length,
+    occupiedSeats: occ,
+    freeBar: freeBar.length, freeTables: freeTables.length, freeHigh: freeHigh.length, freeRoom,
+    events: events[date] || null,
+    autoAssignTests: tests,
+    reservationDetails: activeRes.map(r => ({ id:r.id, name:r.name, time:r.time, partySize:r.partySize, seats:r.seats, status:r.status, source:r.source })),
+  });
+});
+// Get history (completed + noshow) for a date range
+app.get('/api/history', (req, res) => {
+  const hist = reservations.filter(r => r.status==='completed'||r.status==='noshow')
+    .sort((a,b) => b.date < a.date ? -1 : 1);
+  res.json(hist);
+});
+
+// Verify reservation by confirmation code
+app.get('/api/verify/:code', (req, res) => {
+  const r = reservations.find(x => x.confirmCode === req.params.code);
+  if (r) res.json({ ok: true, reservation: { name: r.name, date: r.date, time: r.time, partySize: r.partySize, status: r.status } });
+  else res.json({ ok: false, error: 'Reservation not found' });
+});
+
+app.get('/api/stats/noshow', (req, res) => {
+  const t=reservations.length, n=reservations.filter(r=>r.status==='noshow').length;
+  res.json({ total:t, noshows:n, rate:(t?Math.round(n/t*100):0)+'%' });
+});
+
+// ── SMS routing: Korean numbers → Aligo, International → Twilio ──
+function isKoreanNumber(phone) {
+  const cleaned = phone.replace(/[^0-9+]/g, '');
+  return cleaned.startsWith('010') || cleaned.startsWith('011') || cleaned.startsWith('+82') || cleaned.startsWith('82');
+}
+
+function sendSMS(to, msg) {
+  const cleaned = to.replace(/[^0-9+]/g, '');
+  if (!cleaned) return;
+
+  if (isKoreanNumber(cleaned)) {
+    sendAligoSMS(cleaned, msg);
+  } else {
+    sendTwilioSMS(cleaned, msg);
   }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   REMINDER SYSTEM
-   Day before (D-1) + Day of (D-0) confirmation SMS
-   Checks every 30 minutes
-   ═══════════════════════════════════════════════════════════ */
-
-function getTodayKST () {
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  return kst.toISOString().slice(0, 10);
+function sendAligoSMS(to, msg) {
+  if (!CONFIG.ALIGO_KEY) { console.log('📱 [ALIGO SIM] '+to+'\n'+msg+'\n'); return; }
+  const p = new URLSearchParams({ key:CONFIG.ALIGO_KEY, user_id:CONFIG.ALIGO_USER_ID, sender:CONFIG.ALIGO_SENDER, receiver:to.replace(/[^0-9]/g,''), msg, msg_type:'LMS' });
+  fetch('https://apis.aligo.in/send/',{method:'POST',body:p}).then(r=>r.json()).then(d=>console.log('Aligo:',d)).catch(e=>console.error('Aligo error:',e));
 }
 
-function getTomorrowKST () {
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000 + 24 * 60 * 60 * 1000);
-  return kst.toISOString().slice(0, 10);
+function sendTwilioSMS(to, msg) {
+  if (!CONFIG.TWILIO_SID || !CONFIG.TWILIO_AUTH) { console.log('📱 [TWILIO SIM] '+to+'\n'+msg+'\n'); return; }
+  let dest = to;
+  if (!dest.startsWith('+')) dest = '+' + dest;
+  const auth = Buffer.from(CONFIG.TWILIO_SID + ':' + CONFIG.TWILIO_AUTH).toString('base64');
+  const body = new URLSearchParams({ From: CONFIG.TWILIO_FROM, To: dest, Body: msg });
+  fetch('https://api.twilio.com/2010-04-01/Accounts/' + CONFIG.TWILIO_SID + '/Messages.json', {
+    method: 'POST',
+    headers: { 'Authorization': 'Basic ' + auth, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body,
+  }).then(r => r.json()).then(d => console.log('Twilio:', d.sid || d.message)).catch(e => console.error('Twilio error:', e));
 }
 
-function buildReminderSMS (entry, type) {
-  const biz = CONFIG.BUSINESS_PHONE;
-  const zoneNames = { bar: 'Bar', table: 'Table', room: 'Private Room' };
-  const seats = (entry.assignedSeats || []).join(', ');
-  const zn = zoneNames[entry.zone] || entry.zone;
-
-  if (type === 'dayBefore') {
-    return `[PINE&CO]\n`
-      + `${entry.name}님, 내일 예약을 확인드립니다.\n`
-      + `날짜: ${entry.date} ${entry.time}\n`
-      + `인원: ${entry.partySize}명 / ${zn} (${seats})\n`
-      + `\n`
-      + `${entry.name}, this is a reminder for your reservation tomorrow.\n`
-      + `Date: ${entry.date} ${entry.time}\n`
-      + `Party: ${entry.partySize} / ${zn} (${seats})\n`
-      + `\n`
-      + `예약 취소는 전화로 부탁드립니다.\n`
-      + `To cancel, please call us.\n`
-      + `Tel: ${biz}`;
+// ── Email (Resend API) ──
+function sendConfirmEmail(toEmail, reservation) {
+  if (!CONFIG.RESEND_API_KEY) {
+    console.log('📧 [EMAIL SIM] To: '+toEmail);
+    console.log('  Reservation: '+reservation.name+' / '+reservation.date+' '+reservation.time+' / '+reservation.partySize+'명\n');
+    return;
   }
+  const r = reservation;
+  const zoneKR = {bar:'바 좌석',table:'테이블',highTable:'하이테이블',room:'프라이빗 룸'};
+  const zoneName = zoneKR[r.zone] || r.zone;
+  let roomNote = '';
+  if (r.zone === 'room') roomNote = '<p style="color:#c9a96e;font-size:13px;">미니멈차지 ₩300,000 / Minimum charge ₩300,000</p>';
 
-  // Day of
-  return `[PINE&CO]\n`
-    + `${entry.name}님, 오늘 예약을 다시 확인드립니다.\n`
-    + `시간: ${entry.time} / ${entry.partySize}명 / ${zn}\n`
-    + `\n`
-    + `${entry.name}, a reminder for your reservation today.\n`
-    + `Time: ${entry.time} / ${entry.partySize} guests / ${zn}\n`
-    + `\n`
-    + `예약 취소는 전화로 부탁드립니다.\n`
-    + `To cancel, please call us.\n`
-    + `Tel: ${biz}`;
+  const html = `
+<div style="max-width:480px;margin:0 auto;font-family:'Helvetica Neue',sans-serif;background:#1e1208;color:#f0ebe0;padding:40px 30px;border-radius:12px;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <h1 style="font-family:Georgia,serif;font-size:24px;color:#b8935a;font-weight:400;letter-spacing:4px;margin:0;">PINE &amp; CO</h1>
+    <p style="font-family:Georgia,serif;font-size:10px;color:#c9a96e;letter-spacing:6px;margin:4px 0 0;">SEOUL</p>
+  </div>
+  <div style="width:40px;height:1px;background:#b8935a;margin:0 auto 24px;opacity:.5;"></div>
+  <h2 style="font-family:Georgia,serif;font-size:16px;color:#b8935a;text-align:center;font-weight:400;letter-spacing:2px;margin-bottom:20px;">RESERVATION CONFIRMED</h2>
+  <div style="background:rgba(184,147,90,.08);border:1px solid rgba(184,147,90,.2);border-radius:8px;padding:20px;margin-bottom:20px;">
+    <table style="width:100%;font-size:14px;color:#f0ebe0;border-collapse:collapse;">
+      <tr><td style="padding:6px 0;color:#c9a96e;width:80px;">Date</td><td style="padding:6px 0;font-weight:500;">${r.date}</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">Time</td><td style="padding:6px 0;font-weight:500;">${r.time}</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">Name</td><td style="padding:6px 0;">${r.name}</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">Party</td><td style="padding:6px 0;">${r.partySize}명</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">Seat</td><td style="padding:6px 0;">${zoneName}</td></tr>
+    </table>
+    ${roomNote}
+  </div>
+  <div style="text-align:center;font-size:12px;color:#c9a96e;line-height:1.8;">
+    <p>예약 취소는 전화로만 가능합니다.</p>
+    <p>To cancel, please call:</p>
+    <p style="font-size:14px;color:#b8935a;font-weight:500;">${CONFIG.BUSINESS_PHONE}</p>
+  </div>
+  <div style="width:40px;height:1px;background:#b8935a;margin:24px auto;opacity:.3;"></div>
+  <p style="text-align:center;font-size:10px;color:#c9a96e;opacity:.5;">Open 7PM — 2AM</p>
+</div>`;
+
+  fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + CONFIG.RESEND_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: CONFIG.RESEND_FROM,
+      to: [toEmail],
+      subject: `[PINE&CO] Reservation Confirmed — ${r.date} ${r.time}`,
+      html: html,
+    }),
+  }).then(resp => resp.json()).then(d => console.log('Email sent:', d)).catch(e => console.error('Email error:', e));
 }
 
-async function sendReminders () {
-  const today = getTodayKST();
-  const tomorrow = getTomorrowKST();
-  let changed = false;
+// ── Send all confirmations ──
+function sendConfirmation(reservation) {
+  const r = reservation;
+  const msg = `[PINE&CO] ${r.name}님, 예약이 확인되었습니다.\n날짜: ${r.date} ${r.time}\n인원: ${r.partySize}명\n취소는 전화로만: ${CONFIG.BUSINESS_PHONE}\n\n[PINE&CO] Confirmed.\n${r.date} ${r.time} / Party: ${r.partySize}\nTo cancel: ${CONFIG.BUSINESS_PHONE}`;
+  if (r.phone) sendSMS(r.phone, msg);
+  if (r.email) sendConfirmEmail(r.email, r);
+}
 
-  for (const r of reservations) {
-    if (r.status === 'cancelled' || r.status === 'noshow' || r.status === 'seated') continue;
-
-    // Day-before reminder
-    if (r.date === tomorrow && !r.reminderD1Sent) {
-      const msg = buildReminderSMS(r, 'dayBefore');
-      console.log(`📩 D-1 reminder → ${r.name} (${r.date} ${r.time})`);
-      console.log(`   ${msg.split('\n')[0]}...`);
-      // TODO: integrate with Aligo/Twilio sendMessage when ready
-      r.reminderD1Sent = true;
-      changed = true;
+// ── Reminders ──
+function sendReminders() {
+  const today=kstToday(), tmrw=new Date(Date.now()+9*3600000+86400000).toISOString().slice(0,10);
+  reservations.forEach(r => {
+    if(r.status!=='confirmed') return;
+    if(r.date===tmrw&&!r.reminderD1){
+      const msg=`[PINE&CO] ${r.name}님, 내일 예약 확인: ${r.date} ${r.time} / ${r.partySize}명\n변경/취소: ${CONFIG.BUSINESS_PHONE}`;
+      if(r.phone) sendSMS(r.phone, msg);
+      if(r.email) sendConfirmEmail(r.email, {...r, _reminderType:'D-1'});
+      r.reminderD1=true; saveRes();
     }
+    if(r.date===today&&!r.reminderD0){
+      const msg=`[PINE&CO] ${r.name}님, 오늘 예약 확인: ${r.time} / ${r.partySize}명\n오늘 뵙겠습니다!`;
+      if(r.phone) sendSMS(r.phone, msg);
+      if(r.email) sendConfirmEmail(r.email, {...r, _reminderType:'D-0'});
+      r.reminderD0=true; saveRes();
+    }
+  });
+}
 
-    // Day-of reminder
-    if (r.date === today && !r.reminderD0Sent) {
-      const msg = buildReminderSMS(r, 'dayOf');
-      console.log(`📩 D-0 reminder → ${r.name} (${r.date} ${r.time})`);
-      console.log(`   ${msg.split('\n')[0]}...`);
-      // TODO: integrate with Aligo/Twilio sendMessage when ready
-      r.reminderD0Sent = true;
-      changed = true;
+// ── Google Calendar Sync ──
+// ── Parse free-form Google Calendar entry ──
+function parseGcalEntry(text) {
+  const result = { name:'Guest', time:null, partySize:2, phone:'', instagram:'', staffName:'', raw:text };
+  if (!text) return result;
+
+  // First, try to find time anywhere in the full text (not just per-part)
+  // Patterns: 7:30, 7:30pm, 8pm, 8PM, 8시, 오후8시, 9PM, 21:00
+  const fullTimeMatch = text.match(/(\d{1,2})\s*:\s*(\d{2})\s*(pm|am|PM|AM)?/)
+    || text.match(/(\d{1,2})\s*(pm|PM|am|AM)\b/)
+    || text.match(/(\d{1,2})\s*시/)
+    || text.match(/오후\s*(\d{1,2})\s*시?/);
+  if (fullTimeMatch) {
+    let h = parseInt(fullTimeMatch[1]);
+    const ampm = (fullTimeMatch[3] || fullTimeMatch[2] || '').toLowerCase();
+    if (ampm === 'pm' && h < 12) h += 12;
+    if (ampm === 'am' && h === 12) h = 0;
+    if (text.includes('오후') && h < 12) h += 12;
+    // For a bar open 7PM-2AM: any hour 1-12 without am/pm → assume PM
+    if (!ampm && !text.includes('오후') && h >= 1 && h <= 12) h += 12;
+    // If still morning (like 7 → 19, 8 → 20), force to PM
+    if (h >= 1 && h <= 6) h += 12; // 1am-6am range (late night)
+    if (h >= 7 && h <= 12) h += 12; // if somehow still AM range
+    // Clamp to valid range
+    if (h > 24) h = h - 12;
+    result.time = String(h).padStart(2, '0') + ':00';
+    result.exactTime = fullTimeMatch[0];
+  }
+
+  // Also extract phone from full text (for space-separated entries)
+  if (!result.phone) {
+    const phoneInText = text.match(/\b(01[0-9][\-\s]?\d{3,4}[\-\s]?\d{4})\b/) || text.match(/(\+\d{10,15})/) || text.match(/Contact\s*:\s*([\+\d\s\-]{10,})/i);
+    if (phoneInText) result.phone = phoneInText[1].replace(/[\s\-]/g, '');
+  }
+
+  // Extract Name: pattern from full text
+  const nameInText = text.match(/Name\s*:\s*([A-Za-z\u3131-\uD79D]+(?:\s+[A-Za-z\u3131-\uD79D]+)*)/i);
+  if (nameInText) result.name = nameInText[1].trim();
+
+  // Split by / , · or multiple spaces for other fields
+  const parts = text.split(/[\/·,]|\s{2,}/).map(s => s.trim()).filter(Boolean);
+  const unmatched = [];
+
+  for (const part of parts) {
+    const p = part.trim();
+    if (!p) continue;
+
+    // Instagram: starts with @ or contains "Instagram" followed by handle
+    if (/^@\w/.test(p)) { result.instagram = p; continue; }
+    const igMatch = p.match(/(?:instagram|ig|insta)\s*[:\s]\s*@?(\w+)/i);
+    if (igMatch) { result.instagram = '@' + igMatch[1]; continue; }
+
+    // Skip time-like strings (already parsed from full text)
+    if (/^\d{1,2}\s*:\s*\d{2}/.test(p)) continue;
+    if (/^\d{1,2}\s*(pm|am|PM|AM)$/.test(p)) continue;
+    if (/^\d{1,2}\s*시$/.test(p)) continue;
+    if (/^오후/.test(p)) continue;
+
+    // Party size: 2pax, 3명, 4people, 5p, "Number of People:2"
+    const paxMatch = p.match(/(\d{1,2})\s*(pax|명|people|persons|guests|PAX)/i);
+    if (paxMatch) { result.partySize = parseInt(paxMatch[1]); continue; }
+    const nopMatch = p.match(/Number\s*of\s*People\s*:\s*(\d+)/i);
+    if (nopMatch) { result.partySize = parseInt(nopMatch[1]); continue; }
+    // Standalone small number
+    if (/^\d{1,2}$/.test(p) && parseInt(p) >= 1 && parseInt(p) <= 10 && !result._gotPax) {
+      result.partySize = parseInt(p); result._gotPax = true; continue;
+    }
+    // "2명" embedded in text
+    const paxEmbed = p.match(/^(\d{1,2})명$/);
+    if (paxEmbed) { result.partySize = parseInt(paxEmbed[1]); continue; }
+
+    // Phone: 8+ digits
+    const phoneClean = p.replace(/[\s\-().]/g, '');
+    if (/^[\+]?\d{8,15}$/.test(phoneClean)) { result.phone = phoneClean; continue; }
+    // "Contact: +86..." format
+    const contactMatch = p.match(/Contact\s*:\s*([\+\d\s\-]+)/i);
+    if (contactMatch) { result.phone = contactMatch[1].replace(/[\s\-]/g, ''); continue; }
+
+    // Skip known keywords
+    if (/^(Name|Date|Time|Contact|Number|Hi+!*|전화예약|신규|가게전화|바좌석|요정|요청)\s*:?$/i.test(p)) continue;
+    // "Name:Zosia" format
+    const nameMatch = p.match(/^Name\s*:\s*(.+)/i);
+    if (nameMatch && result.name === 'Guest') { result.name = nameMatch[1].trim(); continue; }
+
+    // Everything else is text
+    unmatched.push(p);
+  }
+
+  // First unmatched = guest name (if not set by Name: pattern)
+  if (unmatched.length >= 1 && result.name === 'Guest') result.name = unmatched[0];
+  // Fallback: if still Guest, try first word that looks like a name from raw text
+  if (result.name === 'Guest' || result.name === 'April 10th') {
+    const words = text.split(/[\s\/,·]+/);
+    for (const w of words) {
+      if (!w) continue;
+      if (/^\d/.test(w)) continue; // starts with number
+      if (/^[@+]/.test(w)) continue; // instagram or phone
+      if (/^(Name|Date|Time|Contact|Number|Hi+|Instagram|of|People|Friday|April|and|the|th|PM|AM|pax|Pax|PAX)\b/i.test(w)) continue;
+      if (/^(신규|가게전화|전화예약|바좌석|요정|요청|오후|오전)\b/.test(w)) continue;
+      if (w.length < 2) continue;
+      result.name = w.replace(/님$/, ''); // remove 님 suffix
+      break;
+    }
+  }
+  // Last unmatched = staff (if 2+ unmatched and not a keyword)
+  if (unmatched.length >= 2) {
+    const last = unmatched[unmatched.length - 1];
+    if (!/^(bar|table|room|바|테이블|룸|counter|private|신규|가게전화|전화예약)\s*$/i.test(last)) {
+      result.staffName = last;
     }
   }
 
-  if (changed) saveData();
+  delete result._gotPax;
+  return result;
 }
 
-// Staff can trigger reminders manually
-app.post('/api/send-reminders', async (_req, res) => {
-  await sendReminders();
-  res.json({ ok: true, message: 'Reminders processed' });
+// ── Force time to nearest valid slot ──
+function snapToSlot(time, date) {
+  const slots = isWeekend(date) ? CONFIG.WEEKEND_SLOTS : CONFIG.WEEKDAY_SLOTS;
+  if (slots.includes(time)) return time;
+  // Find nearest slot
+  const h = parseInt(time.split(':')[0]);
+  let best = slots[0];
+  let bestDiff = 999;
+  slots.forEach(s => {
+    const sh = parseInt(s.split(':')[0]);
+    const diff = Math.abs(sh - h);
+    if (diff < bestDiff) { bestDiff = diff; best = s; }
+  });
+  return best;
+}
+
+
+// Helper: get start of today in UTC (for fetching all of today's events)
+function todayStartUTC() {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 3600000);
+  const start = new Date(kst.getFullYear(), kst.getMonth(), kst.getDate());
+  return new Date(start.getTime() - 9 * 3600000);
+}
+
+async function syncGoogleCalendar() {
+  if (!CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY || !CONFIG.GOOGLE_CALENDAR_ID) {
+    console.log('📅 [GCAL] No credentials, skipping sync');
+    return { added:0, warnings:[], total:0 };
+  }
+  try {
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(
+      CONFIG.GOOGLE_CLIENT_EMAIL,
+      null,
+      CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      ['https://www.googleapis.com/auth/calendar.readonly']
+    );
+    const cal = google.calendar({ version: 'v3', auth });
+    const now = new Date();
+    const twoMonths = new Date(now.getTime() + 62 * 86400000);
+    const res = await cal.events.list({
+      calendarId: CONFIG.GOOGLE_CALENDAR_ID,
+      timeMin: todayStartUTC().toISOString(),
+      timeMax: twoMonths.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 500,
+    });
+    const gcalEvents = res.data.items || [];
+    let added = 0;
+    const warnings = [];
+
+    gcalEvents.forEach(ev => {
+      if (reservations.find(r => r.gcalId === ev.id)) return; // already imported
+      if (ev.status === 'cancelled') return;
+
+      const title = ev.summary || '';
+      const desc = ev.description || '';
+      if (!title.trim() && !desc.trim()) return;
+
+      const fullText = title + (desc ? ' / ' + desc : '');
+
+      // Check if this looks like a reservation
+      if (!looksLikeReservation(fullText)) {
+        console.log('📅 [GCAL] Skipped (not a reservation): ' + title);
+        return;
+      }
+
+      let date, fallbackTime;
+      if (ev.start && ev.start.dateTime) {
+        const start = new Date(ev.start.dateTime);
+        date = start.toISOString().slice(0, 10);
+        fallbackTime = String(start.getHours()).padStart(2, '0') + ':00';
+      } else if (ev.start && ev.start.date) {
+        date = ev.start.date;
+        fallbackTime = '19:00';
+      } else {
+        // NO date? Still import with today's date
+        date = kstToday();
+        fallbackTime = '19:00';
+        warnings.push('⚠️ 날짜없음: ' + title + ' → 오늘로 배정');
+      }
+
+      const parsed = parseGcalEntry(fullText);
+      // Use parsed time, fallback to calendar time, then snap to nearest valid slot
+      let rawTime = parsed.time || fallbackTime;
+      const time = snapToSlot(rawTime, date);
+      const pref = detectPreference(fullText, parsed.partySize);
+      const a = autoAssign(date, time, parsed.partySize, pref);
+
+      let notes = '📅 ' + title;
+      if (parsed.exactTime) notes += '\n⏰ 정확한 시간: ' + parsed.exactTime;
+      if (parsed.staffName) notes += '\n👤 담당: ' + parsed.staffName;
+      if (desc) notes += '\n📄 ' + desc;
+
+      let status = 'confirmed';
+      if (!a) {
+        status = 'needs_assignment';
+        warnings.push('🚨 좌석부족: ' + parsed.name + ' / ' + date + ' ' + time + ' / ' + parsed.partySize + '명');
+        notes += '\n\n🚨 자동 좌석 배정 실패 — 수동 배정 필요!';
+      }
+
+      if (parsed.name === 'Guest' && title.trim()) {
+        parsed.name = title.split(/[\/·,]/)[0].trim() || 'Guest';
+      }
+
+      reservations.push({
+        id: 'gc_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+        gcalId: ev.id,
+        name: parsed.name, phone: parsed.phone, instagram: parsed.instagram, email: '',
+        partySize: parsed.partySize, date, time, preference: pref || 'auto',
+        zone: a ? a.zone : 'unassigned', seats: a ? a.seats : [],
+        status, source: 'google_calendar', notes,
+        confirmCode: 'PC' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(2,4),
+        createdAt: new Date().toISOString(), reminderD1: false, reminderD0: false,
+        modLog: [{ action: 'Google Calendar import' + (a ? '' : ' (⚠️미배정)'), by: parsed.staffName || 'System', at: new Date().toISOString() }],
+      });
+      logReservationCreation(reservations[reservations.length - 1]);
+      added++;
+      console.log('📅 ' + (a ? '✅' : '⚠️') + ' ' + parsed.name + ' / ' + date + ' ' + time + ' / ' + parsed.partySize + 'pax' + (parsed.phone ? ' / ' + parsed.phone : '') + (parsed.instagram ? ' / ' + parsed.instagram : ''));
+    });
+
+    if (added > 0) saveRes();
+    console.log('📅 [GCAL] +' + added + ' / warnings:' + warnings.length + ' / total events:' + gcalEvents.length);
+    return { added, warnings, total: gcalEvents.length };
+  } catch (e) {
+    console.error('📅 [GCAL] Error:', e.message);
+    return { added: 0, warnings: ['❌ ' + e.message], total: 0 };
+  }
+}
+
+// ── Sync report: show ALL gcal events and their status ──
+// Helper: check if text looks like a reservation
+function looksLikeReservation(text) {
+  if (!text) return false;
+  const hasTime = /\d{1,2}\s*:\s*\d{2}|\d{1,2}\s*(pm|am|PM|AM)|\d{1,2}\s*시|오후/.test(text);
+  const hasPax = /\d+\s*(pax|명|people|persons|guests|PAX)|Number\s*of\s*People/i.test(text);
+  const hasPhone = /01[0-9][\-\s]?\d{3,4}[\-\s]?\d{4}|\+\d{10,}|Contact\s*:/i.test(text);
+  const hasInsta = /@\w|instagram|ig\s*:/i.test(text);
+  const hasName = /^Name\s*:/im.test(text);
+  return hasTime || hasPax || hasPhone || hasInsta || hasName;
+}
+
+app.post('/api/gcal-report', async (req, res) => {
+  const { pin } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  if (!CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY || !CONFIG.GOOGLE_CALENDAR_ID) {
+    return res.json({ ok: false, error: 'Google Calendar not configured' });
+  }
+  try {
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(CONFIG.GOOGLE_CLIENT_EMAIL, null, CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'), ['https://www.googleapis.com/auth/calendar.readonly']);
+    const cal = google.calendar({ version: 'v3', auth });
+    const now = new Date();
+    const twoMonths = new Date(now.getTime() + 62 * 86400000);
+    const r = await cal.events.list({ calendarId: CONFIG.GOOGLE_CALENDAR_ID, timeMin: todayStartUTC().toISOString(), timeMax: twoMonths.toISOString(), singleEvents: true, orderBy: 'startTime', maxResults: 500 });
+    const events = (r.data.items || []).filter(ev => ev.status !== 'cancelled' && (ev.summary || '').trim() && looksLikeReservation((ev.summary||'') + ' ' + (ev.description||'')));
+    const report = events.map(ev => {
+      const imported = reservations.find(x => x.gcalId === ev.id);
+      const title = ev.summary || '';
+      let date = '';
+      if (ev.start && ev.start.dateTime) date = new Date(ev.start.dateTime).toISOString().slice(0, 10);
+      else if (ev.start && ev.start.date) date = ev.start.date;
+      const parsed = parseGcalEntry(title + (ev.description ? ' / ' + ev.description : ''));
+      return { gcalId: ev.id, title, date, parsed: { name: parsed.name, time: parsed.time, partySize: parsed.partySize, phone: parsed.phone, instagram: parsed.instagram, staffName: parsed.staffName }, imported: !!imported, systemId: imported ? imported.id : null, systemStatus: imported ? imported.status : null };
+    });
+    res.json({ ok: true, total: events.length, imported: report.filter(r => r.imported).length, missing: report.filter(r => !r.imported).length, report });
+  } catch (e) { res.json({ ok: false, error: e.message }); }
 });
 
-// No-show stats endpoint
-app.get('/api/stats/noshow', (_req, res) => {
-  const total = reservations.length;
-  const noshows = reservations.filter(r => r.status === 'noshow').length;
-  const rate = total > 0 ? Math.round(noshows / total * 100) : 0;
-  res.json({ total, noshows, rate: rate + '%' });
+// ── Bulk import: paste multiple reservations at once ──
+app.post('/api/bulk-import', async (req, res) => {
+  const { pin, text, date } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  if (!text || !date) return res.status(400).json({ error: 'Text and date required' });
+
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const results = [];
+
+  for (const line of lines) {
+    const parsed = parseGcalEntry(line);
+    const time = parsed.time || '19:00';
+    const pref = detectPreference(line, parsed.partySize);
+    const a = autoAssign(date, time, parsed.partySize, pref);
+
+    // Always create, even without seat
+    const r = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name: parsed.name, phone: parsed.phone, instagram: parsed.instagram, email: '',
+      partySize: parsed.partySize, date, time, preference: pref || 'auto',
+      zone: a ? a.zone : 'unassigned', seats: a ? a.seats : [],
+      status: a ? 'confirmed' : 'needs_assignment',
+      source: 'bulk_import', notes: '원본: ' + line + (parsed.staffName ? '\n👤 담당: ' + parsed.staffName : ''),
+      createdAt: new Date().toISOString(), reminderD1: false, reminderD0: false,
+      modLog: [{ action: 'bulk import', by: req.body.staffName || 'Staff', at: new Date().toISOString() }],
+    };
+    reservations.push(r);
+    results.push({ line, name: parsed.name, time, partySize: parsed.partySize, phone: parsed.phone, instagram: parsed.instagram, assigned: !!a, zone: r.zone });
+  }
+  saveRes();
+  res.json({ ok: true, count: results.length, results });
 });
 
-// ── Walk-in seat tracking (in-memory, resets on restart) ──
-let walkinSeats = {};  // { "2026-04-23_19:00": ["B3","B5"] }
-
-app.get('/api/walkin/:date/:time', (req, res) => {
-  const key = req.params.date + '_' + req.params.time;
-  res.json({ seats: walkinSeats[key] || [] });
+// Staff: trigger manual sync
+app.post('/api/gcal-sync', async (req, res) => {
+  const { pin } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  // Clear previously imported gcal reservations to re-import all
+  if (req.body.force) {
+    const before = reservations.length;
+    reservations = reservations.filter(r => r.source !== 'google_calendar');
+    saveRes();
+    console.log('📅 [GCAL] Force: cleared ' + (before - reservations.length) + ' old gcal imports');
+  }
+  const result = await syncGoogleCalendar();
+  res.json({ ok: true, added: result.added, warnings: result.warnings, total: result.total, reservationCount: reservations.length });
 });
 
-app.post('/api/walkin/toggle', (req, res) => {
-  const { date, time, seat } = req.body;
-  if (!date || !time || !seat) return res.status(400).json({ error: 'Missing fields' });
-  const key = date + '_' + time;
-  if (!walkinSeats[key]) walkinSeats[key] = [];
-  const idx = walkinSeats[key].indexOf(seat);
-  if (idx >= 0) walkinSeats[key].splice(idx, 1);
-  else walkinSeats[key].push(seat);
-  res.json({ seats: walkinSeats[key] });
+// Diagnostic: test Google Calendar connection
+app.post('/api/gcal-test', async (req, res) => {
+  const { pin } = req.body;
+  if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+
+  const diag = {
+    hasEmail: !!CONFIG.GOOGLE_CLIENT_EMAIL,
+    hasKey: !!CONFIG.GOOGLE_PRIVATE_KEY,
+    keyLength: (CONFIG.GOOGLE_PRIVATE_KEY || '').length,
+    hasCalId: !!CONFIG.GOOGLE_CALENDAR_ID,
+    calId: CONFIG.GOOGLE_CALENDAR_ID || '(empty)',
+    email: CONFIG.GOOGLE_CLIENT_EMAIL || '(empty)',
+  };
+
+  if (!diag.hasEmail || !diag.hasKey || !diag.hasCalId) {
+    return res.json({ ok: false, error: 'Missing env vars', diag });
+  }
+
+  try {
+    const { google } = require('googleapis');
+    const key = CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    diag.keyStart = key.substring(0, 30);
+    diag.keyHasNewlines = key.includes('\n');
+
+    const auth = new google.auth.JWT(CONFIG.GOOGLE_CLIENT_EMAIL, null, key, ['https://www.googleapis.com/auth/calendar.readonly']);
+    const cal = google.calendar({ version: 'v3', auth });
+
+    const now = new Date();
+    const twoMonths = new Date(now.getTime() + 62 * 86400000);
+    const result = await cal.events.list({
+      calendarId: CONFIG.GOOGLE_CALENDAR_ID,
+      timeMin: todayStartUTC().toISOString(),
+      timeMax: twoMonths.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 500,
+    });
+
+    const events = result.data.items || [];
+    const alreadyImported = [];
+    const notImported = [];
+
+    events.forEach(ev => {
+      if (ev.status === 'cancelled') return;
+      const title = ev.summary || '(no title)';
+      const fullText = title + ' ' + (ev.description || '');
+      if (!looksLikeReservation(fullText)) return; // skip non-reservations
+      let date = '';
+      if (ev.start && ev.start.dateTime) date = new Date(ev.start.dateTime).toISOString().slice(0, 10);
+      else if (ev.start && ev.start.date) date = ev.start.date;
+      const existing = reservations.find(r => r.gcalId === ev.id);
+      const entry = { id: ev.id, title, date, imported: !!existing };
+      if (existing) alreadyImported.push(entry);
+      else notImported.push(entry);
+    });
+
+    res.json({
+      ok: true,
+      totalEvents: events.length,
+      alreadyImported: alreadyImported.length,
+      notImported: notImported.length,
+      notImportedList: notImported,
+      alreadyImportedList: alreadyImported,
+      diag,
+    });
+  } catch (e) {
+    res.json({ ok: false, error: e.message, diag });
+  }
 });
 
-/* ─── Start ─── */
+function cleanup() {
+  const cut=Date.now()-7*86400000, b=reservations.length;
+  reservations=reservations.filter(r=>new Date(r.date+'T23:59:59+09:00').getTime()>cut);
+  if(reservations.length!==b){ console.log('Cleaned '+(b-reservations.length)); saveRes(); }
+}
+
 app.listen(CONFIG.PORT, () => {
-  cleanup();
-  sendReminders();
-  // Check reminders every 30 minutes
-  setInterval(sendReminders, 30 * 60 * 1000);
-
-  console.log(`\n🌲 PINE&CO Reservation System started`);
-  console.log(`   Guest page  : http://localhost:${CONFIG.PORT}/reserve.html`);
-  console.log(`   Staff page  : http://localhost:${CONFIG.PORT}/manage.html`);
-  console.log(`   Reminders   : Auto-check every 30 min (D-1 + D-0)`);
-  console.log(`   Reservations: ${reservations.length} entries loaded\n`);
+  cleanup(); sendReminders(); syncGoogleCalendar(); autoBackup();
+  setInterval(sendReminders, 30*60000);
+  setInterval(syncGoogleCalendar, 60*60000); // sync every hour
+  setInterval(autoBackup, 60*60000); // backup every hour
+  console.log('\n🌲 PINE&CO Reserve | http://localhost:'+CONFIG.PORT+'\n');
 });
