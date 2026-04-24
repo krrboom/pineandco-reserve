@@ -1204,7 +1204,7 @@ app.post('/api/reserve', async (req, res) => {
   const { name, phone, instagram, email, partySize, date, time, specialRequest } = req.body;
   if (!name || !partySize || !date || !time) return res.status(400).json({ error: 'Required fields missing.' });
   if (partySize < 1 || partySize > 10) return res.status(400).json({ error: 'Party size 1-10.' });
-  if (events[date]) return res.status(400).json({ error: 'This date is not available (event).' });
+  if (events[date]) return res.status(400).json({ error: '이 날짜는 예약을 받지 않습니다 (EVENT). / This date is not available (event).' });
   const slots = getSlots(date);
   if (!slots.includes(time)) return res.status(400).json({ error: 'Invalid time.' });
 
@@ -1237,9 +1237,9 @@ app.post('/api/reserve', async (req, res) => {
     await withResLock(async () => {
       const a = autoAssign(date, time, partySize, null);
       if (!a) {
-        if (partySize <= 2) throw new Error('Bar and high table seats are fully booked for this date.');
-        if (partySize <= 5) throw new Error('Table seats are fully booked for this date.');
-        if (partySize >= 6) throw new Error('The private room is fully booked. For groups of 6+, please call us at +82-10-6817-0406 or walk in.');
+        if (partySize <= 2) throw new Error('바와 하이테이블이 모두 예약되었습니다. / Bar and high table seats are fully booked for this date.');
+        if (partySize <= 5) throw new Error('테이블 좌석이 모두 예약되었습니다. / Table seats are fully booked for this date.');
+        if (partySize >= 6) throw new Error('프라이빗 룸이 예약되었습니다. 6명 이상은 전화(+82-10-6817-0406) 또는 방문해주세요. / The private room is fully booked. For groups of 6+, please call us at +82-10-6817-0406 or walk in.');
         throw new Error('No seats available.');
       }
       const confirmCode = 'PC' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(2,4);

@@ -1071,14 +1071,18 @@ function renderWaitSidebar(){
   var waiting=(wQueue||[]).filter(function(q){return q.status==='waiting';});
   var called=(wQueue||[]).filter(function(q){return q.status==='called';});
   var total=waiting.length+called.length;
-  if(ct)ct.textContent=total;
 
-  // On non-today dates, show notice
+  // On non-today dates, hide waiting info (only relevant on today)
   if(!isToday){
-    el.innerHTML='<div class="ws-stale">웨이팅은 오늘 날짜(<strong>'+today+'</strong>)에서만 관리됩니다.<br><br>현재 대기: '+total+'팀<br>오늘 Day View로 이동하려면 아래 버튼을 누르세요.</div>'+
-      '<button onclick="cD=\''+today+'\';ld();" style="width:100%;margin-top:8px;padding:8px;border:1px solid var(--gold);border-radius:6px;background:none;color:var(--gold);font-size:11px;cursor:pointer;">오늘로 이동</button>';
+    if(ct)ct.textContent='—';
+    el.innerHTML='<div class="ws-stale">웨이팅은 <strong>오늘</strong>만 관리됩니다.<br><br>현재 보는 날짜: '+cD+'<br>오늘 날짜: '+today+'</div>'+
+      '<button onclick="cD=\''+today+'\';ld();" style="width:100%;margin-top:8px;padding:8px;border:1px solid var(--gold);border-radius:6px;background:none;color:var(--gold);font-size:11px;cursor:pointer;">오늘 날짜로 이동 →</button>';
     return;
   }
+
+  // Only show count on today
+  if(ct)ct.textContent=total;
+
   if(!total){
     el.innerHTML='<div class="ws-empty">현재 웨이팅이 없습니다.<br><br>고객 등록: /customer.html</div>';
     return;
