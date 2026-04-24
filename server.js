@@ -49,7 +49,11 @@ const CONFIG = {
   // Email: Gmail SMTP (primary) — set in Render environment variables
   GMAIL_USER     : process.env.GMAIL_USER || '',
   GMAIL_PASS     : process.env.GMAIL_PASS || '',
-  EMAIL_FROM     : process.env.EMAIL_FROM || '',
+  EMAIL_FROM     : process.env.EMAIL_FROM || 'Pine & Co Seoul <onboarding@resend.dev>',
+
+  // Email: Resend (fallback) — set in Render environment variables
+  RESEND_API_KEY : process.env.RESEND_API_KEY || '',
+  RESEND_FROM    : process.env.RESEND_FROM || '',
 
   // Waiting list auto-cancel timeout
   AUTO_CANCEL_MIN : parseInt(process.env.AUTO_CANCEL_MIN) || 5,
@@ -84,7 +88,9 @@ const CONFIG = {
 
 const IS_DEV          = !CONFIG.ALIGO_KEY || CONFIG.ALIGO_KEY === 'YOUR_API_KEY';
 const IS_TWILIO_READY = CONFIG.TWILIO_SID !== 'YOUR_TWILIO_SID';
-const IS_EMAIL_READY  = !!(CONFIG.GMAIL_USER && CONFIG.GMAIL_PASS);
+const IS_GMAIL_READY  = !!(CONFIG.GMAIL_USER && CONFIG.GMAIL_PASS);
+const IS_RESEND_READY = !!(CONFIG.RESEND_API_KEY);
+const IS_EMAIL_READY  = IS_GMAIL_READY || IS_RESEND_READY;
 
 // ─────────────────────────────────────────────────────────────
 //  DATA FILES — single DATA_DIR for both systems
@@ -497,10 +503,10 @@ function sendSMS(to, msg) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  EMAIL (Gmail SMTP via nodemailer)
+//  EMAIL (Resend or Gmail SMTP)
 // ─────────────────────────────────────────────────────────────
 let gmailTransport = null;
-if (IS_EMAIL_READY) {
+if (IS_GMAIL_READY) {
   gmailTransport = nodemailer.createTransport({
     host: 'smtp.gmail.com', port: 465, secure: true,
     auth: { user: CONFIG.GMAIL_USER, pass: CONFIG.GMAIL_PASS },
@@ -510,8 +516,56 @@ if (IS_EMAIL_READY) {
     .catch(err => console.error('❌ Gmail SMTP connection FAILED:', err.message));
 }
 
+async function sendEmailViaResend(toEmail, subject, htmlBody) {
+  const fromAddr = CONFIG.RESEND_FROM || CONFIG.EMAIL_FROM || 'onboarding@resend.dev';
+  return new Promise((resolve) => {
+    const body = JSON.stringify({ from: fromAddr, to: [toEmail], subject, html: htmlBody });
+    const req = https.request({
+      hostname: 'api.resend.com', path: '/emails', method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${CONFIG.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, res => {
+      let buf = '';
+      res.on('data', d => (buf += d));
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(buf);
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            console.log(`✅ Resend sent → ${toEmail} (${parsed.id || 'ok'})`);
+            resolve(parsed);
+          } else {
+            console.error(`❌ Resend FAILED → ${toEmail}: ${buf}`);
+            resolve(null);
+          }
+        } catch {
+          console.error(`❌ Resend parse error → ${toEmail}: ${buf}`);
+          resolve(null);
+        }
+      });
+    });
+    req.on('error', err => {
+      console.error(`❌ Resend error → ${toEmail}: ${err.message}`);
+      resolve(null);
+    });
+    req.write(body); req.end();
+  });
+}
+
 async function sendEmail(toEmail, subject, htmlBody) {
-  if (!gmailTransport) { console.log('⚠️  Gmail not configured, skipping email'); return null; }
+  // Prefer Resend (if configured), fallback to Gmail
+  if (IS_RESEND_READY) {
+    const result = await sendEmailViaResend(toEmail, subject, htmlBody);
+    if (result) return result;
+    // If Resend failed and Gmail is available, try Gmail
+    if (!gmailTransport) return null;
+  }
+  if (!gmailTransport) {
+    if (!IS_RESEND_READY) console.log('⚠️  Email not configured, skipping');
+    return null;
+  }
   try {
     const result = await gmailTransport.sendMail({
       from: CONFIG.EMAIL_FROM, replyTo: CONFIG.GMAIL_USER,
@@ -643,7 +697,9 @@ async function sendWaitingMessage(entry, type, extra = {}) {
   // Korean → Aligo (try Alimtalk first, SMS fallback)
   if (korean) {
     if (IS_DEV) { console.log(`\n🟡 [${label} KR simulation] ${krPhone}\n   ${m.sms}\n`); return; }
-    const hasKakao = CONFIG.KAKAO_SENDER_KEY !== 'YOUR_SENDER_KEY'
+    const hasKakao = CONFIG.KAKAO_SENDER_KEY && CONFIG.KAKAO_SENDER_KEY.length > 0
+                  && CONFIG.KAKAO_SENDER_KEY !== 'YOUR_SENDER_KEY'
+                  && m.tpl && m.tpl.length > 0
                   && m.tpl !== `YOUR_TPL_CODE_${type.toUpperCase()}`;
     if (hasKakao) {
       let tplMsg = Object.entries(m.vars).reduce((s, [k, v]) => s.replaceAll(k, v), m.sms);
@@ -656,8 +712,13 @@ async function sendWaitingMessage(entry, type, extra = {}) {
           failover: 'Y', fsubject_1: 'PINE&CO Waiting',
           fmessage_1: m.sms, fmsg_type: 'LMS',
         });
-        console.log(`✅ Alimtalk sent (${type}):`, result?.message || result?.result_code);
-        return result;
+        // Check for senderkey error and fall through to SMS
+        if (result && typeof result === 'object' && result.code !== undefined && result.code < 0) {
+          console.error(`Alimtalk failed (code ${result.code}), falling back to SMS:`, result.message);
+        } else {
+          console.log(`✅ Alimtalk sent (${type}):`, result?.message || result?.result_code);
+          return result;
+        }
       } catch (e) { console.error('Alimtalk error, falling back to SMS:', e.message); }
     }
     try {
@@ -1826,7 +1887,7 @@ app.listen(CONFIG.PORT, () => {
   setInterval(syncGoogleCalendar,  60 * 60000);
   setInterval(autoBackup,          60 * 60000);
 
-  const kakaoReady = CONFIG.KAKAO_SENDER_KEY !== 'YOUR_SENDER_KEY';
+  const kakaoReady = CONFIG.KAKAO_SENDER_KEY && CONFIG.KAKAO_SENDER_KEY.length > 0 && CONFIG.KAKAO_SENDER_KEY !== 'YOUR_SENDER_KEY';
   console.log(`\n${CONFIG.BUSINESS_EMOJI}  ${CONFIG.BUSINESS_NAME} Unified System started`);
   console.log(`   Port           : ${CONFIG.PORT}`);
   console.log(`   Reservation    : ${CONFIG.PUBLIC_URL}/reserve.html`);
@@ -1836,7 +1897,8 @@ app.listen(CONFIG.PORT, () => {
   console.log(`   Korean SMS     : ${IS_DEV ? '🟡 Simulation' : '✅ Aligo live'}`);
   console.log(`   Alimtalk       : ${kakaoReady ? '✅ Connected' : '⚠️  Not configured'}`);
   console.log(`   Intl SMS       : ${IS_TWILIO_READY ? '✅ Twilio live' : '🟡 Simulation'}`);
-  console.log(`   Email          : ${IS_EMAIL_READY ? '✅ Gmail live' : '🟡 Not configured'}`);
+  const emailMode = IS_RESEND_READY ? '✅ Resend live' : (IS_GMAIL_READY ? '✅ Gmail live' : '🟡 Not configured');
+  console.log(`   Email          : ${emailMode}`);
   console.log(`   Waiting auto-cancel: ${CONFIG.AUTO_CANCEL_MIN} min`);
   console.log(`   Reservations loaded: ${reservations.length}`);
   console.log(`   Queue loaded       : ${queue.length}\n`);
