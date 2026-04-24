@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+<title>Pine &amp; Co — Cocktail Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Cinzel:wght@400;500&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--ink:#1e1208;--ink2:#2a1a0e;--cream:#f0ebe0;--gold:#b8935a;--amber:#c9a96e;--muted:#7a6550;--ok:#5DCAA5;--fail:#c07070;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cream);min-height:100vh;min-height:100dvh;overflow-x:hidden;display:flex;flex-direction:column;}
+.hdr{text-align:center;padding:20px 16px 8px;}
+.hdr-logo{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.35em;color:var(--gold);}
+.hdr-t{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:var(--cream);margin-top:1px;}
+
+#app{flex:1;display:flex;flex-direction:column;}
+
+/* Progress */
+.prog{display:flex;gap:6px;justify-content:center;margin:8px 0;}
+.pd{width:9px;height:9px;border-radius:50%;background:rgba(184,147,90,.12);}
+.pd.ok{background:var(--ok);}.pd.no{background:var(--fail);}.pd.now{background:var(--gold);box-shadow:0 0 8px rgba(184,147,90,.35);}
+
+/* Game area */
+.gm{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 14px 20px;max-width:500px;margin:0 auto;width:100%;}
+.tgt{text-align:center;margin-bottom:8px;}
+.tgt-l{font-size:11px;color:var(--muted);letter-spacing:.18em;font-family:'Cinzel',serif;}
+.tgt-n{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:400;color:var(--gold);margin-top:2px;}
+
+/* Shaker */
+.sk-zone{position:relative;width:110px;height:150px;margin:0 auto 10px;}
+.sk{width:72px;height:138px;border:2px solid rgba(184,147,90,.3);border-radius:8px 8px 24px 24px;
+  background:linear-gradient(180deg,rgba(184,147,90,.05),rgba(184,147,90,.01));
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:8px;
+  position:absolute;left:50%;transform:translateX(-50%);overflow:hidden;transition:all .12s;}
+.sk.rdy{border-color:var(--ok);box-shadow:0 0 18px rgba(93,202,165,.12);}
+.sk.bad{border-color:var(--fail);box-shadow:0 0 18px rgba(192,112,112,.15);}
+.sk.shk{animation:shk .07s infinite alternate;}
+.sk-cap{width:40px;height:12px;background:var(--gold);border-radius:4px 4px 0 0;position:absolute;top:-12px;left:50%;transform:translateX(-50%);}
+.sk-cnt{font-size:10px;color:var(--muted);font-family:'Cinzel',serif;letter-spacing:.08em;}
+.sk-items{position:absolute;bottom:22px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center;padding:0 6px;max-width:60px;}
+.sk-item{width:14px;height:14px;border-radius:50%;animation:drop .2s ease-out;}
+@keyframes shk{0%{transform:translateX(-50%) rotate(-4deg) translateY(-2px);}100%{transform:translateX(-50%) rotate(4deg) translateY(2px);}}
+@keyframes drop{0%{transform:translateY(-12px) scale(.5);opacity:0;}100%{transform:translateY(0) scale(1);opacity:1;}}
+
+.hint{text-align:center;margin-bottom:10px;font-size:14px;color:var(--amber);}
+.hint .p{animation:pls 1.2s ease-in-out infinite;}
+@keyframes pls{0%,100%{opacity:.35;}50%{opacity:1;}}
+.sbar{width:180px;height:7px;border-radius:4px;background:rgba(184,147,90,.1);margin:6px auto 0;overflow:hidden;}
+.sfill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold),var(--ok));transition:width .1s;}
+
+/* Retry banner */
+.retry-ban{text-align:center;padding:14px;margin-bottom:10px;border:1px solid rgba(192,112,112,.3);border-radius:10px;background:rgba(192,112,112,.06);}
+.retry-ban .t{color:var(--fail);font-size:14px;font-weight:500;margin-bottom:4px;}
+.retry-ban .s{color:var(--muted);font-size:12px;line-height:1.5;}
+.retry-wrong{color:var(--fail);font-size:12px;}.retry-right{color:var(--ok);font-size:12px;}
+
+/* Ingredients grid */
+.ing-l{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.14em;color:var(--muted);margin-bottom:8px;text-align:center;}
+.ings{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px;}
+.ig{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 6px 6px;
+  border:1px solid rgba(184,147,90,.14);border-radius:10px;background:rgba(240,235,224,.025);
+  cursor:pointer;transition:all .12s;touch-action:manipulation;width:72px;}
+.ig:active{transform:scale(.93);}
+.ig.sel{border-color:var(--gold);background:rgba(184,147,90,.12);}
+.ig.used{opacity:.15;pointer-events:none;}
+.ig svg{width:36px;height:42px;}
+.ig-n{font-size:9px;color:var(--cream);text-align:center;line-height:1.15;min-height:20px;display:flex;align-items:center;}
+
+/* Buttons */
+.btn{padding:14px 32px;border:none;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;font-size:13px;letter-spacing:.1em;font-weight:500;background:linear-gradient(135deg,var(--gold),var(--amber));color:var(--ink);transition:opacity .2s;}
+.btn:hover{opacity:.9;}
+.btn2{background:none;border:1px solid rgba(184,147,90,.2);color:var(--muted);font-size:10px;padding:10px 18px;margin-top:8px;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.08em;}
+
+/* Result */
+.res{position:fixed;inset:0;background:rgba(30,18,8,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:50;animation:fi .4s;overflow-y:auto;}
+@keyframes fi{0%{opacity:0;}100%{opacity:1;}}
+.res-name{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--gold);margin-bottom:4px;}
+.res-sub{font-size:14px;color:var(--cream);margin-bottom:6px;}
+.res-ing{font-size:12px;color:var(--amber);margin-bottom:10px;text-align:center;line-height:2;}
+.res-fact{font-size:12px;color:var(--muted);text-align:center;line-height:1.6;max-width:310px;margin-bottom:16px;padding:12px 16px;border-left:2px solid rgba(184,147,90,.2);font-style:italic;}
+
+/* Glass visuals */
+.gl-w{position:relative;width:120px;height:160px;margin-bottom:12px;}
+.gl-martini{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);width:76px;height:64px;overflow:hidden;}
+.gl-martini::after{content:'';position:absolute;inset:0;border-left:2px solid rgba(240,235,224,.22);border-right:2px solid rgba(240,235,224,.22);border-bottom:2px solid rgba(240,235,224,.22);clip-path:polygon(0 0,100% 0,62% 100%,38% 100%);}
+.gl-martini .lq{position:absolute;bottom:0;left:18%;right:18%;clip-path:polygon(0 0,100% 0,78% 100%,22% 100%);animation:fu .8s ease-out forwards;}
+.gl-high{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:48px;height:96px;border:2px solid rgba(240,235,224,.22);border-radius:3px 3px 8px 8px;overflow:hidden;}
+.gl-high .lq{position:absolute;bottom:0;width:100%;border-radius:0 0 6px 6px;animation:fu .8s ease-out forwards;}
+.gl-coupe{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);width:72px;height:56px;border:2px solid rgba(240,235,224,.22);border-radius:0 0 50% 50%;overflow:hidden;}
+.gl-coupe .lq{position:absolute;bottom:0;width:100%;border-radius:0 0 50% 50%;animation:fu .8s ease-out forwards;}
+.gl-rocks{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:58px;height:56px;border:2px solid rgba(240,235,224,.22);border-radius:2px 2px 6px 6px;overflow:hidden;}
+.gl-rocks .lq{position:absolute;bottom:0;width:100%;border-radius:0 0 4px 4px;animation:fu .8s ease-out forwards;}
+.gl-stem{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:3px;height:20px;background:rgba(240,235,224,.13);}
+.gl-base{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:4px;background:rgba(240,235,224,.15);border-radius:2px;}
+.gl-gar{position:absolute;top:8px;right:6px;font-size:20px;animation:gd .4s ease-out .6s both;}
+@keyframes gd{0%{transform:translateY(-14px) rotate(-20deg);opacity:0;}100%{transform:translateY(0);opacity:1;}}
+.gl-ice{position:absolute;font-size:12px;opacity:.45;animation:ifl 2s ease-in-out infinite alternate;}
+@keyframes ifl{0%{transform:translateY(0);}100%{transform:translateY(-3px);}}
+@keyframes fu{0%{height:0;}100%{height:var(--h,75%);}}
+
+/* Intro & Final */
+.intro,.final{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;}
+.intro-e{font-size:56px;margin-bottom:12px;}
+.intro-t{font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--gold);margin-bottom:6px;}
+.intro-s{font-size:14px;color:var(--muted);line-height:1.8;max-width:280px;margin-bottom:24px;}
+.f-score{font-family:'Cormorant Garamond',serif;font-size:72px;font-weight:300;color:var(--gold);}
+.f-label{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.22em;color:var(--muted);}
+.f-msg{font-size:16px;color:var(--cream);margin-top:14px;line-height:1.7;max-width:300px;}
+.f-box{margin-top:16px;padding:18px 22px;border:1.5px solid var(--ok);border-radius:12px;background:rgba(93,202,165,.05);max-width:310px;}
+.f-box .bt{font-family:'Cinzel',serif;font-size:13px;color:var(--ok);letter-spacing:.1em;margin-bottom:8px;}
+.f-box .bs{font-size:13px;color:var(--cream);line-height:1.7;}
+
+/* Floating check-turn button */
+.check-btn{position:fixed;bottom:20px;right:20px;z-index:40;padding:12px 18px;
+  border:1px solid rgba(184,147,90,.3);border-radius:50px;background:rgba(30,18,8,.9);
+  color:var(--gold);font-family:'Cinzel',serif;font-size:10px;letter-spacing:.08em;
+  cursor:pointer;backdrop-filter:blur(8px);transition:all .15s;box-shadow:0 2px 12px rgba(0,0,0,.3);}
+.check-btn:active{transform:scale(.95);}
+
+/* Turn overlay */
+.turn-overlay{position:fixed;inset:0;background:rgba(30,18,8,.95);z-index:60;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px;animation:fi .3s;}
+.turn-num{font-family:'Cormorant Garamond',serif;font-size:80px;font-weight:300;color:var(--gold);line-height:1;}
+.turn-label{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.2em;color:var(--amber);margin-top:4px;}
+.turn-pos{font-size:22px;color:var(--cream);margin-top:16px;}
+.turn-pos strong{color:var(--gold);font-size:28px;}
+.turn-total{font-size:14px;color:var(--muted);margin-top:4px;}
+.turn-close{margin-top:24px;padding:12px 28px;border:1px solid rgba(184,147,90,.3);border-radius:8px;
+  background:rgba(184,147,90,.08);color:var(--gold);font-family:'Cinzel',serif;font-size:12px;
+  letter-spacing:.1em;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-logo">PINE & CO SEOUL</div>
+  <div class="hdr-t">Cocktail Lab 🧪</div>
+</div>
+<div id="app"></div>
+<div id="turn-overlay" style="display:none;"></div>
+<button class="check-btn" id="check-btn" onclick="checkTurn()" style="display:none;">📋 MY TURN</button>
+<script>
+/* ═══ SVG ICON FACTORY ═══ */
+function svgBottle(body,neck,cap,fill,accent,shine){
+  return `<svg viewBox="0 0 36 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="13" y="2" width="10" height="6" rx="2" fill="${cap}"/>
+    <rect x="14.5" y="7" width="7" height="${neck}" rx="2" fill="${accent}"/>
+    <rect x="${body[0]}" y="${body[1]}" width="${body[2]}" height="${body[3]}" rx="${body[4]}" fill="${fill}"/>
+    ${shine?`<rect x="${body[0]+3}" y="${body[1]+3}" width="3" height="${body[3]-10}" rx="1.5" fill="rgba(255,255,255,.12)"/>`:''}
+    ${accent!==fill?`<rect x="${body[0]}" y="${body[1]+body[3]-8}" width="${body[2]}" height="8" rx="2" fill="${accent}" opacity=".3"/>`:''}
+  </svg>`;
+}
+const IC={
+  // Spirits — each a distinct bottle shape
+  'White Rum':     ()=>svgBottle([8,14,20,30,3],8,'#d4a44a','#f5e6c8','#c8a050',true),
+  'Aged Rum':      ()=>svgBottle([8,14,20,30,3],8,'#8b5e2b','#a06830','#6b3e18',true),
+  'Vodka':         ()=>svgBottle([10,12,16,32,2],6,'#a8b8c8','#d8e4f0','#8898a8',true),
+  'Citrus Vodka':  ()=>svgBottle([10,12,16,32,2],6,'#c8c848','#e8e8b8','#a8a838',true),
+  'Gin':           ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="2" width="8" height="5" rx="2" fill="#1a4a6a"/><rect x="15" y="6" width="6" height="5" rx="1.5" fill="#2868a0"/><ellipse cx="18" cy="30" rx="11" ry="15" fill="#2868a0"/><ellipse cx="18" cy="30" rx="11" ry="15" fill="url(#gsh)" opacity=".15"/><rect x="16" y="20" width="3" height="12" rx="1.5" fill="rgba(255,255,255,.1)"/><defs><linearGradient id="gsh" x1="7" y1="15" x2="29" y2="45"><stop stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient></defs></svg>`,
+  'Tequila':       ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="4" rx="2" fill="#2a5a2a"/><rect x="15" y="4" width="6" height="7" rx="1.5" fill="#3a7a3a"/><path d="M8 16 C8 12 28 12 28 16 L26 44 C26 46 10 46 10 44 Z" fill="#3a7a3a"/><rect x="16" y="18" width="3" height="16" rx="1.5" fill="rgba(255,255,255,.08)"/></svg>`,
+  'Bourbon':       ()=>`<svg viewBox="0 0 36 46"><rect x="13" y="1" width="10" height="5" rx="1" fill="#1a1a1a"/><rect x="14" y="5" width="8" height="6" rx="1" fill="#2a2a2a"/><rect x="7" y="10" width="22" height="34" rx="2" fill="#1a1a1a"/><rect x="9" y="14" width="18" height="10" rx="1" fill="#c8a050" opacity=".6"/><rect x="14" y="16" width="3" height="18" rx="1.5" fill="rgba(255,255,255,.06)"/></svg>`,
+  'Cognac':        ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="4" rx="2" fill="#8b4020"/><rect x="15" y="4" width="6" height="8" rx="2" fill="#6b3018"/><ellipse cx="18" cy="32" rx="12" ry="13" fill="#6b3018"/><ellipse cx="18" cy="32" rx="12" ry="13" fill="url(#csh)" opacity=".12"/><rect x="16" y="22" width="3" height="12" rx="1.5" fill="rgba(255,255,255,.08)"/><defs><linearGradient id="csh" x1="6" y1="19" x2="30" y2="45"><stop stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient></defs></svg>`,
+  // Liqueurs — smaller, colored bottles
+  'Orange Liqueur':()=>`<svg viewBox="0 0 36 46"><rect x="14" y="3" width="8" height="4" rx="2" fill="#d87020"/><rect x="15" y="6" width="6" height="5" rx="1.5" fill="#e08830"/><rect x="9" y="10" width="18" height="28" rx="6" fill="#e08830"/><rect x="15" y="14" width="2.5" height="14" rx="1" fill="rgba(255,255,255,.1)"/></svg>`,
+  'Coffee Liqueur':()=>`<svg viewBox="0 0 36 46"><rect x="14" y="3" width="8" height="4" rx="2" fill="#2a1810"/><rect x="15" y="6" width="6" height="5" rx="1.5" fill="#3a2818"/><rect x="9" y="10" width="18" height="28" rx="4" fill="#3a2818"/><rect x="9" y="28" width="18" height="10" rx="2" fill="#c8a050" opacity=".3"/><rect x="15" y="14" width="2.5" height="12" rx="1" fill="rgba(255,255,255,.06)"/></svg>`,
+  'Raspberry Syrup':()=>`<svg viewBox="0 0 36 46"><rect x="14" y="4" width="8" height="3" rx="1.5" fill="#a03050"/><rect x="15" y="6" width="6" height="4" rx="1" fill="#c04868"/><rect x="10" y="9" width="16" height="30" rx="4" fill="#c04868"/><circle cx="16" cy="22" r="2" fill="rgba(255,255,255,.12)"/><circle cx="20" cy="26" r="1.5" fill="rgba(255,255,255,.08)"/></svg>`,
+  'Orgeat Syrup':  ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="4" width="8" height="3" rx="1.5" fill="#a08848"/><rect x="15" y="6" width="6" height="4" rx="1" fill="#c8a858"/><rect x="10" y="9" width="16" height="30" rx="4" fill="#d8c078"/><rect x="15" y="13" width="2" height="14" rx="1" fill="rgba(255,255,255,.1)"/></svg>`,
+  'Grenadine':     ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="4" width="8" height="3" rx="1.5" fill="#8b2020"/><rect x="15" y="6" width="6" height="4" rx="1" fill="#b03030"/><rect x="10" y="9" width="16" height="30" rx="4" fill="#c03838"/><rect x="15" y="13" width="2" height="14" rx="1" fill="rgba(255,255,255,.08)"/></svg>`,
+  'Maraschino':    ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="4" width="8" height="3" rx="1.5" fill="#808080"/><rect x="15" y="6" width="6" height="4" rx="1" fill="#e0d8d0"/><rect x="10" y="9" width="16" height="30" rx="4" fill="#e8e0d8"/><rect x="15" y="13" width="2" height="14" rx="1" fill="rgba(0,0,0,.04)"/></svg>`,
+  'Campari':       ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="2" width="8" height="4" rx="2" fill="#a01010"/><rect x="15" y="5" width="6" height="5" rx="1.5" fill="#c82020"/><rect x="9" y="9" width="18" height="30" rx="3" fill="#c82020"/><rect x="12" y="14" width="12" height="6" rx="1" fill="#fff" opacity=".15"/></svg>`,
+  'Sweet Vermouth':()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="4" rx="2" fill="#4a1818"/><rect x="15" y="4" width="6" height="8" rx="1.5" fill="#6b2020"/><rect x="9" y="11" width="18" height="32" rx="3" fill="#6b2020"/><rect x="15" y="15" width="2.5" height="16" rx="1" fill="rgba(255,255,255,.06)"/></svg>`,
+  'Dry Vermouth':  ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="4" rx="2" fill="#6a7a3a"/><rect x="15" y="4" width="6" height="8" rx="1.5" fill="#8a9a4a"/><rect x="9" y="11" width="18" height="32" rx="3" fill="#b8c878"/><rect x="15" y="15" width="2.5" height="16" rx="1" fill="rgba(255,255,255,.08)"/></svg>`,
+  'Absinthe':      ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="4" rx="2" fill="#2a5a20"/><rect x="15" y="4" width="6" height="8" rx="1.5" fill="#3a7a28"/><rect x="9" y="11" width="18" height="32" rx="3" fill="#4a8a38"/><rect x="15" y="15" width="2.5" height="16" rx="1" fill="rgba(255,255,255,.06)"/></svg>`,
+  'Elderflower Liqueur':()=>`<svg viewBox="0 0 36 46"><rect x="14" y="3" width="8" height="3" rx="1.5" fill="#a0a078"/><rect x="15" y="5" width="6" height="5" rx="1.5" fill="#c8c8a0"/><rect x="10" y="9" width="16" height="30" rx="6" fill="#d8d8b8"/><circle cx="15" cy="22" r="2" fill="#e8e0a0" opacity=".3"/><circle cx="21" cy="26" r="1.5" fill="#e8e0a0" opacity=".2"/></svg>`,
+  // Juices — fruit shapes
+  'Lime Juice':    ()=>`<svg viewBox="0 0 36 46"><ellipse cx="18" cy="24" rx="13" ry="12" fill="#5aaa38"/><path d="M18 14 C18 14 22 20 22 24 C22 28 18 34 18 34" stroke="#fff" stroke-width="1" opacity=".2" fill="none"/><ellipse cx="18" cy="24" rx="8" ry="7" fill="#78c848" opacity=".4"/><path d="M14 20 L18 24 L14 28" stroke="#e8f0d0" stroke-width=".8" opacity=".3" fill="none"/><path d="M22 20 L18 24 L22 28" stroke="#e8f0d0" stroke-width=".8" opacity=".3" fill="none"/></svg>`,
+  'Lemon Juice':   ()=>`<svg viewBox="0 0 36 46"><ellipse cx="18" cy="24" rx="12" ry="11" fill="#e8d030"/><path d="M8 24 Q18 18 28 24" stroke="#f0e060" stroke-width="1.5" fill="none" opacity=".4"/><ellipse cx="18" cy="24" rx="7" ry="6" fill="#f0e060" opacity=".4"/><path d="M14 20 L18 24 L14 28" stroke="#fff" stroke-width=".8" opacity=".2" fill="none"/></svg>`,
+  'Cranberry Juice':()=>`<svg viewBox="0 0 36 46"><rect x="10" y="6" width="16" height="34" rx="3" fill="#a82040"/><rect x="10" y="6" width="16" height="8" rx="3" fill="#c83050"/><rect x="13" y="3" width="10" height="5" rx="2" fill="#d84060"/><circle cx="15" cy="26" r="3" fill="#c83050" opacity=".4"/><circle cx="21" cy="30" r="2" fill="#c83050" opacity=".3"/></svg>`,
+  'Pineapple Juice':()=>`<svg viewBox="0 0 36 46"><ellipse cx="18" cy="28" rx="11" ry="14" fill="#d8a828"/><path d="M14 8 L18 4 L22 8 L20 6 L18 2 L16 6 Z" fill="#4a8a28"/><path d="M12 12 L18 6 L24 12" fill="#5a9a38" opacity=".7"/><line x1="14" y1="22" x2="14" y2="34" stroke="#c89818" stroke-width=".6" opacity=".3"/><line x1="18" y1="18" x2="18" y2="38" stroke="#c89818" stroke-width=".6" opacity=".3"/><line x1="22" y1="22" x2="22" y2="34" stroke="#c89818" stroke-width=".6" opacity=".3"/></svg>`,
+  'Orange Juice':  ()=>`<svg viewBox="0 0 36 46"><circle cx="18" cy="24" r="13" fill="#e89030"/><circle cx="18" cy="24" r="8" fill="#f0a848" opacity=".4"/><path d="M14 20 L18 24 L14 28" stroke="#fff" stroke-width=".8" opacity=".2" fill="none"/><circle cx="14" cy="18" r="2" fill="#4a8a28"/></svg>`,
+  'Grapefruit Juice':()=>`<svg viewBox="0 0 36 46"><circle cx="18" cy="24" r="13" fill="#e8a088"/><circle cx="18" cy="24" r="8" fill="#f0b898" opacity=".4"/><path d="M14 20 L18 24 L22 20" stroke="#fff" stroke-width=".8" opacity=".15" fill="none"/></svg>`,
+  // Syrups — jar/dispenser shapes
+  'Sugar Syrup':   ()=>`<svg viewBox="0 0 36 46"><rect x="12" y="12" width="12" height="26" rx="3" fill="#d8c878"/><rect x="10" y="10" width="16" height="5" rx="2" fill="#c8a850"/><rect x="14" y="5" width="8" height="7" rx="2" fill="#e8d888"/><path d="M15 30 Q18 34 21 30" stroke="#c8a848" stroke-width="1.5" fill="none" opacity=".4"/></svg>`,
+  'Agave Syrup':   ()=>`<svg viewBox="0 0 36 46"><path d="M18 6 L14 16 L10 14 L12 24 L8 22 L14 36 L18 42 L22 36 L28 22 L24 24 L26 14 L22 16 Z" fill="#6a9a40"/><rect x="14" y="34" width="8" height="10" rx="2" fill="#8ab858"/></svg>`,
+  'Honey Syrup':   ()=>`<svg viewBox="0 0 36 46"><ellipse cx="18" cy="30" rx="10" ry="12" fill="#d8a030"/><rect x="14" y="10" width="8" height="14" rx="3" fill="#c89020"/><rect x="12" y="8" width="12" height="4" rx="2" fill="#b87818"/><path d="M15 34 Q18 38 21 34" stroke="#c89020" stroke-width="1" fill="none" opacity=".4"/></svg>`,
+  'Cinnamon Syrup':()=>`<svg viewBox="0 0 36 46"><rect x="12" y="12" width="12" height="26" rx="3" fill="#8b5830"/><rect x="10" y="10" width="16" height="5" rx="2" fill="#6b3818"/><rect x="14" y="5" width="8" height="7" rx="2" fill="#a07040"/><path d="M16 22 Q18 26 20 22 Q22 26 20 30" stroke="#c89858" stroke-width="1" fill="none" opacity=".5"/></svg>`,
+  // Fresh ingredients
+  'Fresh Mint':    ()=>`<svg viewBox="0 0 36 46"><path d="M18 38 Q8 30 10 20 Q12 14 18 12 Q24 14 26 20 Q28 30 18 38Z" fill="#48a048"/><path d="M18 38 L18 12" stroke="#2a7a2a" stroke-width="1.2"/><path d="M18 20 Q12 18 10 22" stroke="#2a7a2a" stroke-width=".8" fill="none"/><path d="M18 26 Q24 24 26 28" stroke="#2a7a2a" stroke-width=".8" fill="none"/><path d="M15 16 Q10 16 9 20" stroke="#58b058" stroke-width=".6" fill="none" opacity=".4"/></svg>`,
+  'Fresh Espresso':()=>`<svg viewBox="0 0 36 46"><rect x="8" y="18" width="20" height="16" rx="3" fill="#f0e8d8"/><rect x="8" y="18" width="20" height="4" rx="2" fill="#e0d0b8"/><path d="M28 24 Q34 24 34 30 Q34 34 28 34" stroke="#e0d0b8" stroke-width="2" fill="none"/><ellipse cx="18" cy="20" rx="8" ry="3" fill="#3a2010"/><rect x="12" y="12" width="3" height="8" rx="1" fill="#d0c0a0" opacity=".3"/><rect x="18" y="10" width="2" height="10" rx="1" fill="#d0c0a0" opacity=".2"/></svg>`,
+  'Egg White':     ()=>`<svg viewBox="0 0 36 46"><ellipse cx="18" cy="26" rx="10" ry="14" fill="#f5f0e8"/><ellipse cx="18" cy="24" rx="7" ry="8" fill="#fff" opacity=".5"/><path d="M12 16 Q14 10 18 8 Q22 10 24 16" stroke="#d8d0c0" stroke-width="1.2" fill="none"/><path d="M10 18 Q8 22 10 26" stroke="#e8e0d0" stroke-width=".6" fill="none" opacity=".3"/></svg>`,
+  // Mixers
+  'Soda Water':    ()=>`<svg viewBox="0 0 36 46"><rect x="11" y="4" width="14" height="38" rx="4" fill="#b0d0e8"/><rect x="11" y="4" width="14" height="6" rx="3" fill="#90b8d0"/><circle cx="16" cy="22" r="1.5" fill="#fff" opacity=".3"/><circle cx="20" cy="28" r="1" fill="#fff" opacity=".25"/><circle cx="17" cy="34" r="1.2" fill="#fff" opacity=".2"/><circle cx="22" cy="18" r="1" fill="#fff" opacity=".2"/></svg>`,
+  'Tonic Water':   ()=>`<svg viewBox="0 0 36 46"><rect x="11" y="4" width="14" height="38" rx="4" fill="#c8d8c8"/><rect x="11" y="4" width="14" height="6" rx="3" fill="#a8c0a8"/><circle cx="16" cy="22" r="1.5" fill="#fff" opacity=".2"/><circle cx="20" cy="30" r="1" fill="#fff" opacity=".2"/><rect x="14" y="16" width="8" height="4" rx="1" fill="#e8f0e8" opacity=".2"/></svg>`,
+  'Coconut Cream': ()=>`<svg viewBox="0 0 36 46"><circle cx="18" cy="26" r="13" fill="#8b6838"/><path d="M8 22 Q18 16 28 22" fill="#6b4818"/><circle cx="18" cy="28" r="8" fill="#f0e8d8"/><circle cx="15" cy="20" r="2" fill="#4a3018" opacity=".4"/><circle cx="22" cy="20" r="1.5" fill="#4a3018" opacity=".3"/></svg>`,
+  // Bitters
+  'Angostura Bitters':()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="3" rx="1" fill="#c8a050"/><rect x="15" y="3" width="6" height="6" rx="1" fill="#e8c868"/><rect x="12" y="8" width="12" height="30" rx="2" fill="#e8c868"/><rect x="10" y="10" width="16" height="22" rx="1" fill="#f5f0e0"/><rect x="12" y="12" width="12" height="18" rx="1" fill="none" stroke="#c8a050" stroke-width=".5"/></svg>`,
+  'Peach Liqueur': ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="3" width="8" height="3" rx="1.5" fill="#c88048"/><rect x="15" y="5" width="6" height="5" rx="1.5" fill="#e8a868"/><rect x="10" y="9" width="16" height="30" rx="6" fill="#e8a868"/><rect x="15" y="13" width="2.5" height="14" rx="1" fill="rgba(255,255,255,.1)"/></svg>`,
+};
+// Fallback
+function getIcon(name){return (IC[name]||(()=>`<svg viewBox="0 0 36 46"><rect x="10" y="8" width="16" height="32" rx="4" fill="#888"/></svg>`))();}
+
+/* ═══ COCKTAIL DATA (Difford's Guide verified) ═══ */
+const CK=[
+  {name:'Mojito',ing:['White Rum','Lime Juice','Fresh Mint','Sugar Syrup','Soda Water'],glass:'highball',color:'#a8d8a0',gar:'🍃',ice:true,
+   hint:'This Cuban classic needs something herbal and something fizzy.',
+   fact:'The Mojito traces back to 16th-century Havana, where Sir Francis Drake\'s crew mixed aguardiente with lime, mint and sugarcane. Hemingway later made it legendary at La Bodeguita del Medio.'},
+  {name:'Margarita',ing:['Tequila','Lime Juice','Orange Liqueur'],glass:'coupe',color:'#d4e87a',gar:'🍋',ice:false,
+   hint:'Only 3 ingredients. Think: spirit + citrus + a sweet liqueur.',
+   fact:'Essentially a Tequila Sidecar. Its invention is claimed by over a dozen people. By the 1970s it became America\'s most popular cocktail. The salt rim was a later, now iconic, addition.'},
+  {name:'Whiskey Sour',ing:['Bourbon','Lemon Juice','Sugar Syrup','Egg White','Angostura Bitters'],glass:'rocks',color:'#e8c878',gar:'🍒',ice:true,
+   hint:'What gives this sour its silky foam? And don\'t forget the aromatic drops.',
+   fact:'First printed in Jerry Thomas\' 1862 "Bar-Tender\'s Guide." The egg white — creating the signature silky foam — was a later addition from the Boston Sour variation.'},
+  {name:'Daiquiri',ing:['White Rum','Lime Juice','Sugar Syrup'],glass:'coupe',color:'#f0e8c8',gar:'🍈',ice:false,
+   hint:'Beautifully simple — just 3 ingredients. Spirit + sour + sweet.',
+   fact:'Invented in 1898 by American mining engineer Jennings Cox near Santiago de Cuba. Both JFK and Hemingway were devotees. The frozen version is a completely different drink.'},
+  {name:'Espresso Martini',ing:['Vodka','Fresh Espresso','Coffee Liqueur'],glass:'martini',color:'#3a2518',gar:'☕',ice:false,
+   hint:'Just 3 ingredients. What wakes you up... and what adds depth to coffee?',
+   fact:'Created c.1983 by Dick Bradsell at London\'s Soho Brasserie. A model asked for "something to wake me up, then f*** me up." The 3 coffee bean garnish symbolizes health, wealth & happiness.'},
+  {name:'Cosmopolitan',ing:['Citrus Vodka','Orange Liqueur','Cranberry Juice','Lime Juice'],glass:'martini',color:'#d84060',gar:'🍊',ice:false,
+   hint:'Think pink. What gives it that famous color? And which vodka variant?',
+   fact:'Dale DeGroff popularized the definitive recipe at Manhattan\'s Rainbow Room in the mid-1990s. Sex and the City turned it into a global cultural phenomenon.'},
+  {name:'Piña Colada',ing:['White Rum','Coconut Cream','Pineapple Juice'],glass:'highball',color:'#f5edc8',gar:'🍍',ice:true,
+   hint:'Tropical paradise in a glass — just 3 ingredients. Think beach.',
+   fact:'Created in 1954 by bartender Ramón "Monchito" Marrero at the Caribe Hilton, San Juan. Puerto Rico declared it the island\'s official national drink in 1978.'},
+  {name:'Clover Club',ing:['Gin','Lemon Juice','Raspberry Syrup','Egg White'],glass:'coupe',color:'#d8708a',gar:'🫐',ice:false,
+   hint:'A gin sour with something berry and something for that silky texture.',
+   fact:'Named after a gentlemen\'s club at Philadelphia\'s Bellevue-Stratford Hotel, founded in 1882. H.L. Mencken once called it "the greatest cocktail in the world."'},
+  {name:'Mai Tai',ing:['Aged Rum','Lime Juice','Orange Liqueur','Orgeat Syrup','Sugar Syrup'],glass:'rocks',color:'#d89040',gar:'🍃',ice:true,
+   hint:'A tiki classic. Think aged spirit + citrus + a nutty syrup + something orange.',
+   fact:'Created in 1944 by Trader Vic in Oakland, California. He served it to Tahitian friends who exclaimed "Maita\'i roa ae!" — "Out of this world!" The original used a 17-year-old J. Wray & Nephew rum.'},
+  {name:'Sidecar',ing:['Cognac','Orange Liqueur','Lemon Juice'],glass:'coupe',color:'#d8b860',gar:'🍊',ice:false,
+   hint:'A French classic — just 3 ingredients. Think brandy + citrus + something orange.',
+   fact:'Born during WWI, likely at the Ritz Paris or Harry\'s New York Bar, c.1922. Named after the motorcycle sidecar a regular patron arrived in. The sugar rim is a Ritz tradition.'},
+];
+
+const ALL_N=Object.keys(IC);
+let st='intro',ci=0,sc=0,rr=[],sel=[],co=[],shk=0,retryMsg=null,roundIngs=[];
+const TOT=5,SHKNEED=14;
+
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function start(){co=shuffle(CK).slice(0,TOT);ci=0;sc=0;rr=[];round();}
+function round(){
+  sel=[];shk=0;retryMsg=null;st='playing';
+  // Set ingredients once per cocktail, keep on retry
+  const c=cur();
+  const decoys=shuffle(ALL_N.filter(n=>!c.ing.includes(n))).slice(0,Math.max(5,10-c.ing.length));
+  roundIngs=shuffle([...c.ing,...decoys]);
+  render();
+}
+function cur(){return co[ci];}
+
+function tap(name){
+  if(st!=='playing')return;
+  if(retryMsg&&sel.length===0)retryMsg=null; // clear hint on first new selection
+  if(sel.includes(name)){sel=sel.filter(s=>s!==name);render();return;}
+  const c=cur();
+  if(sel.length>=c.ing.length)return; // max reached
+  sel.push(name);
+  if(navigator.vibrate)navigator.vibrate(20);
+  if(sel.length===c.ing.length){st='shaking';shk=0;}
+  render();
+}
+
+function doShake(){
+  if(st!=='shaking')return;shk++;
+  if(navigator.vibrate)navigator.vibrate(12);
+  const s=document.querySelector('.sk');
+  if(s){s.classList.add('shk');setTimeout(()=>s.classList.remove('shk'),80);}
+  if(shk>=SHKNEED){
+    // Check correctness
+    const c=cur();
+    const correct=sel.every(s=>c.ing.includes(s))&&c.ing.every(i=>sel.includes(i));
+    if(correct){
+      sc++;rr.push('ok');st='result';
+      if(navigator.vibrate)navigator.vibrate([80,40,80,40,160]);
+    }else{
+      // Wrong — show what was right/wrong, give hint, retry
+      const right=sel.filter(s=>c.ing.includes(s));
+      const wrong=sel.filter(s=>!c.ing.includes(s));
+      retryMsg={right,wrong,hint:c.hint||'Think about what makes this cocktail unique.'};
+      st='playing';sel=[];shk=0;
+      if(navigator.vibrate)navigator.vibrate([60,30,60,30,60]);
+    }
+  }
+  render();
+}
+function manShake(){if(st==='shaking'){shk+=2;doShake();}}
+function skip(){rr.push('no');st='result';render();}
+function next(){ci++;if(ci>=TOT){st='final';render();}else round();}
+
+// Motion
+let la={x:0,y:0,z:0},lt=0;
+function hm(e){const a=e.accelerationIncludingGravity||e.acceleration;if(!a)return;const d=Math.abs(a.x-la.x)+Math.abs(a.y-la.y)+Math.abs(a.z-la.z);la={x:a.x,y:a.y,z:a.z};if(d>25&&Date.now()-lt>80){lt=Date.now();doShake();}}
+async function reqM(){if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){try{const p=await DeviceMotionEvent.requestPermission();if(p==='granted')window.addEventListener('devicemotion',hm);}catch{}}else if(typeof DeviceMotionEvent!=='undefined')window.addEventListener('devicemotion',hm);}
+
+function progHTML(){
+  return `<div class="prog">${rr.map(r=>`<div class="pd ${r}"></div>`).join('')}${st!=='final'?'<div class="pd now"></div>':''}${Array(Math.max(0,TOT-rr.length-(st==='final'?0:1))).fill('<div class="pd"></div>').join('')}</div>`;
+}
+
+function glassHTML(c,ok){
+  const h=ok?'78%':'20%';const op=ok?1:.12;
+  const lq=`<div class="lq" style="background:${c.color};--h:${h};opacity:${op};"></div>`;
+  let g='';
+  if(c.glass==='martini')g=`<div class="gl-martini">${lq}</div><div class="gl-stem" style="bottom:6px;height:18px;"></div><div class="gl-base"></div>`;
+  else if(c.glass==='highball')g=`<div class="gl-high">${lq}</div>`;
+  else if(c.glass==='coupe')g=`<div class="gl-coupe">${lq}</div><div class="gl-stem"></div><div class="gl-base"></div>`;
+  else g=`<div class="gl-rocks">${lq}</div>`;
+  return `<div class="gl-w">${g}${ok?`<div class="gl-gar">${c.gar}</div>`:''}${ok&&c.ice?`<div class="gl-ice" style="top:28%;left:42%;">🧊</div>`:''}</div>`;
+}
+
+function render(){
+  const app=document.getElementById('app');if(!app)return;
+
+  if(st==='intro'){
+    app.innerHTML=`<div class="intro">
+      <div class="intro-e">🍸</div>
+      <div class="intro-t">Cocktail Lab</div>
+      <div class="intro-s">Pick the right ingredients,<br>shake your phone to mix!<br><br>5 cocktails — can you nail<br>all of them?<br><br><span style="color:var(--gold);font-size:13px;">Psst... get a perfect score and<br>our bartenders might have a little<br>something for you. 😉</span></div>
+      <button class="btn" onclick="reqM();start()">START MIXING</button>
+    </div>`;return;
+  }
+
+  if(st==='final'){
+    const perfect=sc===TOT;
+    const msgs=[
+      {min:0,t:'Room for improvement!',s:'Don\'t worry — even the best bartenders had to start somewhere. Give it another go!',e:'🥃'},
+      {min:2,t:'Not bad at all!',s:'You know your way around a few classics. A couple more tries and you\'ll be unstoppable.',e:'🙌'},
+      {min:4,t:'So close to perfection!',s:'One more and you would\'ve had it. That\'s seriously impressive.',e:'🔥'},
+      {min:5,t:'',s:'',e:'🏆'},
+    ];
+    const m=[...msgs].reverse().find(x=>sc>=x.min);
+    app.innerHTML=`<div class="final">
+      <div style="font-size:48px;margin-bottom:6px;">${m.e}</div>
+      <div class="f-score">${sc}/${TOT}</div>
+      <div class="f-label">COCKTAILS MIXED</div>
+      ${perfect?`
+        <div class="f-msg">Wait... are you <em>actually</em> a bartender?<br>That was flawless. 🔥</div>
+        <div class="f-box">
+          <div class="bt">🎉 YOU EARNED IT</div>
+          <div class="bs">Show this screen to our bartender and tell them:<br><br><strong>"I aced the Cocktail Lab."</strong><br><br>A little surprise is waiting for you. 🍸✨</div>
+        </div>
+      `:`<div class="f-msg">${m.t}<br><span style="color:var(--muted);font-size:13px;">${m.s}</span></div>`}
+      ${progHTML()}
+      <button class="btn" onclick="start()" style="margin-top:14px;">PLAY AGAIN</button>
+    </div>`;return;
+  }
+
+  if(st==='result'){
+    const c=cur();const ok=rr[rr.length-1]==='ok';
+    app.innerHTML=`<div class="res">
+      ${glassHTML(c,ok)}
+      <div class="res-name">${ok?'✨ '+c.name:'❌ '+c.name}</div>
+      <div class="res-sub">${ok?'Perfectly mixed!':'Better luck next time!'}</div>
+      <div class="res-ing">${c.ing.map(n=>`${n}`).join(' · ')}</div>
+      <div class="res-fact">${c.fact}</div>
+      ${progHTML()}
+      <button class="btn" onclick="next()">${ci<TOT-1?'NEXT COCKTAIL →':'SEE RESULTS'}</button>
+    </div>`;return;
+  }
+
+  // Playing / Shaking
+  const c=cur();
+
+  app.innerHTML=`<div class="gm">
+    ${progHTML()}
+    <div class="tgt">
+      <div class="tgt-l">SHAKE THIS COCKTAIL</div>
+      <div class="tgt-n">${c.name}</div>
+    </div>
+
+    ${retryMsg?`<div class="retry-ban">
+      <div class="t">Almost! Give it another shot.</div>
+      <div class="s">
+        ${retryMsg.right.length?`<span class="retry-right">✓ ${retryMsg.right.join(', ')}</span><br>`:''}
+        ${retryMsg.wrong.length?`<span class="retry-wrong">✕ ${retryMsg.wrong.join(', ')}</span><br>`:''}
+        <span style="color:var(--amber);font-style:italic;font-size:11px;">Hint: ${retryMsg.hint}</span>
+      </div>
+    </div>`:''}
+
+    <div class="sk-zone">
+      <div class="sk ${st==='shaking'?'rdy':''}" onclick="${st==='shaking'?'manShake()':''}">
+        <div class="sk-cap"></div>
+        <div class="sk-items">${sel.map(n=>`<div class="sk-item" style="background:${c.color};"></div>`).join('')}</div>
+        <div class="sk-cnt">${sel.length} / ${c.ing.length}</div>
+      </div>
+    </div>
+
+    ${st==='shaking'?`
+      <div class="hint"><span class="p">📱 Shake your phone!</span><br>
+        <span style="font-size:11px;color:var(--muted);">or tap the shaker</span>
+        <div class="sbar"><div class="sfill" style="width:${Math.min(100,Math.round(shk/SHKNEED*100))}%"></div></div>
+      </div>
+    `:`
+      <div class="ing-l">SELECT ${c.ing.length} INGREDIENTS</div>
+      <div class="ings">
+        ${roundIngs.map(n=>`<div class="ig ${sel.includes(n)?'sel':''}" data-i="${n}" onclick="tap('${n.replace(/'/g,"\\'")}')">
+          ${getIcon(n)}
+          <span class="ig-n">${n}</span>
+        </div>`).join('')}
+      </div>
+      <button class="btn2" onclick="skip()">SKIP →</button>
+    `}
+  </div>`;
+}
+
+// ═══ CHECK MY TURN ═══
+const myId=new URLSearchParams(location.search).get('id');
+let turnVisible=false;
+if(myId)document.getElementById('check-btn').style.display='block';
+
+async function checkTurn(){
+  if(turnVisible){closeTurn();return;}
+  try{
+    const r=await fetch('/api/queue');
+    if(!r.ok)return;
+    const q=await r.json();
+    const queue=Array.isArray(q)?q:(q.queue||[]);
+    const me=queue.find(e=>e.id===myId);
+    const ov=document.getElementById('turn-overlay');
+    if(!me){
+      ov.innerHTML=`<div class="turn-overlay">
+        <div style="font-size:40px;margin-bottom:12px;">✅</div>
+        <div class="turn-pos">Your waiting is complete!</div>
+        <div class="turn-total" style="margin-top:8px;">Please check your notifications.</div>
+        <button class="turn-close" onclick="closeTurn()">BACK TO GAME</button>
+      </div>`;
+    }else if(me.status==='called'){
+      ov.innerHTML=`<div class="turn-overlay">
+        <div style="font-size:40px;margin-bottom:12px;">🔔</div>
+        <div class="turn-pos" style="color:var(--ok);font-size:24px;">Your table is ready!</div>
+        <div class="turn-total" style="margin-top:8px;">Please head to the bar when you're ready.</div>
+        <a href="/customer.html?id=${myId}" class="turn-close" style="text-decoration:none;background:var(--ok);color:var(--ink);border-color:var(--ok);display:inline-block;margin-top:16px;">GO TO WAITING PAGE</a>
+        <button class="turn-close" onclick="closeTurn()" style="margin-top:10px;">FINISH THIS ROUND FIRST</button>
+      </div>`;
+    }else{
+      const w=queue.filter(e=>e.status==='waiting');
+      const pos=w.findIndex(e=>e.id===myId)+1;
+      ov.innerHTML=`<div class="turn-overlay">
+        <div class="turn-num">${me.number}</div>
+        <div class="turn-label">YOUR NUMBER</div>
+        <div class="turn-pos"><strong>#${pos}</strong> in line</div>
+        <div class="turn-total">${w.length} total waiting</div>
+        <button class="turn-close" onclick="closeTurn()">BACK TO GAME</button>
+      </div>`;
+    }
+    ov.style.display='block';
+    turnVisible=true;
+  }catch{}
+}
+function closeTurn(){document.getElementById('turn-overlay').style.display='none';turnVisible=false;}
+
+render();
+</script>
+</body>
+</html>
