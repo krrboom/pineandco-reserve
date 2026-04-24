@@ -266,13 +266,16 @@ function checkReturning(name, phone, email, instagram) {
     if (v.email && email && v.email.toLowerCase() === email.toLowerCase()) matches++;
     if (v.instagram && instagram && v.instagram.toLowerCase() === instagram.toLowerCase()) matches++;
     if (matches >= 2) {
+      const visitArr = Array.isArray(v.visits) ? v.visits : [];
       const zoneCounts = {};
-      (v.visits || []).forEach(vis => { zoneCounts[vis.zone] = (zoneCounts[vis.zone]||0) + 1; });
+      visitArr.forEach(vis => { if (vis && vis.zone) zoneCounts[vis.zone] = (zoneCounts[vis.zone]||0) + 1; });
       const prefZone = Object.keys(zoneCounts).sort((a,b) => zoneCounts[b] - zoneCounts[a])[0] || '';
-      const recentVisits = (v.visits || []).slice(-5).reverse().map(vis => vis.date + ' ' + (vis.zone||''));
+      const recentVisits = visitArr.slice(-5).reverse().map(vis => (vis && vis.date ? vis.date : '') + ' ' + (vis && vis.zone ? vis.zone : ''));
       return {
-        returning: true,
-        visits: v.visits.length, lastVisit: v.lastVisit, firstVisit: v.firstVisit,
+        returning: visitArr.length > 0,
+        visits: visitArr.length,
+        lastVisit: v.lastVisit || '',
+        firstVisit: v.firstVisit || '',
         prefZone, recentVisits,
       };
     }
