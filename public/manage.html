@@ -186,6 +186,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--tx);
   <div id="newBookingsSection"></div>
   <div id="todayWaitingMini"></div>
   <div id="todaySummary"></div>
+  <div id="todayCloseOut"></div>
 </div>
 
 <!-- CALENDAR VIEW -->
@@ -338,7 +339,18 @@ var barNext={'B1':'B2','B2':'B3','B3':'B2','B4':'B5','B5':'B6','B6':'B5','B7':'B
 
 // ═══════════ HELPERS ═══════════
 function kst(){return new Date(Date.now()+9*3600000);}
+// Real calendar date (used for reservations)
 function ktd(){return kst().toISOString().slice(0,10);}
+// Business day — if before 2AM KST, treat as previous day (7PM-2AM business hours)
+function businessDay(){
+  var k=kst();
+  if(k.getUTCHours()<2){
+    // Before 2AM KST — subtract one day
+    var prev=new Date(k.getTime()-24*3600000);
+    return prev.toISOString().slice(0,10);
+  }
+  return k.toISOString().slice(0,10);
+}
 function fl(m){var t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(function(){t.className='toast';},3000);}
 function gs(){var s=document.getElementById('stSel');return (s&&s.value)||'Staff';}
 function esc(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -360,7 +372,7 @@ async function doLogin(){
   var as=document.getElementById('aSz');as.innerHTML='';
   for(var i=1;i<=10;i++)as.innerHTML+='<option value="'+i+'">'+i+'명</option>';
   evts=await fetch('/api/events').then(function(r){return r.json();}).catch(function(){return {};});
-  var n=kst();cY=n.getFullYear();cM=n.getMonth();cD=ktd();
+  var n=kst();cY=n.getFullYear();cM=n.getMonth();cD=businessDay();
   document.getElementById('login').style.display='none';
   document.getElementById('dash').style.display='block';
   // Start SSE for real-time waiting updates
@@ -447,26 +459,30 @@ function timeRemain(calledAt){
 
 // ═══════════ TODAY VIEW: Header + New Bookings + Waiting Mini + Summary ═══════════
 async function loadHome(){
-  var today=ktd();
+  var today=businessDay();
+  var realToday=ktd();
+  var isAfterMidnight=today!==realToday;
   // Render header
   var d=new Date(today+'T12:00:00');
+  var afterMidnightBadge=isAfterMidnight?'<div style="display:inline-block;margin-left:8px;padding:2px 8px;background:rgba(184,147,90,.15);border-radius:10px;font-size:10px;color:var(--gold);vertical-align:middle;">영업일 기준</div>':'';
   document.getElementById('todayHeader').innerHTML=
     '<div style="text-align:center;margin-bottom:16px;">'+
-    '<div style="font-family:Cinzel,serif;font-size:18px;color:var(--gold);font-weight:400;">'+today+' ('+DK[d.getDay()]+')</div>'+
+    '<div style="font-family:Cinzel,serif;font-size:18px;color:var(--gold);font-weight:400;">'+today+' ('+DK[d.getDay()]+')'+afterMidnightBadge+'</div>'+
     '<div style="font-size:12px;color:var(--mu);margin-top:4px;">Pine &amp; Co Seoul</div></div>';
   // Always re-fetch queue (SSE fallback)
   try{var qr=await fetch('/api/queue');if(qr.ok)wQueue=await qr.json();}catch(e){}
-  // Load new bookings, today's queue preview, and summary
+  // Load new bookings, today's queue preview, summary, and close-out
   renderNewBookings();
   renderTodayWaitingMini();
   renderTodaySummary();
+  renderCloseOut();
 }
 
 // 오늘 들어온 예약 (bookings.html에서 이동) — 하나씩 ✅ 확인 버튼
 async function renderNewBookings(){
   var el=document.getElementById('newBookingsSection');
   if(!el)return;
-  var today=ktd();
+  var today=businessDay();
   var newRes=await fetch('/api/new-today').then(function(r){return r.json();}).catch(function(){return [];});
   var h='';
   h+='<div style="text-align:center;margin-bottom:12px;">';
@@ -584,7 +600,7 @@ function renderTodayWaitingMini(){
 async function renderTodaySummary(){
   var el=document.getElementById('todaySummary');
   if(!el)return;
-  var today=ktd();
+  var today=businessDay();
   var todayRes=await fetch('/api/reservations/'+today).then(function(r){return r.json();}).catch(function(){return [];});
   var todayAvail=await fetch('/api/availability/'+today).then(function(r){return r.json();}).catch(function(){return {};});
   var h='';
@@ -643,6 +659,69 @@ async function renderTodaySummary(){
   // Day View shortcut
   h+='<button onclick="sv(\'day\')" style="width:100%;padding:12px;border:1px solid var(--brd);border-radius:8px;background:var(--card);color:var(--gold);font-size:12px;cursor:pointer;margin-top:8px;font-family:Cinzel,serif;">Day View에서 상세 관리 →</button>';
   el.innerHTML=h;
+}
+
+// ═══════════ CLOSE-OUT (웨이팅 마감 요약) ═══════════
+var showCloseFlag=false;
+var closeSummaryData=null;
+
+async function renderCloseOut(){
+  var el=document.getElementById('todayCloseOut');
+  if(!el)return;
+  var h='';
+  h+='<div style="margin-top:32px;text-align:center;">';
+  h+='<button onclick="toggleCloseOut()" style="padding:14px 28px;border:1px solid rgba(184,147,90,.3);border-radius:8px;background:rgba(184,147,90,.08);color:var(--gold);font-family:Cinzel,serif;font-size:12px;letter-spacing:.14em;cursor:pointer;">';
+  h+=showCloseFlag?'▲ CLOSE SUMMARY':'CLOSE OUT / 마감';
+  h+='</button>';
+  h+='</div>';
+
+  if(showCloseFlag&&closeSummaryData){
+    var s=closeSummaryData;
+    h+='<div style="margin-top:16px;padding:24px;border:1px solid rgba(184,147,90,.2);border-radius:10px;background:rgba(240,235,224,.04);">';
+    h+='<div style="font-family:Cinzel,serif;font-size:14px;letter-spacing:.14em;color:var(--gold);text-align:center;margin-bottom:18px;">TODAY\'S WAITING SUMMARY</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:center;">';
+    h+='<div style="padding:14px;border-radius:8px;background:rgba(184,147,90,.08);">';
+    h+='<div style="font-size:28px;color:var(--gold);font-family:Cinzel,serif;">'+s.total+'</div>';
+    h+='<div style="font-size:10px;color:var(--mu);margin-top:4px;letter-spacing:.1em;">TOTAL TEAMS · 전체</div></div>';
+    h+='<div style="padding:14px;border-radius:8px;background:rgba(93,202,165,.08);">';
+    h+='<div style="font-size:28px;color:#5DCAA5;font-family:Cinzel,serif;">'+s.checkedIn+'</div>';
+    h+='<div style="font-size:10px;color:var(--mu);margin-top:4px;letter-spacing:.1em;">CHECKED IN · 입장</div></div>';
+    h+='<div style="padding:14px;border-radius:8px;background:rgba(160,80,80,.08);">';
+    h+='<div style="font-size:28px;color:#a05050;font-family:Cinzel,serif;">'+s.cancelled+'</div>';
+    h+='<div style="font-size:10px;color:var(--mu);margin-top:4px;letter-spacing:.1em;">CANCELLED · 취소</div></div>';
+    h+='<div style="padding:14px;border-radius:8px;background:rgba(200,160,48,.08);">';
+    h+='<div style="font-size:28px;color:#c9a030;font-family:Cinzel,serif;">'+s.autoCancelled+'</div>';
+    h+='<div style="font-size:10px;color:var(--mu);margin-top:4px;letter-spacing:.1em;">AUTO-CANCELLED · 자동취소</div></div>';
+    h+='</div>';
+    if(s.stillWaiting+s.stillNotified>0){
+      h+='<div style="text-align:center;margin-top:14px;font-size:12px;color:var(--mu);">현재 대기중: '+s.stillWaiting+'팀 · 알림중: '+s.stillNotified+'팀</div>';
+    }
+    // List of checked-in guests
+    if(s.checkedInList&&s.checkedInList.length){
+      h+='<div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(184,147,90,.15);">';
+      h+='<div style="font-size:11px;color:var(--gold);font-family:Cinzel,serif;letter-spacing:.12em;margin-bottom:8px;">✅ CHECKED-IN GUESTS</div>';
+      s.checkedInList.forEach(function(g){
+        h+='<div style="font-size:11px;color:var(--tx);padding:3px 0;">';
+        h+='#'+g.number+' '+esc(g.name||'')+' · '+(g.partySize||2)+'명';
+        if(g.phone)h+=' · '+esc(g.phone);
+        h+='</div>';
+      });
+      h+='</div>';
+    }
+    h+='</div>';
+  }
+  el.innerHTML=h;
+}
+
+async function toggleCloseOut(){
+  showCloseFlag=!showCloseFlag;
+  if(showCloseFlag){
+    try{
+      var r=await fetch('/api/waiting/close');
+      if(r.ok)closeSummaryData=await r.json();
+    }catch(e){closeSummaryData=null;}
+  }
+  renderCloseOut();
 }
 
 // ═══════════ CALENDAR VIEW ═══════════
@@ -1066,7 +1145,7 @@ function renderWaitSidebar(){
   var el=document.getElementById('wsList');
   var ct=document.getElementById('wsCount');
   if(!el)return;
-  var today=ktd();
+  var today=businessDay();
   var isToday=cD===today;
   var waiting=(wQueue||[]).filter(function(q){return q.status==='waiting';});
   var called=(wQueue||[]).filter(function(q){return q.status==='called';});
@@ -1178,7 +1257,7 @@ function wShowSeatPicker(entry){
     String(q.assignedSeat).split(',').forEach(function(s){takenSeats[s.trim()]=true;});
   });
   // Also include today's reservation-assigned seats
-  var today=ktd();
+  var today=businessDay();
   if(cD===today){
     aR.filter(function(r){return (r.status==='confirmed'||r.status==='seated'||r.status==='needs_assignment')&&r.seats;}).forEach(function(r){
       r.seats.forEach(function(s){takenSeats[s]=true;});

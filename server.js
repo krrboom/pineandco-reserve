@@ -642,31 +642,44 @@ async function sendWaitingMessage(entry, type, extra = {}) {
       vars : { '#{이름}': entry.name, '#{번호}': String(entry.number),
                '#{순서}': String(extra.myPos || 1), '#{전체대기}': String(extra.total || 1),
                '#{링크}': url },
-      sms  : `Hi ${entry.name}! 😊\n`
-           + `You are #${entry.number} on the PINE&CO waiting list.\n`
+      sms  : `[PINE&CO]\n`
+           + `파인앤코에 방문해주셔서 감사합니다.\n`
+           + `웨이팅 ${entry.number}번 (${entry.partySize}명) 등록되었습니다.\n`
+           + `자리가 나면 문자로 알려드리겠습니다.\n`
            + `\n`
-           + `Position: ${extra.myPos || 1} of ${extra.total || 1} parties\n`
+           + `Thank you for visiting Pine & Co.\n`
+           + `You are #${entry.number} (${entry.partySize} guests).\n`
+           + `We'll notify you when your table is ready.\n`
            + `\n`
-           + `Track your status:\n`
-           + `${url}`,
+           + `대기 / Waiting: ${extra.myPos || 1} / ${extra.total || 1}\n`
+           + `${url}\n`
+           + `Tel: ${biz}`,
     },
     call: {
       tpl  : CONFIG.TPL_CALL,
       vars : { '#{이름}': entry.name, '#{번호}': String(entry.number),
                '#{분}': String(min), '#{링크}': url },
-      sms  : `${entry.name}, your table is ready! 🎉\n`
+      sms  : `[PINE&CO]\n`
+           + `${entry.name}님, 자리가 준비되었습니다! 🎉\n`
+           + `웨이팅 ${entry.number}번 / ${min}분 내 방문 부탁드립니다.\n`
            + `\n`
+           + `${entry.name}, your table is ready! 🎉\n`
            + `Waiting #${entry.number}\n`
            + `Please arrive within ${min} minutes.\n`
            + `\n`
-           + `${url}`,
+           + `${url}\n`
+           + `Tel: ${biz}`,
     },
     cancel: {
       tpl  : CONFIG.TPL_CANCEL,
       vars : { '#{이름}': entry.name, '#{분}': String(min) },
-      sms  : `${entry.name}, your spot has been released\n`
-           + `after ${min} minutes.\n`
+      sms  : `[PINE&CO]\n`
+           + `${entry.name}님, ${min}분이 지나\n`
+           + `웨이팅이 자동 취소되었습니다.\n`
+           + `재등록은 언제든 가능합니다.\n`
            + `\n`
+           + `${entry.name}, your spot was released\n`
+           + `after ${min} minutes.\n`
            + `You're welcome to register again.\n`
            + `\n`
            + `Tel: ${biz}`,
@@ -874,17 +887,24 @@ function recoverTimers() {
   if (queue.length > 0) saveQueue();
 }
 
-// ── Daily 9AM KST reset (waiting queue + history only; reservations unaffected) ──
+// ── Daily 2AM KST reset (waiting queue + history only; reservations unaffected) ──
+// Business hours: 7PM - 2AM. So waiting list is valid from 7PM until the next day 2AM.
+// At 2AM, everything resets for a clean slate.
 function scheduleDailyReset() {
   const now = new Date();
   const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const kst9am = new Date(kstNow);
-  kst9am.setUTCHours(0, 0, 0, 0); // 9AM KST = 0:00 UTC
-  if (kstNow.getUTCHours() >= 0) kst9am.setUTCDate(kst9am.getUTCDate() + 1);
-  const ms = kst9am.getTime() - now.getTime();
-  console.log(`⏰ Waiting-only daily reset scheduled in ${Math.round(ms/1000/60)} minutes`);
+  // 2AM KST = 17:00 UTC (previous day)
+  // Compute next 2AM KST moment
+  const nextReset = new Date(kstNow);
+  nextReset.setUTCHours(17, 0, 0, 0); // 2AM KST = 17:00 UTC
+  // If current KST time is already past 2AM today, schedule for tomorrow's 2AM
+  if (kstNow.getUTCHours() >= 17) {
+    nextReset.setUTCDate(nextReset.getUTCDate() + 1);
+  }
+  const ms = nextReset.getTime() - kstNow.getTime();
+  console.log(`⏰ Waiting-only daily reset (2AM KST) scheduled in ${Math.round(ms/1000/60)} minutes`);
   setTimeout(() => {
-    console.log('🔄 Daily 9AM KST reset — clearing waiting queue and waiting history');
+    console.log('🔄 Daily 2AM KST reset — clearing waiting queue and waiting history');
     Object.keys(cancelTimers).forEach(id => { clearTimeout(cancelTimers[id]); delete cancelTimers[id]; });
     queue = [];
     waitHistory = [];
