@@ -30,26 +30,26 @@ const CONFIG = {
   PUBLIC_URL     : process.env.PUBLIC_URL     || 'https://pineandco-reserve.onrender.com',
   BUSINESS_HOURS : '19:00 - 02:00',
 
-  // SMS: Aligo (Korean numbers)
-  ALIGO_KEY      : process.env.ALIGO_KEY      || 'rh3n2s1roxzkir7k40s2uud6t56n80uk',
-  ALIGO_USER_ID  : process.env.ALIGO_USER_ID  || 'pineandcoseoul',
-  ALIGO_SENDER   : process.env.ALIGO_SENDER   || '01068170406',
+  // SMS: Aligo (Korean numbers) — set in Render environment variables
+  ALIGO_KEY      : process.env.ALIGO_KEY      || '',
+  ALIGO_USER_ID  : process.env.ALIGO_USER_ID  || '',
+  ALIGO_SENDER   : process.env.ALIGO_SENDER   || '',
 
-  // KakaoTalk Alimtalk
-  KAKAO_SENDER_KEY : process.env.KAKAO_SENDER_KEY || '0fb72a35d7e535142a1863909dddd879687eabb8',
-  TPL_JOIN   : process.env.TPL_JOIN   || 'YOUR_TPL_CODE_JOIN',
-  TPL_CALL   : process.env.TPL_CALL   || 'YOUR_TPL_CODE_CALL',
-  TPL_CANCEL : process.env.TPL_CANCEL || 'YOUR_TPL_CODE_CANCEL',
+  // KakaoTalk Alimtalk — set in Render environment variables
+  KAKAO_SENDER_KEY : process.env.KAKAO_SENDER_KEY || '',
+  TPL_JOIN   : process.env.TPL_JOIN   || '',
+  TPL_CALL   : process.env.TPL_CALL   || '',
+  TPL_CANCEL : process.env.TPL_CANCEL || '',
 
-  // SMS: Twilio (International numbers)
-  TWILIO_SID     : process.env.TWILIO_SID     || 'AC4240cb85035b38453f598974ae9d3e91',
-  TWILIO_TOKEN   : process.env.TWILIO_TOKEN   || 'ff11036c4c74209ec1d2874deff960ce',
-  TWILIO_FROM    : process.env.TWILIO_FROM    || '+12602548266',
+  // SMS: Twilio (International numbers) — set in Render environment variables
+  TWILIO_SID     : process.env.TWILIO_SID     || '',
+  TWILIO_TOKEN   : process.env.TWILIO_TOKEN   || '',
+  TWILIO_FROM    : process.env.TWILIO_FROM    || '',
 
-  // Email: Gmail SMTP (primary)
-  GMAIL_USER     : process.env.GMAIL_USER || 'pineandcoseoul@gmail.com',
-  GMAIL_PASS     : process.env.GMAIL_PASS || 'akgr cssw thpc hgaa',
-  EMAIL_FROM     : process.env.EMAIL_FROM || 'Pine & Co Seoul <pineandcoseoul@gmail.com>',
+  // Email: Gmail SMTP (primary) — set in Render environment variables
+  GMAIL_USER     : process.env.GMAIL_USER || '',
+  GMAIL_PASS     : process.env.GMAIL_PASS || '',
+  EMAIL_FROM     : process.env.EMAIL_FROM || '',
 
   // Waiting list auto-cancel timeout
   AUTO_CANCEL_MIN : parseInt(process.env.AUTO_CANCEL_MIN) || 5,
