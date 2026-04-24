@@ -594,7 +594,7 @@ async function renderTodaySummary(){
     el.innerHTML=h;return;
   }
   var active=todayRes.filter(function(r){return r.status!=='cancelled'&&r.status!=='noshow';});
-  var newToday=todayRes.filter(function(r){return r.createdAt&&r.createdAt.startsWith(today)&&!r.staffChecked;});
+  var newToday=todayRes.filter(function(r){return r.createdAt&&r.createdAt.startsWith(today)&&r.status!=='cancelled'&&!r.staffChecked;});
   // Stats cards
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:16px 0 12px;">';
   h+='<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;text-align:center;">';
