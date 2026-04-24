@@ -1,26 +1,20 @@
-# 🔀 옛날 앱 리다이렉트 서버
+# Pine & Co Seoul — 통합 시스템 v4 (진짜 버그 수정)
 
-## 이게 뭐예요?
+## v4 수정 내역 (2026-04-24)
 
-`pineandco-waiting.onrender.com` (옛날 앱)으로 오는 모든 요청을
-`pineandco-reserve.onrender.com` (통합 앱)으로 자동 이동시켜주는 초간단 서버입니다.
+### 발견된 핵심 버그
+`loadQueue()` 함수의 검증 로직이 너무 엄격해서
+**phone이 null인 웨이팅 (이메일로만 등록한 손님)이 서버 재시작 시 자동 삭제**되고 있었습니다.
 
-비유: **"이사 갔습니다. 새 주소는 여기입니다"** 안내판 역할
+### 증상
+- 웨이팅 등록 → 잠깐 보임
+- Render가 자동 재시작 (sleep/wake 또는 배포 시) → 웨이팅 사라짐
+- Day View에 "현재 웨이팅 없음" 표시
 
-## 배포 방법
+### 해결
+- 검증 조건에서 phone을 필수 → 선택적으로 변경
+- 데이터 정규화 추가: 어떤 포맷이든 안전하게 로드되도록
+- email-only 웨이팅도 유지됨
 
-`pineandco-waiting` GitHub 저장소의 **모든 파일을 이 파일들로 덮어쓰기**하시면 됩니다.
-
-기존 파일(customer.html, staff.html, 옛 server.js 등)은 다 사라져도 됩니다.
-이 3개 파일만 있으면 리다이렉트 서버로 동작해요:
-
-- `server.js` (리다이렉트 로직)
-- `package.json`
-- `Procfile`
-
-## 작동 확인
-
-배포 후 브라우저에서 `https://pineandco-waiting.onrender.com/customer.html` 접속
-→ 자동으로 `https://pineandco-reserve.onrender.com/customer.html` 로 이동됨
-
-QR코드 스캔해도 마찬가지로 자동 이동!
+## 배포
+GitHub에 통째로 덮어쓰기 → Render 자동 재배포 (2~3분)
