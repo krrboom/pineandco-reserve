@@ -209,12 +209,27 @@ function loadQueue() {
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) throw new Error('Not an array');
+    // Lenient validation: keep entries as long as they have the bare essentials.
+    // phone or email can be missing/null (old format, or email-only registrations).
     queue = parsed.filter(e =>
-      e && typeof e.id === 'string' && typeof e.number === 'number'
-      && typeof e.name === 'string' && typeof e.phone === 'string'
+      e && typeof e.id === 'string'
+      && typeof e.name === 'string' && e.name.trim().length > 0
       && typeof e.status === 'string' && ['waiting','called'].includes(e.status)
       && typeof e.joinedAt === 'number'
-    );
+    ).map(e => ({
+      // Normalize fields so downstream code never hits undefined
+      id: e.id,
+      number: typeof e.number === 'number' ? e.number : (typeof e.number === 'string' ? parseInt(e.number) || 0 : 0),
+      name: e.name.trim(),
+      phone: typeof e.phone === 'string' ? e.phone : '',
+      email: typeof e.email === 'string' ? e.email : null,
+      partySize: typeof e.partySize === 'number' ? e.partySize : (parseInt(e.partySize) || 2),
+      joinedAt: e.joinedAt,
+      status: e.status,
+      assignedSeat: e.assignedSeat || null,
+      calledAt: typeof e.calledAt === 'number' ? e.calledAt : null,
+      notifiedVia: e.notifiedVia || null,
+    }));
     if (queue.length !== parsed.length) {
       console.warn(`⚠️  Removed ${parsed.length - queue.length} invalid entries from queue`);
       saveQueue();
