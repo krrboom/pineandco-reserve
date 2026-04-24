@@ -43,7 +43,7 @@ const CONFIG = {
 
   // SMS: Twilio (International numbers) — set in Render environment variables
   TWILIO_SID     : process.env.TWILIO_SID     || '',
-  TWILIO_TOKEN   : process.env.TWILIO_TOKEN   || '',
+  TWILIO_TOKEN   : process.env.TWILIO_TOKEN   || process.env.TWILIO_AUTH || '',
   TWILIO_FROM    : process.env.TWILIO_FROM    || '',
 
   // Email: Gmail SMTP (primary) — set in Render environment variables
