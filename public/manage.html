@@ -805,15 +805,35 @@ function pt(t){cT=t;rf();rl();rtb(Object.keys(av));}
 // ═══════════ FLOOR LAYOUT SVG ═══════════
 function rf(){
   var el=document.getElementById('fW');
+  // Reservation-occupied seats (only confirmed; SEATED/NOSHOW now considered done)
   var allDateRes=aR.filter(function(r){return r.status==='confirmed'||r.status==='seated'||r.status==='needs_assignment';});
   var ocAll={};allDateRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){ocAll[s]=r;});});
+  // Waiting-occupied seats (called guests with assigned seat) — only show on today
+  var today=businessDay();
+  var isToday=cD===today;
+  var waitingOcc={};
+  if(isToday){
+    (wQueue||[]).filter(function(q){return q.status==='called'&&q.assignedSeat;}).forEach(function(q){
+      String(q.assignedSeat).split(',').forEach(function(s){
+        var sk=s.trim();
+        if(sk)waitingOcc[sk]={name:q.name,partySize:q.partySize,number:q.number,_isWaiting:true};
+      });
+    });
+  }
   var isAllView=cT==='ALL';
-  var curTimeRes=isAllView?allDateRes:aR.filter(function(r){return r.time===cT&&r.status!=='cancelled';});
+  var curTimeRes=isAllView?allDateRes:aR.filter(function(r){return r.time===cT&&(r.status==='confirmed'||r.status==='seated');});
   var ocCur={};curTimeRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){ocCur[s]=r;});});
+  // Merge waiting into ocCur and ocAll so waiting seats show as occupied in floor view
+  Object.keys(waitingOcc).forEach(function(s){
+    if(!ocCur[s])ocCur[s]=waitingOcc[s];
+    if(!ocAll[s])ocAll[s]=waitingOcc[s];
+  });
 
   function sc(id){
     var cur=ocCur[id],other=ocAll[id]&&!ocCur[id]?ocAll[id]:null,r=cur||other;
     var isWalkin=r&&r.source==='walkin';
+    var isWaiting=r&&r._isWaiting;
+    if(cur&&isWaiting)return{f:'rgba(58,110,165,.32)',sk:'#3a6ea5',sw:2};
     if(cur&&isWalkin)return{f:'rgba(74,124,89,.35)',sk:'#4a7c59',sw:2};
     if(cur)return{f:'rgba(184,147,90,.4)',sk:'#b8935a',sw:1.5};
     if(other)return{f:'rgba(120,120,120,.15)',sk:'rgba(120,120,120,.3)',sw:1};
@@ -829,7 +849,8 @@ function rf(){
     if(cur){
       var ns=cur.notifiedSeats||[];
       s+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#3d2e1f" font-size="9" font-weight="500">'+esc(cur.name.slice(0,4))+'</text>';
-      s+='<text x="'+cx+'" y="'+(cy+7)+'" text-anchor="middle" fill="#8a7560" font-size="7">'+(isAllView?cur.time:cur.partySize+'명')+'</text>';
+      var subtxt=cur._isWaiting?('🔔#'+cur.number):(isAllView?cur.time:cur.partySize+'명');
+      s+='<text x="'+cx+'" y="'+(cy+7)+'" text-anchor="middle" fill="#8a7560" font-size="7">'+subtxt+'</text>';
       if(cur.untilTime)s+='<text x="'+(cx+14)+'" y="'+(cy-12)+'" fill="#c33" font-size="7" font-weight="600">⏰</text>';
       if(ns.indexOf(id)>=0)s+='<text x="'+(cx-12)+'" y="'+(cy-10)+'" fill="#FF3333" font-size="18" font-weight="900">N</text>';
     }else if(other){
@@ -847,7 +868,7 @@ function rf(){
     if(cur){
       var ns=cur.notifiedSeats||[];
       s+='<text x="'+(x+w/2)+'" y="'+(y+h/2-8)+'" text-anchor="middle" fill="#3d2e1f" font-size="10" font-weight="500">'+esc(cur.name.slice(0,5))+'</text>';
-      s+='<text x="'+(x+w/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+cur.time+' · '+cur.partySize+'명</text>';
+      s+='<text x="'+(x+w/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle" fill="#8a7560" font-size="9">'+(cur._isWaiting?'🔔 #'+cur.number+' · '+cur.partySize+'명':cur.time+' · '+cur.partySize+'명')+'</text>';
       if(cur.untilTime)s+='<text x="'+(x+w-4)+'" y="'+(y+12)+'" text-anchor="end" fill="#c33" font-size="8">⏰'+cur.untilTime+'</text>';
       if(ns.indexOf(id)>=0)s+='<text x="'+(x+4)+'" y="'+(y+12)+'" fill="#FF3333" font-size="18" font-weight="900">N</text>';
     }else if(other){
@@ -878,9 +899,10 @@ function rf(){
   v+='<rect x="10" y="0" width="640" height="18" rx="3" fill="rgba(0,0,0,.02)"/>';
   v+='<circle cx="30" cy="9" r="5" fill="rgba(184,147,90,.4)" stroke="#b8935a"/><text x="42" y="12" fill="#8a7560" font-size="8">선택시간</text>';
   v+='<circle cx="110" cy="9" r="5" fill="rgba(74,124,89,.35)" stroke="#4a7c59"/><text x="122" y="12" fill="#8a7560" font-size="8">워크인</text>';
-  v+='<circle cx="180" cy="9" r="5" fill="rgba(120,120,120,.15)" stroke="rgba(120,120,120,.3)"/><text x="192" y="12" fill="#8a7560" font-size="8">다른시간</text>';
-  v+='<text x="260" y="12" fill="#c33" font-size="8">⏰=시간제한</text>';
-  v+='<text x="340" y="12" fill="#FF3333" font-size="9" font-weight="900">N=노티완료</text>';
+  v+='<circle cx="180" cy="9" r="5" fill="rgba(58,110,165,.32)" stroke="#3a6ea5"/><text x="192" y="12" fill="#8a7560" font-size="8">웨이팅</text>';
+  v+='<circle cx="240" cy="9" r="5" fill="rgba(120,120,120,.15)" stroke="rgba(120,120,120,.3)"/><text x="252" y="12" fill="#8a7560" font-size="8">다른시간</text>';
+  v+='<text x="320" y="12" fill="#c33" font-size="8">⏰=시간제한</text>';
+  v+='<text x="400" y="12" fill="#FF3333" font-size="9" font-weight="900">N=노티완료</text>';
   v+='<rect x="155" y="30" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
   v+='<rect x="370" y="30" width="155" height="26" rx="5" fill="rgba(184,147,90,.06)" stroke="rgba(184,147,90,.12)"/>';
   v+='<text x="232" y="47" text-anchor="middle" fill="#8a7560" font-size="10" font-family="Cinzel,serif">Back bar</text>';
@@ -946,6 +968,17 @@ function seatClick(evt,seatId){
   allDateRes.forEach(function(r){if(r.seats&&r.seats.indexOf(seatId)>=0)occ=r;});
   var occAll={};allDateRes.forEach(function(r){if(r.seats)r.seats.forEach(function(s){occAll[s]=r;});});
 
+  // Check if seat is occupied by a waiting guest (called)
+  var waitingOccupant=null;
+  var today=businessDay();
+  if(cD===today){
+    (wQueue||[]).filter(function(q){return q.status==='called'&&q.assignedSeat;}).forEach(function(q){
+      String(q.assignedSeat).split(',').forEach(function(s){
+        if(s.trim()===seatId)waitingOccupant=q;
+      });
+    });
+  }
+
   // SWAP MODE
   if(swapFrom){
     if(occ&&occ.id!==swapFrom){doSwap(swapFrom,occ.id);}
@@ -954,7 +987,7 @@ function seatClick(evt,seatId){
   }
   // MOVE MODE
   if(moveFrom){
-    if(occ){fl('빈 좌석을 클릭하세요');return;}
+    if(occ||waitingOccupant){fl('빈 좌석을 클릭하세요');return;}
     var mRes=aR.find(function(x){return x.id===moveFrom.id;});
     var targetSeats=[];
     if(seatId.charAt(0)==='B'&&mRes.partySize>=2){
@@ -972,6 +1005,33 @@ function seatClick(evt,seatId){
   var pop=document.getElementById('spPop');
   var ov=document.getElementById('spOv');
   var h='<button class="sp-close" onclick="closePop()" title="Close">×</button>';
+  if(waitingOccupant&&!occ){
+    // Seat occupied by a waiting guest (NOTIFY sent, not yet checked-in)
+    var w=waitingOccupant;
+    h+='<h4>'+seatId+' — 🔔 웨이팅 손님 (#'+w.number+')</h4>';
+    h+='<div class="si2">';
+    h+='<strong>'+esc(w.name)+'</strong> · '+(w.partySize||2)+'명<br>';
+    if(w.phone)h+='📱 '+esc(w.phone)+'<br>';
+    if(w.calledAt)h+='⏰ 알림 후 '+timeRemain(w.calledAt)+' 남음';
+    h+='</div>';
+    h+='<button class="primary" onclick="wDone(\''+w.id+'\');closePop();">✅ CHECK-IN (입장 처리)</button>';
+    h+='<button onclick="wUndo(\''+w.id+'\');closePop();">↩️ UNDO (대기로 돌리기)</button>';
+    h+='<button class="danger" onclick="wDecline(\''+w.id+'\');closePop();">❌ CAN\'T COME (거절)</button>';
+    pop.innerHTML=h;
+    pop.style.display='block';
+    var isMobileW=window.matchMedia('(max-width:900px), (pointer:coarse)').matches;
+    if(isMobileW){
+      pop.style.left='';pop.style.top='';pop.style.transform='';
+      document.body.style.overflow='hidden';
+    }else{
+      var rW=pop.getBoundingClientRect();
+      pop.style.left=Math.min(Math.max(evt.clientX,10),window.innerWidth-(rW.width||260)-10)+'px';
+      pop.style.top=Math.min(Math.max(evt.clientY,10),window.innerHeight-(rW.height||300)-10)+'px';
+      pop.style.transform='';
+    }
+    ov.style.display='block';
+    return;
+  }
   if(occ){
     var isWalkin=occ.source==='walkin';
     var ns=occ.notifiedSeats||[];
@@ -982,12 +1042,16 @@ function seatClick(evt,seatId){
     if(occ.untilTime)h+=' · <strong style="color:#c33;">'+occ.untilTime+'까지</strong>';
     if(isNotified)h+=' · <span style="color:#4a7c59;">✅ '+seatId+' 노티완료</span>';
     if(occ.phone)h+='<br>📱 '+esc(occ.phone);
+    if(occ.status==='seated')h+='<br><span style="color:#3d7a5a;font-weight:500;">🪑 착석 중</span>';
     h+='</div>';
 
     // Primary actions
     if(occ.status==='confirmed'){
       h+='<button class="primary" onclick="us(\''+occ.id+'\',\'seated\')">✅ SEATED (착석)</button>';
       h+='<button class="danger" onclick="us(\''+occ.id+'\',\'noshow\')">❌ NO-SHOW</button>';
+    }
+    if(occ.status==='seated'){
+      h+='<button class="primary" onclick="seatOut(\''+occ.id+'\')" style="background:#3a6ea5;border-color:#3a6ea5;">🚪 OUT (퇴장 · 좌석 비우기)</button>';
     }
 
     h+='<button onclick="startMove(\''+occ.id+'\',\''+seatId+'\')">📍 자리 이동 (빈 좌석 클릭)</button>';
@@ -1407,7 +1471,7 @@ function td(id){exId=exId===id?null:id;rl();}
 
 function rl(){
   var el=document.getElementById('rL');
-  var activeFilter=function(r){return r.status==='confirmed'||r.status==='seated'||r.status==='needs_assignment';};
+  var activeFilter=function(r){return r.status==='confirmed'||r.status==='needs_assignment';};
   var res;
   if(cT==='ALL'){
     res=aR.filter(activeFilter).sort(function(a,b){return (a.time+a.name)<(b.time+b.name)?-1:1;});
@@ -1493,6 +1557,16 @@ async function us(id,st){
   if(st==='cancelled'){if(!confirm('⚠️ '+name+'님의 예약을 취소할까요?\n\n이 작업은 되돌릴 수 없습니다.'))return;}
   if(st==='seated'){if(!confirm(name+'님이 자리에 앉았습니까?'))return;}
   await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st,staffName:gs()})});
+  closePop();ld();
+}
+
+// 손님 퇴장 처리 — 좌석 비우고 히스토리로 이동
+async function seatOut(id){
+  var r=aR.find(function(x){return x.id===id;});
+  var name=r?r.name:'';
+  if(!confirm('🚪 '+name+'님이 나가셨습니까?\n좌석이 비워지고 다음 손님이 사용할 수 있게 됩니다.'))return;
+  await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'completed',staffName:gs()})});
+  fl('🚪 '+name+'님 퇴장 — 좌석 비워짐');
   closePop();ld();
 }
 
@@ -1752,8 +1826,8 @@ async function loadHistSection(){
     h+='<div class="hist-group">';
     h+='<div class="hist-date"><span>'+date+' ('+DK[d.getDay()]+')</span><span>'+res.length+'건</span></div>';
     res.forEach(function(r){
-      var stColor=r.status==='seated'?'#3d7a5a':'var(--red)';
-      var stText=r.status==='seated'?'✅ 방문':'❌ 노쇼';
+      var stColor=(r.status==='seated'||r.status==='completed')?'#3d7a5a':'var(--red)';
+      var stText=r.status==='completed'?'✅ 완료':(r.status==='seated'?'🪑 착석':'❌ 노쇼');
       h+='<div class="hist-row">';
       h+='<div style="font-weight:500;">'+esc(r.name)+' · '+r.partySize+'명 · '+(zn[r.zone]||r.zone)+' <span style="color:'+stColor+';font-size:10px;">'+stText+'</span></div>';
       h+='<div style="color:var(--mu);font-size:11px;margin-top:2px;">⏰ '+r.time+' · '+(sl[r.source]||r.source);
