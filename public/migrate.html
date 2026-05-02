@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Pine & Co - 웨이팅 손님 이전</title>
+  <style>
+    body{font-family:-apple-system,sans-serif;background:#1e1208;color:#f0ebe0;padding:20px;max-width:600px;margin:auto;}
+    h1{color:#b8935a;font-size:18px;text-align:center;}
+    .entry{background:#2a1a0e;border:1px solid #b8935a;border-radius:8px;padding:12px;margin:8px 0;font-size:13px;}
+    .entry strong{color:#b8935a;}
+    button{background:#b8935a;color:#1e1208;border:none;padding:14px 24px;font-size:14px;border-radius:6px;cursor:pointer;font-weight:600;width:100%;margin-top:16px;}
+    button:disabled{opacity:0.5;}
+    #status{text-align:center;padding:20px;font-size:14px;}
+    .ok{color:#5DCAA5;}
+    .err{color:#a05050;}
+    input{padding:10px;width:100%;background:#1e1208;border:1px solid #b8935a;color:#f0ebe0;border-radius:4px;font-size:14px;margin-bottom:8px;}
+  </style>
+</head>
+<body>
+  <h1>🌲 옛 웨이팅 손님 11팀 → 통합 앱으로 이전</h1>
+
+  <input id="pin" type="password" placeholder="STAFF PIN (1234)" />
+
+  <div id="entries"></div>
+
+  <button id="go" onclick="migrate()">11팀 한 번에 이전</button>
+
+  <div id="status"></div>
+
+  <script>
+    var TARGET = 'https://pineandco-reserve.onrender.com';
+    var ENTRIES = [
+      {name:'yuhao zhong',  phone:'+821080490116',  partySize:4, email:'jeremy.zyh@outlook.com'},
+      {name:'장언치',        phone:'+821076515139',  partySize:2, email:'enqiz17@gmail.com'},
+      {name:'jiayi',        phone:'+8615201729570', partySize:2, email:'1403653045@qq.com'},
+      {name:'june',         phone:'+8613636651997', partySize:2, email:null},
+      {name:'Ruimeng',      phone:'+82019788855352',partySize:4, email:'sevenxuruimeng@gmail.com'},
+      {name:'Joey',         phone:'',               partySize:2, email:'bl15164538217@163.com'},
+      {name:'susu',         phone:'',               partySize:2, email:'996751415@qq.com'},
+      {name:'Jingyi Geng',  phone:'+8613839960000', partySize:4, email:'1021770394@qq.com'},
+      {name:'Aria',         phone:'+8613705019199', partySize:5, email:'619085494@qq.com'},
+      {name:'yi',           phone:'+8613910052449', partySize:2, email:'zy0613@hotmail.com'},
+      {name:'Karhy',        phone:'01080635615',    partySize:2, email:'554944963@qq.com'}
+    ];
+
+    function render(){
+      var h='';
+      ENTRIES.forEach(function(e,i){
+        h += '<div class="entry">'
+          + (i+1)+'. <strong>'+e.name+'</strong> · '+e.partySize+'명'
+          + (e.phone?' · 📱 '+e.phone:'')
+          + (e.email?' · 📧 '+e.email:'')
+          + '</div>';
+      });
+      document.getElementById('entries').innerHTML = h;
+    }
+    render();
+
+    async function migrate(){
+      var pin = document.getElementById('pin').value;
+      if(!pin){ alert('PIN을 입력하세요'); return; }
+      var btn = document.getElementById('go');
+      btn.disabled = true;
+      btn.textContent = '이전 중...';
+      var status = document.getElementById('status');
+      status.innerHTML = '서버에 전송 중...';
+      try{
+        var r = await fetch(TARGET + '/api/queue/migrate', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({pin: pin, entries: ENTRIES})
+        });
+        var d = await r.json();
+        if(r.ok){
+          status.innerHTML = '<div class="ok">✅ 완료!<br><br>'
+            + '✓ 이전된 팀: <strong>'+d.imported+'팀</strong><br>'
+            + '⊘ 중복 스킵: '+d.skipped+'팀<br>'
+            + '📊 현재 큐 총: '+d.total+'팀</div>'
+            + '<br><a href="'+TARGET+'/manage.html" style="color:#b8935a;">→ 통합 앱 매니지 페이지로 이동</a>';
+        }else{
+          status.innerHTML = '<div class="err">❌ 실패: '+(d.error||'알 수 없는 오류')+'</div>';
+          btn.disabled = false;
+          btn.textContent = '다시 시도';
+        }
+      }catch(e){
+        status.innerHTML = '<div class="err">❌ 네트워크 오류: '+e.message+'</div>';
+        btn.disabled = false;
+        btn.textContent = '다시 시도';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -75,6 +75,9 @@ const CONFIG = {
     room       : ['ROOM'],
   },
   CAPACITY: { T1:5,T2:5,T3:5,T4:5,H1:2,H2:2,ROOM:10,B1:1,B2:1,B3:1,B4:1,B5:1,B6:1,B7:1,B8:1,B9:1,B10:1,B11:1,B12:1,B13:1,B14:1 },
+  // ── Staff-reserved seats: NEVER offered to guests via auto-assign or customer.html ──
+  // Used for emergencies, regulars, walk-ins. Staff can still manually assign these via manage.html.
+  STAFF_RESERVED_SEATS : ['T1'],
   ROOM_MIN_CHARGE : 300000,
   BAR_EDGE_SEATS  : ['B1','B3','B4','B6'],
   BAR_MID_SEATS   : ['B2','B5'],
@@ -629,6 +632,13 @@ function buildWaitEmailHTML(type, entry, url, extra) {
   };
 }
 
+// ── Helper: convert Korean name to 'Guest' to keep SMS in 1 segment (GSM-7) ──
+// SMS billing: any non-ASCII char forces UCS-2 (70 chars/seg vs 160). Foreign names = personalized, Korean names = 'Guest'.
+function asciiName(name) {
+  if (!name) return 'Guest';
+  return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(name) ? 'Guest' : name;
+}
+
 // ── Unified waiting notification (Aligo/Twilio + email) ──
 async function sendWaitingMessage(entry, type, extra = {}) {
   const rawPhone = (entry.phone || '').replace(/-/g, '');
@@ -642,47 +652,18 @@ async function sendWaitingMessage(entry, type, extra = {}) {
       vars : { '#{이름}': entry.name, '#{번호}': String(entry.number),
                '#{순서}': String(extra.myPos || 1), '#{전체대기}': String(extra.total || 1),
                '#{링크}': url },
-      sms  : `[PINE&CO]\n`
-           + `파인앤코에 방문해주셔서 감사합니다.\n`
-           + `웨이팅 ${entry.number}번 (${entry.partySize}명) 등록되었습니다.\n`
-           + `자리가 나면 문자로 알려드리겠습니다.\n`
-           + `\n`
-           + `Thank you for visiting Pine & Co.\n`
-           + `You are #${entry.number} (${entry.partySize} guests).\n`
-           + `We'll notify you when your table is ready.\n`
-           + `\n`
-           + `대기 / Waiting: ${extra.myPos || 1} / ${extra.total || 1}\n`
-           + `${url}\n`
-           + `Tel: ${biz}`,
+      sms  : `PINE&CO: Hi ${asciiName(entry.name)}, you are #${entry.number} (${extra.myPos||1}/${extra.total||1}). Track: ${url}`,
     },
     call: {
       tpl  : CONFIG.TPL_CALL,
       vars : { '#{이름}': entry.name, '#{번호}': String(entry.number),
                '#{분}': String(min), '#{링크}': url },
-      sms  : `[PINE&CO]\n`
-           + `${entry.name}님, 자리가 준비되었습니다! 🎉\n`
-           + `웨이팅 ${entry.number}번 / ${min}분 내 방문 부탁드립니다.\n`
-           + `\n`
-           + `${entry.name}, your table is ready! 🎉\n`
-           + `Waiting #${entry.number}\n`
-           + `Please arrive within ${min} minutes.\n`
-           + `\n`
-           + `${url}\n`
-           + `Tel: ${biz}`,
+      sms  : `PINE&CO: #${entry.number} ${asciiName(entry.name)}, your table is ready. Arrive in ${min} min. ${url}`,
     },
     cancel: {
       tpl  : CONFIG.TPL_CANCEL,
       vars : { '#{이름}': entry.name, '#{분}': String(min) },
-      sms  : `[PINE&CO]\n`
-           + `${entry.name}님, ${min}분이 지나\n`
-           + `웨이팅이 자동 취소되었습니다.\n`
-           + `재등록은 언제든 가능합니다.\n`
-           + `\n`
-           + `${entry.name}, your spot was released\n`
-           + `after ${min} minutes.\n`
-           + `You're welcome to register again.\n`
-           + `\n`
-           + `Tel: ${biz}`,
+      sms  : `PINE&CO: #${entry.number} ${asciiName(entry.name)}, your spot expired after ${min} min. Please register again.`,
     },
   };
 
@@ -747,6 +728,11 @@ async function sendWaitingMessage(entry, type, extra = {}) {
   // International → Twilio
   else {
     const e164 = toE164(entry.phone);
+    // 🛡️ Safety guard: block Korean numbers from leaking to Twilio
+    if (e164.startsWith('+82') || e164.startsWith('+820')) {
+      console.error(`🚨 BLOCKED: Korean number leaked to Twilio route → ${e164}. Should use Aligo. Skipping SMS.`);
+      return { error: 'korean_number_blocked' };
+    }
     if (!IS_TWILIO_READY) { console.log(`\n🟡 [${label} INTL simulation] → ${e164}\n   ${m.sms}\n`); return; }
     try {
       const result = await sendTwilio(e164, m.sms);
@@ -764,7 +750,20 @@ function buildReserveConfirmHTML(r) {
   const zoneKR = { bar:'바 좌석', table:'테이블', highTable:'하이테이블', room:'프라이빗 룸' };
   const zoneName = zoneKR[r.zone] || r.zone;
   const roomNote = r.zone === 'room'
-    ? '<p style="color:#c9a96e;font-size:13px;">미니멈차지 ₩300,000 / Minimum charge ₩300,000</p>' : '';
+    ? `<div style="background:rgba(184,147,90,.12);border:1px solid rgba(184,147,90,.35);border-radius:8px;padding:16px;margin-top:14px;">
+         <p style="font-size:13px;color:#c9a96e;font-weight:600;margin:0 0 8px;letter-spacing:.05em;">🎩 PRIVATE ROOM</p>
+         <p style="font-size:12px;color:#f0ebe0;line-height:1.6;margin:0 0 8px;">
+           <strong style="color:#c9a96e;">Minimum spend: ₩300,000</strong><br>
+           This reservation is <strong>non-refundable</strong> and cannot be changed once confirmed.<br>
+           If your party size or plans change, please call us directly.
+         </p>
+         <hr style="border:none;border-top:1px solid rgba(184,147,90,.25);margin:8px 0;">
+         <p style="font-size:12px;color:#f0ebe0;line-height:1.6;margin:0;">
+           <strong style="color:#c9a96e;">최소 이용 금액: 30만원</strong><br>
+           본 예약은 확정 후 변경 또는 취소 시 <strong>환불이 불가</strong>합니다.<br>
+           인원 변동이 있으시면 매장으로 직접 연락 부탁드립니다.
+         </p>
+       </div>` : '';
   return `
 <div style="max-width:480px;margin:0 auto;font-family:'Helvetica Neue',sans-serif;background:#1e1208;color:#f0ebe0;padding:40px 30px;border-radius:12px;">
   <div style="text-align:center;margin-bottom:24px;">
@@ -920,7 +919,16 @@ function scheduleDailyReset() {
 // ─────────────────────────────────────────────────────────────
 function kstToday() { return new Date(Date.now() + 9*3600000).toISOString().slice(0,10); }
 function isWeekend(d) { const day = new Date(d+'T12:00:00+09:00').getDay(); return day===5 || day===6; }
-function getSlots(d) { return isWeekend(d) ? CONFIG.WEEKEND_SLOTS : CONFIG.WEEKDAY_SLOTS; }
+// ── New Sunday-as-weekend rule: applies from June 1, 2026 onward ──
+// Before June 1: legacy behavior (Sun = weekday, allows 23:00) — protects existing May reservations
+// From June 1: Sunday treated as weekend (no 23:00 slot)
+function isWeekendForSlots(d) {
+  const day = new Date(d+'T12:00:00+09:00').getDay();
+  if (day===5 || day===6) return true; // Fri, Sat always weekend
+  if (day===0 && d >= '2026-06-01') return true; // Sun: weekend from June 1
+  return false;
+}
+function getSlots(d) { return isWeekendForSlots(d) ? CONFIG.WEEKEND_SLOTS : CONFIG.WEEKDAY_SLOTS; }
 function getResFor(date, time) {
   return reservations.filter(r => r.date===date && r.time===time && r.status!=='cancelled' && r.status!=='noshow');
 }
@@ -935,7 +943,9 @@ function getOccupiedForDate(date) {
 function autoAssign(date, time, partySize, preference) {
   // ═══ STRICT SEAT RULES — NEVER VIOLATE ═══
   const occ = getOccupiedForDate(date);
-  const free = s => !occ.includes(s);
+  const staffReserved = CONFIG.STAFF_RESERVED_SEATS || [];
+  // Treat staff-reserved seats as occupied for guest auto-assign (staff can still book manually)
+  const free = s => !occ.includes(s) && !staffReserved.includes(s);
   const freeBar   = CONFIG.SEATS.bar.filter(free);
   const freeHigh  = CONFIG.SEATS.highTables.filter(free);
   const freeTables = CONFIG.SEATS.tables.filter(free);
@@ -949,12 +959,21 @@ function autoAssign(date, time, partySize, preference) {
     if (freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
     return null;
   }
-  // 2명: 바(인접) → 하이, 테이블 절대 안 됨
+  // 2명: 인접한 바 페어만 (떨어진 좌석 절대 금지) → 하이테이블 → 없으면 null
+  // 바 구조:
+  //   백바: B1-B2-B3 한 블록 · B4-B5-B6 한 블록 (B3-B4 떨어짐)
+  //   ㄷ자: B7-B8-B9-B10-B11-B12-B13-B14 (코너 포함 전부 인접)
   if (partySize === 2) {
-    const barPairs = [['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B4','B5']];
+    const barPairs = [
+      ['B1','B2'], ['B2','B3'],                          // 백바 좌측 블록
+      ['B4','B5'], ['B5','B6'],                          // 백바 우측 블록 (B3-B4 끊김)
+      ['B7','B8'], ['B8','B9'], ['B9','B10'],            // ㄷ자 좌측 + 코너
+      ['B10','B11'],                                     // ㄷ자 아래
+      ['B11','B12'], ['B12','B13'], ['B13','B14'],       // ㄷ자 우측 + 코너
+    ];
     for (const p of barPairs) if (p.every(free)) return { zone:'bar', seats:p };
     if (freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
-    if (freeBar.length >= 2) return { zone:'bar', seats:[freeBar[0], freeBar[1]] };
+    // ⛔ NO fallback: never assign non-adjacent bar seats to a 2-person party
     return null;
   }
   // 3~5: 테이블만
@@ -1097,6 +1116,43 @@ app.post('/api/queue/join', async (req, res) => {
   } catch (e) {
     console.error('JOIN error:', e);
     res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── Migration: bulk import from old waiting app (no SMS sent) ──
+// PIN-protected. Imports preserve original timestamps so wait time displays correctly.
+app.post('/api/queue/migrate', async (req, res) => {
+  try {
+    if (req.body?.pin !== CONFIG.STAFF_PIN) return res.status(401).json({ error: 'Bad PIN' });
+    const entries = Array.isArray(req.body.entries) ? req.body.entries : [];
+    if (!entries.length) return res.status(400).json({ error: 'No entries' });
+    const result = await withQueueLock(async () => {
+      let imported = 0, skipped = 0;
+      for (const e of entries) {
+        if (!e.name) { skipped++; continue; }
+        // Skip duplicates by phone or email
+        const dupPhone = e.phone && queue.find(q => q.phone && q.phone.replace(/[^0-9]/g, '') === String(e.phone).replace(/[^0-9]/g, ''));
+        const dupEmail = e.email && queue.find(q => q.email && q.email.toLowerCase() === e.email.toLowerCase());
+        if (dupPhone || dupEmail) { skipped++; continue; }
+        queue.push({
+          id: uid(), number: nextNumber(),
+          name: String(e.name).trim(),
+          phone: e.phone ? String(e.phone).trim() : '',
+          email: e.email ? String(e.email).trim() : null,
+          partySize: parseInt(e.partySize) || 2,
+          joinedAt: e.joinedAt || Date.now(),
+          status: 'waiting',
+        });
+        imported++;
+      }
+      saveQueue();
+      broadcastQueue();
+      return { imported, skipped, total: queue.length };
+    });
+    res.json(result);
+  } catch (e) {
+    console.error('MIGRATE error:', e);
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -1686,7 +1742,7 @@ function parseGcalEntry(text) {
 }
 
 function snapToSlot(time, date) {
-  const slots = isWeekend(date) ? CONFIG.WEEKEND_SLOTS : CONFIG.WEEKDAY_SLOTS;
+  const slots = isWeekendForSlots(date) ? CONFIG.WEEKEND_SLOTS : CONFIG.WEEKDAY_SLOTS;
   if (slots.includes(time)) return time;
   const h = parseInt(time.split(':')[0]);
   let best = slots[0], bestDiff = 999;

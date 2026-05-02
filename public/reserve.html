@@ -182,7 +182,7 @@ if(selTime){
   }
   h+='</div>';
 
-  if(partySize>=6)h+='<div class="note" style="background:rgba(184,147,90,.1);padding:10px;border-radius:6px;">🔑 6+ guests: <strong>Private Room only</strong><br>Minimum charge ₩300,000<br>If the room is unavailable, please call +82-10-6817-0406</div>';
+  if(partySize>=6)h+='<div class="note" style="background:rgba(184,147,90,.1);padding:12px;border-radius:6px;border-left:3px solid #b8935a;"><strong style="color:#c9a96e;">🎩 6+ guests: Private Room only</strong><br><span style="color:#d9c9b0;">Minimum spend: <strong>₩300,000</strong></span><br><span style="color:#a89478;font-size:11px;">⚠️ Non-refundable once confirmed.</span><br>If the room is unavailable, please call +82-10-6817-0406</div>';
   if(partySize>=9)h+='<div class="note">※ '+partySize+' guests may find the room a bit tight.</div>';
 
   h+='<div class="ilbl" style="margin-top:12px">Special requests (optional)</div>';
@@ -263,6 +263,60 @@ avail=r;step=2;render();
 function pickTime(t){selTime=t;partySize=0;render();}
 function pickSize(n){partySize=n;render();}
 
+// ── Room confirmation modal (for 6+ guests = Private Room) ──
+function showRoomConfirmModal(onConfirm){
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  var box=document.createElement('div');
+  box.style.cssText='background:#1e1208;border:1px solid #b8935a;border-radius:12px;max-width:420px;width:100%;padding:24px;color:#f0ebe0;font-family:Noto Sans KR,sans-serif;max-height:90vh;overflow-y:auto;';
+  box.innerHTML=
+    '<div style="font-family:Cinzel,serif;font-size:18px;color:#b8935a;text-align:center;letter-spacing:.1em;margin-bottom:16px;">🎩 PRIVATE ROOM RESERVATION</div>'
+    +'<div style="background:rgba(184,147,90,.08);border-left:3px solid #b8935a;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.7;">'
+    +'<strong style="color:#c9a96e;">Minimum spend: ₩300,000</strong><br>'
+    +'Capacity: Up to 10 guests'
+    +'</div>'
+    +'<div style="font-size:12px;line-height:1.7;margin-bottom:14px;color:#d9c9b0;">'
+    +'<strong style="color:#b8935a;">Please note:</strong><br>'
+    +'• This is a private room with a guaranteed minimum spend of ₩300,000.<br>'
+    +'• Room reservations are <strong>non-refundable</strong> and cannot be changed once confirmed.<br>'
+    +'• If your party size or plans may change, we kindly recommend our regular seating.'
+    +'</div>'
+    +'<hr style="border:none;border-top:1px solid rgba(184,147,90,.2);margin:14px 0;">'
+    +'<div style="font-size:12px;line-height:1.7;margin-bottom:14px;color:#d9c9b0;">'
+    +'<strong style="color:#b8935a;">🎩 프라이빗 룸 예약 안내</strong><br>'
+    +'<span style="color:#c9a96e;">최소 이용 금액: 30만원</span><br>'
+    +'수용 인원: 최대 10명<br><br>'
+    +'<strong style="color:#b8935a;">안내사항:</strong><br>'
+    +'• 프라이빗 룸은 30만원 최소 이용금액이 보장됩니다.<br>'
+    +'• 예약 확정 후 변경 또는 취소 시 <strong>환불이 불가</strong>합니다.<br>'
+    +'• 인원 변동 가능성이 있으시면 일반석을 권장드립니다.'
+    +'</div>'
+    +'<label style="display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.6;cursor:pointer;padding:10px;background:rgba(184,147,90,.06);border-radius:6px;margin-bottom:14px;">'
+    +'<input type="checkbox" id="roomConfirmCheck" style="margin-top:2px;flex-shrink:0;">'
+    +'<span style="color:#d9c9b0;">I have read and confirm the private room reservation.<br>'
+    +'<span style="color:#a89478;">위 내용을 모두 확인했으며, 룸 예약을 확정합니다.</span></span>'
+    +'</label>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button id="roomCancelBtn" style="flex:1;padding:12px;background:none;border:1px solid rgba(184,147,90,.3);border-radius:6px;color:#a89478;font-size:12px;cursor:pointer;">Cancel</button>'
+    +'<button id="roomConfirmBtn" style="flex:2;padding:12px;background:#b8935a;border:none;border-radius:6px;color:#1e1208;font-size:12px;cursor:pointer;font-weight:600;letter-spacing:.05em;opacity:.5;" disabled>CONFIRM ROOM</button>'
+    +'</div>';
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  var chk=box.querySelector('#roomConfirmCheck');
+  var btnOk=box.querySelector('#roomConfirmBtn');
+  var btnCancel=box.querySelector('#roomCancelBtn');
+  chk.addEventListener('change',function(){
+    btnOk.disabled=!chk.checked;
+    btnOk.style.opacity=chk.checked?'1':'.5';
+  });
+  btnCancel.onclick=function(){document.body.removeChild(ov);};
+  btnOk.onclick=function(){
+    if(!chk.checked)return;
+    document.body.removeChild(ov);
+    onConfirm();
+  };
+}
+
 async function doSubmit(){
 var name=(document.getElementById('rn')||{}).value;if(name)name=name.trim();
 var phone=(document.getElementById('rp')||{}).value;if(phone)phone=phone.trim();
@@ -272,6 +326,16 @@ var email=(document.getElementById('re')||{}).value;if(email)email=email.trim();
 var ig=(document.getElementById('ri')||{}).value;if(ig)ig=ig.trim();
 if(!name){flash('Please enter your name.');return;}
 if(!phone&&!email){flash('Please provide your email or phone number.');return;}
+
+// ── Room confirmation: 6+ guests requires explicit consent ──
+if(partySize>=6){
+  showRoomConfirmModal(function(){ doSubmitConfirmed(name,phone,email,ig); });
+  return;
+}
+doSubmitConfirmed(name,phone,email,ig);
+}
+
+async function doSubmitConfirmed(name,phone,email,ig){
 var btn=document.getElementById('sbtn');if(btn){btn.disabled=true;btn.textContent='RESERVING...';}
 var body={name:name,phone:phone||'',email:email||'',instagram:ig||'',partySize:partySize,date:selDate,time:selTime,specialRequest:savedSR};
 try{

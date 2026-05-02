@@ -342,6 +342,8 @@ var adminPin='',allStaff=[];
 var DK=['일','월','화','수','목','금','토'];
 var MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
 // Adjacent bar seat map for 2-person moves
+// barNext: 2명 예약시 옆자리 자동 페어. B3-B4, B6-B7 사이는 끊겨있어서 페어 불가.
+// ㄷ자는 코너 포함 전부 연결: B7-B8-B9-B10-B11-B12-B13-B14
 var barNext={'B1':'B2','B2':'B3','B3':'B2','B4':'B5','B5':'B6','B6':'B5','B7':'B8','B8':'B9','B9':'B10','B10':'B11','B11':'B12','B12':'B13','B13':'B14','B14':'B13'};
 
 // ═══════════ HELPERS ═══════════
@@ -1599,7 +1601,7 @@ function showSeatPicker(id){
     h+='</div>';
   }
   if(r.partySize>=2){
-    var pairs=[['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B4','B5']];
+    var pairs=[['B1','B2'],['B2','B3'],['B4','B5'],['B5','B6'],['B7','B8'],['B8','B9'],['B9','B10'],['B10','B11'],['B11','B12'],['B12','B13'],['B13','B14']];
     var fp=pairs.filter(function(p){return p.every(isFree);});
     if(fp.length){
       h+='<div style="font-size:10px;color:var(--mu);margin:4px 0 2px;">🥃 바 (2인):</div><div style="display:flex;flex-wrap:wrap;">';
@@ -1648,7 +1650,7 @@ function autoSuggestSeats(){
       });
     }
     if(sz>=2){
-      var pairs=[['B7','B8'],['B9','B10'],['B11','B12'],['B13','B14'],['B1','B2'],['B4','B5']];
+      var pairs=[['B1','B2'],['B2','B3'],['B4','B5'],['B5','B6'],['B7','B8'],['B8','B9'],['B9','B10'],['B10','B11'],['B11','B12'],['B12','B13'],['B13','B14']];
       pairs.forEach(function(p){if(p.every(isFree))options.push({v:p.join(','),z:'bar',l:'Bar '+p.join('+')});});
     }
   }
