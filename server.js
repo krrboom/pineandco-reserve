@@ -652,18 +652,52 @@ async function sendWaitingMessage(entry, type, extra = {}) {
       vars : { '#{이름}': entry.name, '#{번호}': String(entry.number),
                '#{순서}': String(extra.myPos || 1), '#{전체대기}': String(extra.total || 1),
                '#{링크}': url },
+      // Twilio (foreign): 1-segment English
       sms  : `PINE&CO: Hi ${asciiName(entry.name)}, you are #${entry.number} (${extra.myPos||1}/${extra.total||1}). Track: ${url}`,
+      // Aligo (Korean LMS, no segment limit): full bilingual message
+      smsKr: `[PINE&CO]\n`
+           + `파인앤코에 방문해주셔서 감사합니다.\n`
+           + `웨이팅 ${entry.number}번 (${entry.partySize||2}명) 등록되었습니다.\n`
+           + `자리가 나면 문자로 알려드리겠습니다.\n`
+           + `\n`
+           + `Thank you for visiting Pine & Co.\n`
+           + `You are #${entry.number} (${entry.partySize||2} guests).\n`
+           + `We'll notify you when your table is ready.\n`
+           + `\n`
+           + `대기 / Waiting: ${extra.myPos || 1} / ${extra.total || 1}\n`
+           + `${url}\n`
+           + `Tel: ${biz}`,
     },
     call: {
       tpl  : CONFIG.TPL_CALL,
       vars : { '#{이름}': entry.name, '#{번호}': String(entry.number),
                '#{분}': String(min), '#{링크}': url },
       sms  : `PINE&CO: #${entry.number} ${asciiName(entry.name)}, your table is ready. Arrive in ${min} min. ${url}`,
+      smsKr: `[PINE&CO]\n`
+           + `${entry.name}님, 자리가 준비되었습니다!\n`
+           + `웨이팅 ${entry.number}번 / ${min}분 내 방문 부탁드립니다.\n`
+           + `\n`
+           + `${entry.name}, your table is ready!\n`
+           + `Waiting #${entry.number}\n`
+           + `Please arrive within ${min} minutes.\n`
+           + `\n`
+           + `${url}\n`
+           + `Tel: ${biz}`,
     },
     cancel: {
       tpl  : CONFIG.TPL_CANCEL,
       vars : { '#{이름}': entry.name, '#{분}': String(min) },
       sms  : `PINE&CO: #${entry.number} ${asciiName(entry.name)}, your spot expired after ${min} min. Please register again.`,
+      smsKr: `[PINE&CO]\n`
+           + `${entry.name}님, ${min}분이 지나\n`
+           + `웨이팅이 자동 취소되었습니다.\n`
+           + `재등록은 언제든 가능합니다.\n`
+           + `\n`
+           + `${entry.name}, your spot was released\n`
+           + `after ${min} minutes.\n`
+           + `You're welcome to register again.\n`
+           + `\n`
+           + `Tel: ${biz}`,
     },
   };
 
@@ -690,13 +724,13 @@ async function sendWaitingMessage(entry, type, extra = {}) {
 
   // Korean → Aligo (try Alimtalk first, SMS fallback)
   if (korean) {
-    if (IS_DEV) { console.log(`\n🟡 [${label} KR simulation] ${krPhone}\n   ${m.sms}\n`); return; }
+    if (IS_DEV) { console.log(`\n🟡 [${label} KR simulation] ${krPhone}\n   ${m.smsKr}\n`); return; }
     const hasKakao = CONFIG.KAKAO_SENDER_KEY && CONFIG.KAKAO_SENDER_KEY.length > 0
                   && CONFIG.KAKAO_SENDER_KEY !== 'YOUR_SENDER_KEY'
                   && m.tpl && m.tpl.length > 0
                   && m.tpl !== `YOUR_TPL_CODE_${type.toUpperCase()}`;
     if (hasKakao) {
-      let tplMsg = Object.entries(m.vars).reduce((s, [k, v]) => s.replaceAll(k, v), m.sms);
+      let tplMsg = Object.entries(m.vars).reduce((s, [k, v]) => s.replaceAll(k, v), m.smsKr);
       try {
         const result = await httpPost('kakaoapi.aligo.in', '/akv10/alimtalk/send/', {
           apikey: CONFIG.ALIGO_KEY, userid: CONFIG.ALIGO_USER_ID,
@@ -704,7 +738,7 @@ async function sendWaitingMessage(entry, type, extra = {}) {
           sender: CONFIG.ALIGO_SENDER, receiver_1: krPhone,
           recvname_1: entry.name, message_1: tplMsg,
           failover: 'Y', fsubject_1: 'PINE&CO Waiting',
-          fmessage_1: m.sms, fmsg_type: 'LMS',
+          fmessage_1: m.smsKr, fmsg_type: 'LMS',
         });
         // Check for senderkey error and fall through to SMS
         if (result && typeof result === 'object' && result.code !== undefined && result.code < 0) {
@@ -719,7 +753,7 @@ async function sendWaitingMessage(entry, type, extra = {}) {
       const result = await httpPost('apis.aligo.in', '/send/', {
         key: CONFIG.ALIGO_KEY, user_id: CONFIG.ALIGO_USER_ID,
         sender: CONFIG.ALIGO_SENDER, receiver: krPhone,
-        msg: m.sms, msg_type: 'LMS',
+        msg: m.smsKr, msg_type: 'LMS',
       });
       console.log(`✅ KR SMS sent (${type}):`, JSON.stringify(result));
       return result;
