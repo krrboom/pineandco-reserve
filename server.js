@@ -1297,6 +1297,34 @@ app.delete('/api/queue/:id', async (req, res) => {
   } catch (e) { console.error('DELETE error:', e); res.status(500).json({ error: 'Server error.' }); }
 });
 
+// ── External cancel: match by name + phone (used by FWD from waiting app) ──
+// Used when guest cancels on the old waiting app — sync the cancellation here too.
+app.post('/api/queue/external-cancel', async (req, res) => {
+  try {
+    const { name, phone } = req.body || {};
+    if (!name) return res.status(400).json({ error: 'name required' });
+    const cleanPhone = (phone || '').replace(/[^0-9+]/g, '');
+    let cancelled = 0;
+    await withQueueLock(async () => {
+      const matches = queue.filter(q => {
+        if (q.name !== name) return false;
+        if (!cleanPhone) return true; // name-only match if no phone
+        const qPhone = (q.phone || '').replace(/[^0-9+]/g, '');
+        return qPhone === cleanPhone || qPhone.endsWith(cleanPhone.slice(-8)) || cleanPhone.endsWith(qPhone.slice(-8));
+      });
+      for (const entry of matches) {
+        if (cancelTimers[entry.id]) { clearTimeout(cancelTimers[entry.id]); delete cancelTimers[entry.id]; }
+        moveToWaitHistory(entry, 'cancelled');
+        cancelled++;
+      }
+      queue = queue.filter(q => !matches.includes(q));
+      if (cancelled > 0) broadcastQueue();
+    });
+    console.log(`[EXT-CANCEL] ${name} (${phone || 'no phone'}) → ${cancelled} matched`);
+    res.json({ ok: true, cancelled });
+  } catch (e) { console.error('EXT-CANCEL error:', e); res.status(500).json({ error: 'Server error.' }); }
+});
+
 // ── Waiting history & close-out summary (namespaced to avoid reserve collision) ──
 app.get('/api/waiting/history', (_req, res) => res.json(waitHistory));
 
