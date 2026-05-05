@@ -191,6 +191,22 @@ function onCountryChange(val){
     inp.value='';
     inp.placeholder=val==='+82'?'010 ···· ····':'Phone number';
   }
+  // For non-Korean numbers: clearly request email (SMS unreliable internationally)
+  const cnNotice=document.getElementById('cnNotice');
+  const emHint=document.getElementById('emailHint');
+  const emInput=document.getElementById('em');
+  const isForeign = val !== '+82';
+  if(isForeign){
+    if(cnNotice)cnNotice.style.display='block';
+    if(emHint)emHint.textContent='(required for international guests)';
+    if(emHint)emHint.style.color='#c9a96e';
+    if(emInput)emInput.style.borderColor='#c9a96e';
+  }else{
+    if(cnNotice)cnNotice.style.display='none';
+    if(emHint)emHint.textContent='(optional if phone provided)';
+    if(emHint)emHint.style.color='';
+    if(emInput)emInput.style.borderColor='';
+  }
 }
 
 function pickSize(n){
@@ -207,6 +223,13 @@ async function register(){
   const digits=rawPhone.replace(/\D/g,'');
   if(!rawPhone&&!email){flash('Please enter a phone number or email.');return;}
   if(rawPhone&&digits.length<7){flash('Please enter a valid phone number.');return;}
+
+  // Foreign guests: email required — international SMS often fails to deliver
+  if(selectedCountry!=='+82'&&rawPhone&&!email){
+    flash('Please provide your email — we\'ll send your table notifications there. / 한국 번호가 아닌 경우 이메일을 부탁드립니다.');
+    document.getElementById('em')?.focus();
+    return;
+  }
 
   // Build full phone with country code
   let phone='';
@@ -347,9 +370,17 @@ function render(){
     <div class="divider"><span>WAITING LIST</span></div>
     <p class="wait-badge">${badge}</p>
     <div class="form-wrap">
-      <div class="field"><label>NAME</label><input id="n" placeholder="Your name" autocomplete="off"/></div>
+      <div class="field"><label>NAME / 姓名</label><input id="n" placeholder="Your name" autocomplete="off"/></div>
       <div class="field">
-        <label>PHONE NUMBER <span style="font-size:9px;color:var(--muted);letter-spacing:0;">(optional if email provided)</span></label>
+        <label>EMAIL / 邮箱 <span id="emailHint" style="font-size:9px;color:var(--muted);letter-spacing:0;">(optional if phone provided)</span></label>
+        <input id="em" type="email" placeholder="your@email.com" autocomplete="email"/>
+        <p id="cnNotice" style="display:none;font-size:11px;color:#c9a96e;margin-top:6px;line-height:1.6;letter-spacing:0;">
+          📧 Please provide your email — we'll send your table notifications there.<br>
+          <span style="color:#a89478;">한국 번호가 아닌 경우 이메일을 부탁드립니다. 자리 안내를 이메일로 보내드립니다.</span>
+        </p>
+      </div>
+      <div class="field">
+        <label>PHONE NUMBER / 手机号码 <span style="font-size:9px;color:var(--muted);letter-spacing:0;">(optional if email provided)</span></label>
         <div class="phone-row">
           <select id="cc" onchange="onCountryChange(this.value)">
             ${COUNTRIES.map(c=>`<option value="${c.code}">${c.flag} ${c.code} ${c.name}</option>`).join('')}
@@ -357,9 +388,8 @@ function render(){
           <input id="p" type="tel" placeholder="010 ···· ····"/>
         </div>
       </div>
-      <div class="field"><label>EMAIL <span style="font-size:9px;color:var(--muted);letter-spacing:0;">(optional if phone provided)</span></label><input id="em" type="email" placeholder="your@email.com" autocomplete="email"/></div>
       <div class="field">
-        <label>PARTY SIZE</label>
+        <label>PARTY SIZE / 人数</label>
         <div class="size-row" id="sz">
           ${[1,2,3,4,5,6].map(n=>`<button class="sz-btn${n===2?' active':''}" onclick="pickSize(${n})">${n}</button>`).join('')}
           <button class="sz-btn" onclick="pickSize(7)">7+</button>
@@ -367,7 +397,7 @@ function render(){
       </div>
       <button class="btn-primary" id="btn" onclick="register()">JOIN THE WAITING LIST</button>
     </div>
-    <p class="form-hint">You'll receive notifications via SMS and/or email</p>`;
+    <p class="form-hint">Korean numbers will be notified by SMS · International guests by email</p>`;
 
   document.getElementById('p').addEventListener('input',function(){this.value=fmt(this.value);});
   document.getElementById('n').addEventListener('keydown',e=>e.key==='Enter'&&register());

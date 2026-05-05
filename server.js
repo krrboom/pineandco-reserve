@@ -411,25 +411,39 @@ function logWaitingCheckin(entry) {
 //  PHONE UTILITIES
 // ─────────────────────────────────────────────────────────────
 function isKoreanNumber(phone) {
-  const clean = (phone || '').replace(/[-\s()]/g, '');
-  if (clean.startsWith('010')) return true;
-  if (clean.startsWith('011')) return true;
-  if (clean.startsWith('+82')) return true;
-  if (clean.startsWith('82'))  return true;
+  if (!phone) return false;
+  const clean = String(phone).replace(/[^0-9+]/g, '');
+  // ── Korean country code patterns ──
+  if (clean.startsWith('+82')) return true;     // +82-10-...
+  if (clean.startsWith('+820')) return true;    // +820-10-... (typo)
+  if (clean.startsWith('820')) return true;     // 82010... (no plus)
+  if (clean.startsWith('82') && clean.length >= 11) return true;
+  // ── Local Korean patterns (no country code) ──
+  if (/^01[0-9]/.test(clean)) return true;      // 010, 011, 016, 017, 018, 019
+  if (/^0[2-6][0-9]/.test(clean)) return true;  // 02-09xx (regional landline)
+  if (/^070/.test(clean)) return true;          // 070 (internet phone)
   return false;
 }
 
 function toE164(phone) {
-  let clean = (phone || '').replace(/[-\s()]/g, '');
+  let clean = String(phone || '').replace(/[^0-9+]/g, '');
+  // Fix common typo: +820... → +82...
+  if (clean.startsWith('+820')) clean = '+82' + clean.slice(4);
+  if (clean.startsWith('820') && !clean.startsWith('+')) clean = '+82' + clean.slice(3);
   if (clean.startsWith('+')) return clean;
+  // Korean local patterns
   if (/^01[0-9]/.test(clean)) return '+82' + clean.slice(1);
+  if (/^0[2-6]/.test(clean))  return '+82' + clean.slice(1);
+  if (/^070/.test(clean))     return '+82' + clean.slice(1);
+  // Foreign with country code, no +
   if (/^[1-9]\d{6,14}$/.test(clean)) return '+' + clean;
   return '+' + clean;
 }
 
 function toKoreanDomestic(phone) {
-  let clean = (phone || '').replace(/[-\s()]/g, '');
-  clean = clean.replace(/^\+?82/, '');
+  let clean = String(phone || '').replace(/[^0-9+]/g, '');
+  // Strip +82 or 82 prefix (handle +820 typo too)
+  clean = clean.replace(/^\+?820?/, '');
   if (!clean.startsWith('0')) clean = '0' + clean;
   return clean;
 }
@@ -588,46 +602,83 @@ async function sendEmail(toEmail, subject, htmlBody) {
 function buildWaitEmailHTML(type, entry, url, extra) {
   const min = CONFIG.AUTO_CANCEL_MIN;
   const biz = CONFIG.BUSINESS_PHONE;
-  const btnStyle = 'display:inline-block;padding:16px 40px;background:#b8935a;color:#1e1208;text-decoration:none;border-radius:8px;font-family:sans-serif;font-size:16px;font-weight:600;letter-spacing:1px;';
+  const btnStyle = 'display:inline-block;padding:16px 44px;background:#b8935a;color:#1e1208;text-decoration:none;border-radius:8px;font-family:Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;';
+  const dividerStyle = 'border:none;border-top:1px solid rgba(184,147,90,.25);margin:28px auto;width:60px;';
+
   const templates = {
     join: {
-      subject: `Pine & Co - Waiting #${entry.number} confirmed`,
+      subject: `🌲 Pine & Co — You're on the waitlist (#${entry.number})`,
       body: `
-        <p style="color:#f0ebe0;">파인앤코에 방문해주셔서 감사합니다.<br>Thank you for visiting Pine & Co.</p>
-        <p style="font-size:48px;color:#b8935a;font-weight:300;margin:20px 0;">#${entry.number}</p>
-        <p style="color:#f0ebe0;">웨이팅 ${entry.number}번 (${entry.partySize||2}명) 등록되었습니다.<br>
-        You are #${entry.number} (${entry.partySize||2} guests).</p>
-        <p style="color:#b8935a;">현재 대기: ${extra.myPos||1} / ${extra.total||1}</p>
-        <p style="margin:24px 0;"><a href="${url}" style="${btnStyle}">CHECK MY STATUS</a></p>
-        <p style="color:#7a6550;">자리가 나면 알려드리겠습니다.<br>We'll notify you when your table is ready.</p>`,
+        <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 24px;">YOU'RE ON THE LIST</p>
+        <p style="color:#f0ebe0;font-size:15px;line-height:1.7;margin:0 0 8px;">Welcome, <strong style="color:#c9a96e;">${entry.name}</strong>.</p>
+        <p style="color:#a89478;font-size:13px;line-height:1.7;margin:0 0 24px;">Thank you for choosing Pine &amp; Co.<br>파인앤코를 찾아주셔서 감사합니다.</p>
+
+        <div style="font-family:Georgia,serif;font-size:64px;color:#b8935a;font-weight:300;margin:24px 0 4px;letter-spacing:-2px;">#${entry.number}</div>
+        <p style="color:#a89478;font-size:12px;letter-spacing:2px;margin:0 0 8px;">YOUR NUMBER</p>
+        <p style="color:#c9a96e;font-size:13px;margin:8px 0 28px;">${entry.partySize||2} guest${(entry.partySize||2)>1?'s':''} · Position ${extra.myPos||1} of ${extra.total||1}</p>
+
+        <p style="margin:28px 0;"><a href="${url}" style="${btnStyle}">Check Your Status</a></p>
+
+        <hr style="${dividerStyle}"/>
+
+        <p style="color:#a89478;font-size:13px;line-height:1.7;margin:0;">
+          We'll let you know the moment your table is ready.<br>
+          <span style="color:#7a6550;font-size:12px;">자리가 준비되면 바로 안내드리겠습니다.</span>
+        </p>`,
     },
     call: {
-      subject: `Pine & Co - Your table is ready!`,
+      subject: `🌲 Pine & Co — Your table is ready`,
       body: `
-        <p style="font-size:24px;color:#b8935a;font-weight:500;">자리가 마련되었습니다!<br>Your table is ready!</p>
-        <p style="color:#f0ebe0;">${entry.name}님, ${min}분 내로 방문 부탁드리겠습니다.<br>
-        ${entry.name}, we kindly ask you to arrive within ${min} minutes.</p>
-        <p style="margin:24px 0;"><a href="${url}" style="${btnStyle}">VIEW DETAILS</a></p>
-        <p style="color:#f0ebe0;">시간이 더 필요하시면 편하게 연락 부탁드립니다.<br>Need more time? Please don't hesitate to call us.</p>
-        <p style="color:#b8935a;font-size:18px;margin-top:16px;">📞 ${biz}</p>`,
+        <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 16px;">YOUR TABLE IS READY</p>
+        <div style="font-family:Georgia,serif;font-size:36px;color:#b8935a;font-weight:300;margin:8px 0 24px;letter-spacing:-1px;line-height:1.2;">Welcome,<br>${entry.name}.</div>
+
+        <p style="color:#f0ebe0;font-size:15px;line-height:1.7;margin:0 0 8px;">Your table is now ready.</p>
+        <p style="color:#a89478;font-size:13px;line-height:1.7;margin:0 0 28px;">
+          We kindly ask you to arrive within <strong style="color:#c9a96e;">${min} minutes</strong>.<br>
+          <span style="color:#7a6550;">${min}분 내로 방문 부탁드리겠습니다.</span>
+        </p>
+
+        <p style="margin:28px 0;"><a href="${url}" style="${btnStyle}">View Details</a></p>
+
+        <hr style="${dividerStyle}"/>
+
+        <p style="color:#a89478;font-size:13px;line-height:1.7;margin:0 0 12px;">
+          Need a little more time?<br>
+          <span style="color:#7a6550;font-size:12px;">시간이 더 필요하시면 편하게 연락 부탁드립니다.</span>
+        </p>
+        <p style="color:#c9a96e;font-size:16px;font-weight:500;margin:8px 0 0;">📞 ${biz}</p>`,
     },
     cancel: {
-      subject: `Pine & Co - Waiting cancelled`,
+      subject: `Pine & Co — Your spot has been released`,
       body: `
-        <p style="color:#f0ebe0;">${entry.name}님, ${min}분이 경과하여 웨이팅이 자동 취소되었습니다.<br>
-        ${entry.name}, your spot has been released after ${min} minutes.</p>
-        <p style="color:#f0ebe0;">다시 방문해 주시면 재등록 가능합니다.<br>You're welcome to register again.</p>
-        <p style="color:#b8935a;font-size:18px;margin-top:16px;">📞 ${biz}</p>`,
+        <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 24px;">SPOT RELEASED</p>
+        <p style="color:#f0ebe0;font-size:15px;line-height:1.7;margin:0 0 8px;">Hello, <strong style="color:#c9a96e;">${entry.name}</strong>.</p>
+        <p style="color:#a89478;font-size:13px;line-height:1.7;margin:0 0 24px;">
+          As we didn't hear back within ${min} minutes, your spot has been released.<br>
+          <span style="color:#7a6550;">${min}분이 경과하여 웨이팅이 자동 취소되었습니다.</span>
+        </p>
+
+        <p style="color:#f0ebe0;font-size:14px;line-height:1.7;margin:24px 0;">
+          We'd love to have you visit again — feel free to register anytime.<br>
+          <span style="color:#a89478;font-size:12px;">언제든 다시 등록해 주시면 모시겠습니다.</span>
+        </p>
+
+        <hr style="${dividerStyle}"/>
+
+        <p style="color:#c9a96e;font-size:16px;font-weight:500;margin:8px 0 0;">📞 ${biz}</p>`,
     },
   };
   const t = templates[type];
   return {
     subject: t.subject,
-    html: `<div style="max-width:480px;margin:0 auto;background:#1e1208;color:#f0ebe0;padding:40px 32px;font-family:Georgia,serif;text-align:center;border-radius:12px;">
-      <div style="font-family:serif;font-size:14px;letter-spacing:4px;color:#b8935a;margin-bottom:24px;">PINE & CO SEOUL</div>
-      ${t.body}
-      <hr style="border:none;border-top:1px solid rgba(184,147,90,.2);margin:32px 0 16px;"/>
-      <p style="font-size:11px;color:#7a6550;">Pine & Co Seoul · pineandcoseoul@gmail.com</p>
+    html: `<div style="background:#0f0a06;padding:32px 16px;font-family:Georgia,serif;">
+      <div style="max-width:520px;margin:0 auto;background:#1e1208;color:#f0ebe0;padding:48px 32px;text-align:center;border-radius:14px;border:1px solid rgba(184,147,90,.15);box-shadow:0 8px 32px rgba(0,0,0,.4);">
+        <div style="font-family:Georgia,serif;font-size:14px;letter-spacing:5px;color:#b8935a;margin-bottom:8px;font-weight:300;">PINE &amp; CO</div>
+        <div style="font-family:Georgia,serif;font-size:9px;letter-spacing:3px;color:#7a6550;margin-bottom:36px;">SEOUL · COCKTAIL BAR</div>
+        ${t.body}
+        <hr style="border:none;border-top:1px solid rgba(184,147,90,.15);margin:36px 0 16px;"/>
+        <p style="font-size:10px;color:#5a4530;letter-spacing:1px;margin:0;line-height:1.6;">Pine &amp; Co Seoul · 010-6817-0406<br>You're receiving this because you joined our waiting list.</p>
+      </div>
     </div>`,
   };
 }
@@ -767,6 +818,12 @@ async function sendWaitingMessage(entry, type, extra = {}) {
       console.error(`🚨 BLOCKED: Korean number leaked to Twilio route → ${e164}. Should use Aligo. Skipping SMS.`);
       return { error: 'korean_number_blocked' };
     }
+    // 💰 Cost optimization: Skip ALL international SMS — high cost + low delivery rate.
+    // We rely on email for all foreign guests. Korean numbers handled above via Aligo.
+    const hasEmail = entry.email && entry.email.length > 0;
+    console.log(`💌 SKIPPED: International SMS → ${e164} (using email instead${hasEmail ? '' : ' — but no email on file!'})`);
+    return { skipped: 'foreign_email_only', country: e164.substring(0, 4), hasEmail };
+    // ── Below code is unreachable but kept for reference ──
     if (!IS_TWILIO_READY) { console.log(`\n🟡 [${label} INTL simulation] → ${e164}\n   ${m.sms}\n`); return; }
     try {
       const result = await sendTwilio(e164, m.sms);
@@ -1123,6 +1180,15 @@ app.post('/api/queue/join', async (req, res) => {
 
       const cleanPhone = (phone || '').trim().replace(/-/g, '');
       const size = Math.max(1, Math.min(20, parseInt(partySize) || 2));
+
+      // Foreign guests must provide email — international SMS is unreliable, we send via email only.
+      // Korean numbers (+82/010/011 etc.) are exempt — they receive SMS through Aligo.
+      if (cleanPhone) {
+        const isKorean = /^(\+?82|0[1-7])/.test(cleanPhone);
+        if (!isKorean && !email?.trim()) {
+          return { status: 400, body: { error: 'Please provide your email — we\'ll send your table notifications there. / 한국 번호가 아닌 경우 이메일을 부탁드립니다. 자리 안내를 이메일로 보내드립니다.' } };
+        }
+      }
 
       if (cleanPhone) {
         const existing = queue.find(q => q.phone && q.phone.replace(/-/g, '') === cleanPhone);
