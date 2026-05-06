@@ -631,7 +631,13 @@ async function renderTodaySummary(){
     el.innerHTML=h;return;
   }
   var active=todayRes.filter(function(r){return r.status!=='cancelled'&&r.status!=='noshow';});
-  var newToday=todayRes.filter(function(r){return r.createdAt&&r.createdAt.startsWith(today)&&r.status!=='cancelled'&&!r.staffChecked;});
+  // KST-aware: convert UTC createdAt to KST date for comparison
+  function isCreatedTodayKst(r){
+    if(!r.createdAt)return false;
+    var kstDate=new Date(new Date(r.createdAt).getTime()+9*3600000).toISOString().slice(0,10);
+    return kstDate===today;
+  }
+  var newToday=todayRes.filter(function(r){return isCreatedTodayKst(r)&&r.status!=='cancelled'&&!r.staffChecked;});
   // Stats cards
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:16px 0 12px;">';
   h+='<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;text-align:center;">';
@@ -660,7 +666,7 @@ async function renderTodaySummary(){
     if(!tRes.length){h+='<div style="font-size:11px;color:var(--mu);opacity:.5;">예약 없음</div>';}
     else{
       tRes.forEach(function(r){
-        var isNew=r.createdAt&&r.createdAt.startsWith(today)&&!r.staffChecked;
+        var isNew=isCreatedTodayKst(r)&&!r.staffChecked;
         var isReturn=r._returning;
         h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:5px 8px;border-radius:5px;margin-bottom:3px;background:'+(isReturn?'rgba(46,125,50,.06)':isNew?'rgba(74,124,89,.06)':'rgba(0,0,0,.02)')+';'+(isReturn?'border-left:3px solid #2e7d32;':'')+'">';
         h+='<div><span style="font-weight:500;font-size:12px;">'+esc(r.name)+'</span>';

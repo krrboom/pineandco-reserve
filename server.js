@@ -1495,7 +1495,11 @@ app.post('/api/reserve', async (req, res) => {
     if (activeCount >= 3) return res.status(400).json({ error: '예약 가능 횟수를 초과했습니다. / Maximum reservation limit reached.' });
   }
   const today = kstToday();
-  const ipCount = reservations.filter(r => r._ip === ip && r.createdAt && r.createdAt.startsWith(today)).length;
+  const ipCount = reservations.filter(r => {
+    if (r._ip !== ip || !r.createdAt) return false;
+    const createdKstDate = new Date(new Date(r.createdAt).getTime() + 9*3600000).toISOString().slice(0,10);
+    return createdKstDate === today;
+  }).length;
   if (ipCount >= 1) return res.status(429).json({ error: '오늘 이미 예약하셨습니다. 추가 예약은 전화로 문의해주세요. / You already made a reservation today.' });
 
   try {
@@ -1660,7 +1664,15 @@ app.post('/api/sheet-setup', async (req, res) => {
 // New reservations received today (not yet checked by staff)
 app.get('/api/new-today', (_req, res) => {
   const today = kstToday();
-  const newOnes = reservations.filter(r => r.createdAt && r.createdAt.startsWith(today) && r.status!=='cancelled' && !r.staffChecked);
+  // Convert each createdAt (UTC) to KST date for comparison
+  const newOnes = reservations.filter(r => {
+    if (!r.createdAt) return false;
+    if (r.status === 'cancelled') return false;
+    if (r.staffChecked) return false;
+    // Convert UTC createdAt to KST date string for comparison
+    const createdKstDate = new Date(new Date(r.createdAt).getTime() + 9*3600000).toISOString().slice(0,10);
+    return createdKstDate === today;
+  });
   const enriched = newOnes.map(r => {
     const rv = checkReturning(r.name, r.phone, r.email, r.instagram);
     return { ...r, _returning: rv.returning, _visitCount: rv.visits || 0, _lastVisit: rv.lastVisit || '', _firstVisit: rv.firstVisit || '', _prefZone: rv.prefZone || '', _recentVisits: rv.recentVisits || [] };
