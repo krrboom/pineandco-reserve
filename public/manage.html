@@ -1736,7 +1736,8 @@ function autoSuggestSeats(){
     ['H1','H2'].forEach(function(s){if(isFree(s))options.push({v:s,z:'highTable',l:'High '+s+' (2p)'});});
   }
   if(zn2==='auto'||zn2==='table'){
-    ['T1','T2','T3','T4'].forEach(function(s){if(isFree(s))options.push({v:s,z:'table',l:'Table '+s+' (5p)'});});
+    // T1은 직원 비상/웨이팅용 — 예약 자동 추천에서 제외
+    ['T2','T3','T4'].forEach(function(s){if(isFree(s))options.push({v:s,z:'table',l:'Table '+s+' (5p)'});});
   }
   if(zn2==='auto'||zn2==='room'){
     if(isFree('ROOM'))options.push({v:'ROOM',z:'room',l:'Room (10p/300K)'});
