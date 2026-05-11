@@ -146,9 +146,14 @@ let selectedCountry='+82';
 async function safeFetch(url,opts){
   try{
     const r=await fetch(url,opts);
-    const d=await r.json();
-    return {ok:r.ok, data:d};
-  }catch{return {ok:false, data:null};}
+    let d=null;
+    try{ d=await r.json(); }catch{ /* response not JSON (502/503/HTML error page) */ }
+    return {ok:r.ok, status:r.status, data:d};
+  }catch(e){
+    // Network error (no internet, server down)
+    console.error('Network error:',e.message);
+    return {ok:false, status:0, data:null};
+  }
 }
 async function reloadQueue(){const res=await safeFetch('/api/queue');if(res.ok&&Array.isArray(res.data))queue=res.data;}
 
@@ -219,10 +224,18 @@ async function register(){
   const name=document.getElementById('n')?.value.trim();
   const rawPhone=document.getElementById('p')?.value.trim()||'';
   const email=document.getElementById('em')?.value.trim()||'';
-  if(!name){flash('Please enter your name.');return;}
+  if(!name){flash('Please enter your name. / 이름을 입력해주세요.');return;}
+  if(name.length>50){flash('Name is too long (max 50 characters). / 이름이 너무 깁니다.');return;}
   const digits=rawPhone.replace(/\D/g,'');
-  if(!rawPhone&&!email){flash('Please enter a phone number or email.');return;}
-  if(rawPhone&&digits.length<7){flash('Please enter a valid phone number.');return;}
+  if(!rawPhone&&!email){flash('Please enter a phone number or email. / 전화번호 또는 이메일을 입력해주세요.');return;}
+  if(rawPhone&&digits.length<7){flash('Please enter a valid phone number. / 올바른 전화번호를 입력해주세요.');return;}
+  if(rawPhone&&digits.length>15){flash('Phone number is too long. / 전화번호가 너무 깁니다.');return;}
+  // Validate email format
+  if(email){
+    const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRe.test(email)){flash('Please enter a valid email. / 이메일 형식이 올바르지 않습니다.');document.getElementById('em')?.focus();return;}
+    if(email.length>100){flash('Email is too long. / 이메일이 너무 깁니다.');return;}
+  }
 
   // Foreign guests: email required — international SMS often fails to deliver
   if(selectedCountry!=='+82'&&rawPhone&&!email){
@@ -248,9 +261,9 @@ async function register(){
       if(res.data?.existing){
         myId=res.data.existing.id;submitted=true;history.replaceState(null,'',`?id=${myId}`);
         await reloadQueue();render();
-        flash('You are already on the waiting list.');return;
+        flash(res.data?.error||'You are already on the waiting list.');return;
       }
-      throw new Error(res.data?.error||'Could not connect to server. Please try again.');
+      throw new Error(res.data?.error||'Could not connect to server. Please try again. / 서버 연결에 실패했습니다.');
     }
     myId=res.data.id;submitted=true;history.replaceState(null,'',`?id=${myId}`);
     await reloadQueue();render();
@@ -323,12 +336,17 @@ function render(){
   // 등록 완료 후 대기 중
   if(me&&me.status==='waiting'){
     const myPos=W.findIndex(q=>q.id===me.id)+1;
+    const ahead=myPos-1; // 내 앞에 남은 팀 수
+    const nextUp=ahead===0;
     app.innerHTML=`
       <div class="my-card">
         <div class="my-num">${me.number}</div>
         <div class="my-label">YOUR NUMBER</div>
-        <p class="my-pos"><strong>#${myPos}</strong> in line</p>
-        <p style="font-size:16px;color:var(--muted);margin-top:4px;">${W.length} total waiting</p>
+        ${nextUp
+          ? `<p class="my-pos" style="color:#c9a96e;"><strong>You're next!</strong></p>
+             <p style="font-size:14px;color:var(--muted);margin-top:4px;">곧 안내드리겠습니다</p>`
+          : `<p class="my-pos"><strong>${ahead}</strong> ahead of you</p>
+             <p style="font-size:14px;color:var(--muted);margin-top:4px;">앞에 ${ahead}팀 남았습니다</p>`}
       </div>
       <a href="/game.html?id=${me.id}" style="display:block;text-align:center;margin:20px 0 12px;padding:16px 24px;
         border:1px solid rgba(184,147,90,.3);border-radius:10px;background:rgba(184,147,90,.06);

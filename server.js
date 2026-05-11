@@ -615,7 +615,7 @@ function buildWaitEmailHTML(type, entry, url, extra) {
 
         <div style="font-family:Georgia,serif;font-size:64px;color:#b8935a;font-weight:300;margin:24px 0 4px;letter-spacing:-2px;">#${entry.number}</div>
         <p style="color:#a89478;font-size:12px;letter-spacing:2px;margin:0 0 8px;">YOUR NUMBER</p>
-        <p style="color:#c9a96e;font-size:13px;margin:8px 0 28px;">${entry.partySize||2} guest${(entry.partySize||2)>1?'s':''} · Position ${extra.myPos||1} of ${extra.total||1}</p>
+        <p style="color:#c9a96e;font-size:13px;margin:8px 0 28px;">${entry.partySize||2} guest${(entry.partySize||2)>1?'s':''} · ${(extra.myPos||1)-1===0?'You\'re next!':`${(extra.myPos||1)-1} ahead of you / 앞에 ${(extra.myPos||1)-1}팀`}</p>
 
         <p style="margin:28px 0;"><a href="${url}" style="${btnStyle}">Check Your Status</a></p>
 
@@ -704,7 +704,7 @@ async function sendWaitingMessage(entry, type, extra = {}) {
                '#{순서}': String(extra.myPos || 1), '#{전체대기}': String(extra.total || 1),
                '#{링크}': url },
       // Twilio (foreign): 1-segment English
-      sms  : `PINE&CO: Hi ${asciiName(entry.name)}, you are #${entry.number} (${extra.myPos||1}/${extra.total||1}). Track: ${url}`,
+      sms  : `PINE&CO: Hi ${asciiName(entry.name)}, you are #${entry.number}. ${(extra.myPos||1)-1===0?"You're next!":`${(extra.myPos||1)-1} ahead of you.`} Track: ${url}`,
       // Aligo (Korean LMS, no segment limit): full bilingual message
       smsKr: `[PINE&CO]\n`
            + `파인앤코에 방문해주셔서 감사합니다.\n`
@@ -715,7 +715,7 @@ async function sendWaitingMessage(entry, type, extra = {}) {
            + `You are #${entry.number} (${entry.partySize||2} guests).\n`
            + `We'll notify you when your table is ready.\n`
            + `\n`
-           + `대기 / Waiting: ${extra.myPos || 1} / ${extra.total || 1}\n`
+           + `대기 / Waiting: ${(extra.myPos||1)-1===0?"다음 차례입니다 / You're next":`앞에 ${(extra.myPos||1)-1}팀 / ${(extra.myPos||1)-1} ahead`}\n`
            + `${url}\n`
            + `Tel: ${biz}`,
     },
@@ -1178,6 +1178,21 @@ app.post('/api/queue/join', async (req, res) => {
       if (!phone?.trim() && !email?.trim())
         return { status: 400, body: { error: 'Please enter a phone number or email.' } };
 
+      // Validate name length (prevent screen-breaking long names)
+      const cleanName = name.trim().slice(0, 50);
+
+      // Validate email format if provided
+      const cleanEmail = (email || '').trim();
+      if (cleanEmail) {
+        const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRe.test(cleanEmail)) {
+          return { status: 400, body: { error: 'Please enter a valid email address. / 이메일 형식이 올바르지 않습니다.' } };
+        }
+        if (cleanEmail.length > 100) {
+          return { status: 400, body: { error: 'Email is too long.' } };
+        }
+      }
+
       const cleanPhone = (phone || '').trim().replace(/-/g, '');
       const size = Math.max(1, Math.min(20, parseInt(partySize) || 2));
 
@@ -1185,30 +1200,40 @@ app.post('/api/queue/join', async (req, res) => {
       // Korean numbers (+82/010/011 etc.) are exempt — they receive SMS through Aligo.
       if (cleanPhone) {
         const isKorean = /^(\+?82|0[1-7])/.test(cleanPhone);
-        if (!isKorean && !email?.trim()) {
+        if (!isKorean && !cleanEmail) {
           return { status: 400, body: { error: 'Please provide your email — we\'ll send your table notifications there. / 한국 번호가 아닌 경우 이메일을 부탁드립니다. 자리 안내를 이메일로 보내드립니다.' } };
         }
       }
 
+      // Duplicate check: phone
       if (cleanPhone) {
         const existing = queue.find(q => q.phone && q.phone.replace(/-/g, '') === cleanPhone);
         if (existing)
-          return { status: 409, body: { error: 'This phone number is already in the waiting list.', existing } };
+          return { status: 409, body: { error: 'This phone number is already in the waiting list. / 이미 등록된 전화번호입니다.', existing } };
+      }
+      // Duplicate check: email (NEW — prevents same email registering twice)
+      if (cleanEmail) {
+        const existing = queue.find(q => q.email && q.email.toLowerCase() === cleanEmail.toLowerCase());
+        if (existing)
+          return { status: 409, body: { error: 'This email is already in the waiting list. / 이미 등록된 이메일입니다.', existing } };
       }
 
       const entry = {
         id: uid(), number: nextNumber(),
-        name: name.trim(), phone: (phone || '').trim(),
-        email: email?.trim() || null,
+        name: cleanName, phone: (phone || '').trim(),
+        email: cleanEmail || null,
         partySize: size,
         joinedAt: Date.now(), status: 'waiting',
       };
       queue.push(entry);
+      saveQueue();  // 🔒 Persist to disk immediately (prevents data loss on crash/restart)
       broadcastQueue();
 
       const waitingList = queue.filter(q => q.status === 'waiting');
       const myPos = waitingList.findIndex(q => q.id === entry.id) + 1;
-      sendWaitingMessage(entry, 'join', { myPos, total: waitingList.length }).catch(console.error);
+      sendWaitingMessage(entry, 'join', { myPos, total: waitingList.length }).catch(err => {
+        console.error('[JOIN] sendWaitingMessage failed:', err.message);
+      });
 
       return { status: 200, body: entry };
     });
