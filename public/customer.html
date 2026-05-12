@@ -267,7 +267,29 @@ async function register(){
     }
     myId=res.data.id;submitted=true;history.replaceState(null,'',`?id=${myId}`);
     await reloadQueue();render();
-  }catch(e){flash(e.message);if(btn){btn.disabled=false;btn.textContent='JOIN THE WAITING LIST';}}
+    // Visual confirmation: prominent toast + scroll to top so guest sees their number clearly
+    flash(`✅ 등록 완료! Welcome #${res.data.number}`);
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){
+    flash(e.message);
+    if(btn){btn.disabled=false;btn.textContent='JOIN THE WAITING LIST';}
+    // Show prominent fallback: if registration fails, guest should call directly
+    setTimeout(function(){
+      const existing=document.getElementById('fallbackCall');
+      if(existing)return;
+      const div=document.createElement('div');
+      div.id='fallbackCall';
+      div.style.cssText='margin:16px 0;padding:16px;background:rgba(170,51,51,.08);border:1px solid rgba(170,51,51,.3);border-radius:10px;text-align:center;';
+      div.innerHTML=`
+        <p style="font-size:12px;color:#c33;margin-bottom:8px;font-weight:500;">
+          ⚠️ Having trouble? Please call us directly<br>
+          <span style="color:#a89478;font-size:11px;">등록이 안 되면 전화로 부탁드립니다</span>
+        </p>
+        <a href="tel:010-6817-0406" style="display:inline-block;padding:12px 24px;background:var(--gold);color:#1e1208;text-decoration:none;border-radius:8px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:.05em;">📞 010-6817-0406</a>`;
+      const form=document.querySelector('.form-wrap');
+      if(form)form.parentNode.insertBefore(div,form.nextSibling);
+    },200);
+  }
 }
 
 async function cancel(){

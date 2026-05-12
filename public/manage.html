@@ -166,6 +166,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--tx);
 .day-hist-toggle{width:100%;background:none;border:1px solid var(--brd);color:var(--gold);padding:10px 14px;border-radius:6px;font-family:Cinzel,serif;font-size:11px;letter-spacing:.12em;cursor:pointer;text-align:center;}
 .day-hist-toggle:hover{background:rgba(184,147,90,.06);}
 .day-hist-toggle.open{background:rgba(184,147,90,.08);border-color:var(--gold);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 .hist-row .st{font-size:10px;padding:1px 6px;border-radius:3px;}
 </style></head>
 <body>
@@ -198,6 +199,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--tx);
   <div id="todayWaitingMini"></div>
   <div id="todaySummary"></div>
   <div id="todayCloseOut"></div>
+</div>
+
+<!-- Connection status indicator (visible on all screens) -->
+<div id="connStatus" style="position:fixed;bottom:12px;right:12px;padding:6px 12px;border-radius:20px;font-size:10px;font-family:Cinzel,serif;letter-spacing:.08em;z-index:9999;transition:all .3s;display:none;">
+  <span id="connDot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4a7c59;margin-right:6px;vertical-align:middle;"></span>
+  <span id="connText">실시간 연결됨</span>
 </div>
 
 <!-- CALENDAR VIEW -->
@@ -408,23 +415,66 @@ async function doLogin(){
     if(document.getElementById('vHome').style.display!=='none'){renderTodayWaitingMini();}
   },1000);
   // Poll queue every 3 seconds as SSE fallback (in case SSE drops)
+  // CRITICAL: Always re-render after fetch — don't trust change detection alone.
+  // Past bug: customers registered but didn't appear due to flawed change detection.
+  window._lastQueueFetch=Date.now();
   setInterval(async function(){
     try{
-      var qr=await fetch('/api/queue');
+      var qr=await fetch('/api/queue',{cache:'no-store'});
       if(qr.ok){
         var newQ=await qr.json();
-        // Only update if changed (simple length + first-id check)
-        var changed=newQ.length!==wQueue.length||(newQ[0]&&wQueue[0]&&newQ[0].id!==wQueue[0].id);
-        if(changed||newQ.length!==wQueue.length){
-          wQueue=newQ;
-          if(document.getElementById('vDay').style.display!=='none')renderWaitSidebar();
-          if(document.getElementById('vHome').style.display!=='none')renderTodayWaitingMini();
-        }else{
-          wQueue=newQ; // still update to catch status changes
-        }
+        wQueue=newQ;
+        window._lastQueueFetch=Date.now();
+        // ALWAYS re-render visible panels — guarantees newly registered guests appear immediately
+        if(document.getElementById('vDay')&&document.getElementById('vDay').style.display!=='none')renderWaitSidebar();
+        if(document.getElementById('vHome')&&document.getElementById('vHome').style.display!=='none')renderTodayWaitingMini();
+        updateConnStatus(true);
       }
-    }catch(e){}
+    }catch(e){
+      console.warn('[Queue poll] fetch failed:',e.message);
+      updateConnStatus(false);
+    }
   },3000);
+  // Connection status checker — shows warning if queue not updated for >10s
+  setInterval(updateConnStatus,2000);
+}
+
+function updateConnStatus(forceOk){
+  var el=document.getElementById('connStatus');
+  if(!el)return;
+  var dot=document.getElementById('connDot');
+  var txt=document.getElementById('connText');
+  var ago=Math.floor((Date.now()-(window._lastQueueFetch||0))/1000);
+  if(forceOk===false){
+    el.style.display='inline-block';
+    el.style.background='rgba(170,51,51,.1)';
+    el.style.border='1px solid rgba(170,51,51,.4)';
+    dot.style.background='#c33';
+    dot.style.animation='pulse 1s infinite';
+    txt.textContent='⚠️ 연결 끊김 - 새로고침 필요';
+    txt.style.color='#c33';
+    return;
+  }
+  if(ago>10){
+    el.style.display='inline-block';
+    el.style.background='rgba(201,169,110,.12)';
+    el.style.border='1px solid rgba(201,169,110,.4)';
+    dot.style.background='#c9a96e';
+    dot.style.animation='pulse 1.5s infinite';
+    txt.textContent='⚠️ '+ago+'초 전 갱신';
+    txt.style.color='#c9a96e';
+  }else if(ago>5){
+    el.style.display='inline-block';
+    el.style.background='rgba(74,124,89,.08)';
+    el.style.border='1px solid rgba(74,124,89,.25)';
+    dot.style.background='#4a7c59';
+    dot.style.animation='none';
+    txt.textContent='실시간 ('+ago+'s)';
+    txt.style.color='var(--mu)';
+  }else{
+    // Hide when everything is fresh (don't distract)
+    el.style.display='none';
+  }
 }
 
 function sv(v){
