@@ -85,6 +85,73 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cre
   z-index:99;white-space:nowrap;max-width:90vw;text-align:center;
   pointer-events:none;opacity:0;transition:opacity .3s;backdrop-filter:blur(12px);}
 .toast.show{opacity:1;}
+/* === COCKTAIL LAB GAME CARD === */
+.game-card-cta{
+  display:block;margin:24px 0 16px;padding:28px 20px 22px;
+  background:linear-gradient(165deg,rgba(184,147,90,.18) 0%,rgba(201,169,110,.08) 60%,rgba(184,147,90,.12) 100%);
+  border:1.5px solid rgba(201,169,110,.4);
+  border-radius:16px;text-align:center;text-decoration:none;color:var(--cream);
+  box-shadow:0 4px 24px rgba(184,147,90,.12),inset 0 1px 0 rgba(255,240,210,.08);
+  animation:gameCardIn .8s ease-out;
+  position:relative;overflow:hidden;
+}
+.game-card-cta::before{
+  content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(201,169,110,.15),transparent);
+  animation:shimmer 4s ease-in-out infinite;
+}
+.game-shaker{
+  display:block;
+  margin-bottom:8px;
+  text-align:center;
+}
+.game-card-title{
+  font-family:'Cinzel',serif;font-size:18px;letter-spacing:.18em;
+  color:#c9a96e;font-weight:500;margin:6px 0 12px;
+}
+.game-card-reward{
+  font-size:14px;color:#f0ebe0;margin:0 0 4px;font-weight:500;
+}
+.game-card-meta{
+  font-size:11px;color:rgba(240,235,224,.55);letter-spacing:.05em;margin:0 0 18px;
+}
+.game-card-btn{
+  display:inline-block;padding:13px 36px;
+  background:linear-gradient(180deg,#c9a96e 0%,#b8935a 100%);
+  color:#1e1208;border-radius:30px;
+  font-family:'Cinzel',serif;font-size:13px;letter-spacing:.18em;font-weight:600;
+  box-shadow:0 4px 16px rgba(201,169,110,.35),0 0 0 0 rgba(201,169,110,.5);
+  animation:btnGlow 2.4s ease-in-out infinite;
+  margin-bottom:14px;
+}
+.game-card-foot{
+  font-size:10px;color:rgba(240,235,224,.4);letter-spacing:.04em;
+  border-top:1px solid rgba(201,169,110,.15);padding-top:12px;margin-top:4px;
+}
+@keyframes shakeIt{
+  0%,100%{transform:rotate(0deg);}
+  10%{transform:rotate(-12deg) translateY(-1px);}
+  20%{transform:rotate(11deg) translateY(-2px);}
+  30%{transform:rotate(-10deg) translateY(-1px);}
+  40%{transform:rotate(9deg) translateY(-2px);}
+  50%{transform:rotate(-8deg) translateY(-1px);}
+  60%{transform:rotate(6deg);}
+  70%{transform:rotate(-4deg);}
+  80%{transform:rotate(2deg);}
+  90%{transform:rotate(-1deg);}
+}
+@keyframes btnGlow{
+  0%,100%{box-shadow:0 4px 16px rgba(201,169,110,.35),0 0 0 0 rgba(201,169,110,.4);}
+  50%{box-shadow:0 4px 20px rgba(201,169,110,.55),0 0 28px 4px rgba(201,169,110,.25);}
+}
+@keyframes gameCardIn{
+  0%{opacity:0;transform:translateY(20px) scale(.96);}
+  100%{opacity:1;transform:translateY(0) scale(1);}
+}
+@keyframes shimmer{
+  0%,90%,100%{left:-100%;}
+  50%{left:100%;}
+}
 </style>
 </head>
 <body>
@@ -370,10 +437,21 @@ function render(){
           : `<p class="my-pos"><strong>${ahead}</strong> ahead of you</p>
              <p style="font-size:14px;color:var(--muted);margin-top:4px;">앞에 ${ahead}팀 남았습니다</p>`}
       </div>
-      <a href="/game.html?id=${me.id}" style="display:block;text-align:center;margin:20px 0 12px;padding:16px 24px;
-        border:1px solid rgba(184,147,90,.3);border-radius:10px;background:rgba(184,147,90,.06);
-        text-decoration:none;color:var(--gold);font-family:'Cinzel',serif;font-size:13px;letter-spacing:.1em;">
-        🍸 Play Cocktail Lab while you wait!
+      <a href="/game.html?id=${me.id}" class="game-card-cta">
+        <div class="game-shaker">
+          <video autoplay loop muted playsinline disablepictureinpicture
+                 width="180" height="220"
+                 poster="paco_bartender.gif"
+                 style="border-radius:12px;display:block;margin:0 auto;max-width:100%;height:auto;">
+            <source src="paco_bartender.mp4" type="video/mp4">
+            <img src="paco_bartender.gif" alt="PACO bartender shaking" width="180" style="border-radius:12px;display:block;margin:0 auto;">
+          </video>
+        </div>
+        <div class="game-card-title">COCKTAIL LAB</div>
+        <div class="game-card-reward">Perfect score = surprise 🎁</div>
+        <div class="game-card-meta">5 cocktails · ~5 minutes</div>
+        <div class="game-card-btn">▶  START GAME</div>
+        <div class="game-card-foot">Show your phone to the bartender when you win</div>
       </a>
       <a href="https://maps.app.goo.gl/wEbWqtfoAurjyUf9A" target="_blank" style="display:block;text-align:center;margin:0 0 20px;padding:14px 24px;
         border:1px solid rgba(184,147,90,.15);border-radius:10px;background:rgba(240,235,224,.03);
