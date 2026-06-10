@@ -1023,7 +1023,20 @@ function getSlots(d) { return isWeekendForSlots(d) ? CONFIG.WEEKEND_SLOTS : CONF
 function getResFor(date, time) {
   return reservations.filter(r => r.date===date && r.time===time && r.status!=='cancelled' && r.status!=='noshow');
 }
+function getOccupiedFor(date, time) {
+  // CRITICAL FIX: filter by both date AND time
+  // Past bug: returned ALL occupied seats for the entire date,
+  // causing "fully booked" errors even when seats were free at other times.
+  const s = [];
+  reservations
+    .filter(r => r.date===date && r.time===time && (r.status==='confirmed' || r.status==='seated' || r.status==='needs_assignment'))
+    .forEach(r => { if (r.seats) s.push(...r.seats); });
+  return s;
+}
+// Legacy alias (kept for any other callers — but uses time-aware logic)
 function getOccupiedForDate(date) {
+  // ⚠️ Deprecated. This used to return ALL occupied seats for the entire date.
+  // Kept as fallback; new code should use getOccupiedFor(date, time).
   const s = [];
   reservations
     .filter(r => r.date===date && (r.status==='confirmed' || r.status==='seated' || r.status==='needs_assignment'))
@@ -1033,7 +1046,7 @@ function getOccupiedForDate(date) {
 
 function autoAssign(date, time, partySize, preference) {
   // ═══ STRICT SEAT RULES — NEVER VIOLATE ═══
-  const occ = getOccupiedForDate(date);
+  const occ = getOccupiedFor(date, time);  // FIX: time-aware occupancy
   const staffReserved = CONFIG.STAFF_RESERVED_SEATS || [];
   // Treat staff-reserved seats as occupied for guest auto-assign (staff can still book manually)
   const free = s => !occ.includes(s) && !staffReserved.includes(s);
@@ -1457,12 +1470,6 @@ app.get('/api/availability/:date', (req, res) => {
   const { date } = req.params;
   if (events[date]) return res.json({ blocked: true, event: events[date] });
   const slots = getSlots(date);
-  const occ   = getOccupiedForDate(date);
-
-  const barFree    = CONFIG.SEATS.bar.filter(s => !occ.includes(s)).length;
-  const tablesFree = CONFIG.SEATS.tables.filter(s => !occ.includes(s)).length;
-  const highFree   = CONFIG.SEATS.highTables.filter(s => !occ.includes(s)).length;
-  const roomFree   = !occ.includes('ROOM') ? 1 : 0;
 
   const result = {};
   const kstNow   = new Date(Date.now() + 9 * 3600000);
@@ -1470,6 +1477,14 @@ app.get('/api/availability/:date', (req, res) => {
   const nowHour  = kstNow.getHours() + kstNow.getMinutes() / 60;
 
   slots.forEach(time => {
+    // CRITICAL FIX: calculate occupancy per time slot (not whole day)
+    // Past bug: same `occ` for all times caused false "fully booked" reports.
+    const occ = getOccupiedFor(date, time);
+    const barFree    = CONFIG.SEATS.bar.filter(s => !occ.includes(s)).length;
+    const tablesFree = CONFIG.SEATS.tables.filter(s => !occ.includes(s)).length;
+    const highFree   = CONFIG.SEATS.highTables.filter(s => !occ.includes(s)).length;
+    const roomFree   = !occ.includes('ROOM') ? 1 : 0;
+
     const isLate = time === CONFIG.LATE_SLOT && !isWeekend(date);
     let eBar = barFree, eTbl = tablesFree;
     if (isLate) {
