@@ -1023,20 +1023,35 @@ function getSlots(d) { return isWeekendForSlots(d) ? CONFIG.WEEKEND_SLOTS : CONF
 function getResFor(date, time) {
   return reservations.filter(r => r.date===date && r.time===time && r.status!=='cancelled' && r.status!=='noshow');
 }
+// Slot grouping for overbooking prevention.
+// Dinner slots (19/20/21) share seats — booking one occupies seats for ALL three.
+// (Customers stay ~2 hours, so 19:00 customer is still at the table at 20:00.)
+// Late-night slot (23:00) is independent — by then dinner is over.
+const DINNER_SLOTS = ['19:00', '20:00', '21:00'];
+
 function getOccupiedFor(date, time) {
-  // CRITICAL FIX: filter by both date AND time
-  // Past bug: returned ALL occupied seats for the entire date,
-  // causing "fully booked" errors even when seats were free at other times.
+  // CRITICAL: seat is occupied if ANY reservation in the same slot group exists.
+  // Past bug: returned ALL occupied seats for the entire date (caused false "fully booked").
+  // Newer bug (June bug): time-only filter allowed OVERBOOKING (19:00 and 20:00 same seat).
+  // Current fix: group dinner slots together; late slot stays independent.
+  const reqIsDinner = DINNER_SLOTS.includes(time);
   const s = [];
   reservations
-    .filter(r => r.date===date && r.time===time && (r.status==='confirmed' || r.status==='seated' || r.status==='needs_assignment'))
+    .filter(r => {
+      if (r.date !== date) return false;
+      if (r.status === 'cancelled' || r.status === 'noshow') return false;
+      if (r.status !== 'confirmed' && r.status !== 'seated' && r.status !== 'needs_assignment') return false;
+      const resIsDinner = DINNER_SLOTS.includes(r.time);
+      // Both dinner → share seats (block overbooking)
+      if (reqIsDinner && resIsDinner) return true;
+      // Both late (or any same-time non-dinner) → only same time
+      return r.time === time;
+    })
     .forEach(r => { if (r.seats) s.push(...r.seats); });
   return s;
 }
-// Legacy alias (kept for any other callers — but uses time-aware logic)
+// Legacy alias — uses date-only (kept only for /api/debug endpoint)
 function getOccupiedForDate(date) {
-  // ⚠️ Deprecated. This used to return ALL occupied seats for the entire date.
-  // Kept as fallback; new code should use getOccupiedFor(date, time).
   const s = [];
   reservations
     .filter(r => r.date===date && (r.status==='confirmed' || r.status==='seated' || r.status==='needs_assignment'))
