@@ -133,8 +133,13 @@ let opLock       = false;
 // Reservation operation lock
 let lockPromise = Promise.resolve();
 function withResLock(fn) {
-  lockPromise = lockPromise.then(fn).catch(e => { console.error(e); throw e; });
-  return lockPromise;
+  // CRITICAL FIX: previous version chained .catch(throw) which left lockPromise
+  // permanently rejected after the first throw, causing ALL subsequent reservation
+  // requests to fail with the same error until server restart.
+  // New: caller gets the real result/error via `result`; the chain itself stays alive.
+  const result = lockPromise.then(fn);
+  lockPromise = result.catch(() => {}); // swallow rejection for the chain only
+  return result;                         // caller still sees the actual error
 }
 
 // Waiting operation lock (spin-wait)
@@ -1559,6 +1564,19 @@ app.post('/api/reserve', async (req, res) => {
 
   try {
     await withResLock(async () => {
+      // ── Late-night (23:00) hard cap: max 2 teams per day ──
+      // Owner policy: 11PM slot limited to 2 teams to ensure proper closing time.
+      if (time === CONFIG.LATE_SLOT) {
+        const lateCount = reservations.filter(r =>
+          r.date === date &&
+          r.time === CONFIG.LATE_SLOT &&
+          r.status !== 'cancelled' &&
+          r.status !== 'noshow'
+        ).length;
+        if (lateCount >= 2) {
+          throw new Error('23:00(11PM) 예약은 하루 2팀까지만 가능합니다. 다른 시간을 선택해주세요. / Late night (11PM) reservations are limited to 2 teams per day. Please select another time.');
+        }
+      }
       const a = autoAssign(date, time, partySize, null);
       if (!a) {
         if (partySize <= 2) throw new Error('바와 하이테이블이 모두 예약되었습니다. / Bar and high table seats are fully booked for this date.');
