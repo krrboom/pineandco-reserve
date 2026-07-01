@@ -378,7 +378,92 @@ async function logReservationCreation(r) {
   } catch (e) { console.error('📋 [LOG] Error:', e.message); }
 }
 
-// ── Waiting check-in log → Apps Script webhook (via HTTPS redirect follow) ──
+// ═══════════════════════════════════════════════════════════════════════════
+// Sheet → Server sync: hourly job that recovers reservations present in the
+// spreadsheet but missing from the server DB (e.g. after a disk wipe or
+// migration issue). Sheet is the source of truth for recovery.
+// ═══════════════════════════════════════════════════════════════════════════
+async function syncReservationsFromSheet() {
+  if (!CONFIG.GOOGLE_SHEET_ID || !CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY) return;
+  try {
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(
+      CONFIG.GOOGLE_CLIENT_EMAIL, null,
+      CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    );
+    const sheets = google.sheets({ version: 'v4', auth });
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+      range: '예약로그!A:N',
+    });
+    const rows = resp.data.values || [];
+    if (rows.length <= 1) return; // header only
+
+    // Columns: [timestamp, confirmCode, date, time, name, partySize, phone, email, instagram, zone, seats, source, notes, status]
+    const existingCodes = new Set(reservations.map(r => r.confirmCode).filter(Boolean));
+    const existingKeys = new Set(reservations.map(r =>
+      (r.name || '') + '|' + (r.date || '') + '|' + (r.time || '') + '|' + (r.phone || '')
+    ));
+
+    let added = 0;
+    const seenInSheet = new Set(); // avoid re-adding the same code twice from log duplicates
+
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length < 5) continue;
+      const [ts, confirmCode, date, time, name, partySize, phone, email, instagram, zone, seats, source, notes, status] = row;
+      if (!date || !time || !name) continue;
+      if (status && status.toLowerCase() === 'cancelled') continue;
+
+      const code = confirmCode || '';
+      const key = (name || '') + '|' + (date || '') + '|' + (time || '') + '|' + (phone || '');
+
+      // Skip if already in server (by code or by name+date+time+phone)
+      if (code && existingCodes.has(code)) continue;
+      if (existingKeys.has(key)) continue;
+      // Skip if we've already added this from a duplicate log line
+      if (code && seenInSheet.has(code)) continue;
+      if (seenInSheet.has(key)) continue;
+
+      const r = {
+        id: 'sync_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        confirmCode: code || ('SYNC' + Date.now().toString(36).slice(-4).toUpperCase()),
+        name: String(name),
+        phone: phone || '',
+        email: email || '',
+        instagram: instagram || '',
+        partySize: parseInt(partySize, 10) || 1,
+        date: String(date),
+        time: String(time),
+        preference: '',
+        zone: zone || 'bar',
+        seats: seats ? String(seats).split(',').map(s => s.trim()).filter(Boolean) : [],
+        status: status && status.toLowerCase() === 'seated' ? 'seated' : 'confirmed',
+        source: source || 'sheet-sync',
+        notes: notes || '',
+        createdAt: ts ? new Date(ts + '+09:00').toISOString() : new Date().toISOString(),
+        reminderD1: false,
+        reminderD0: false,
+        _syncedFromSheet: true,
+        modLog: [{ action: 'recovered from sheet', by: 'System', at: new Date().toISOString() }],
+      };
+      reservations.push(r);
+      seenInSheet.add(code || key);
+      added++;
+    }
+
+    if (added > 0) {
+      saveRes();
+      broadcastReservations();
+      console.log('📥 [SHEET SYNC] Recovered ' + added + ' reservation(s) from sheet');
+    }
+  } catch (e) {
+    console.error('📥 [SHEET SYNC] Error:', e.message);
+  }
+}
+
+// Waiting check-in log → Apps Script webhook (via HTTPS redirect follow)
 function logWaitingCheckin(entry) {
   const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const payload = JSON.stringify({
@@ -938,6 +1023,15 @@ function broadcastQueue() {
   sseClients = sseClients.filter(r => !r.writableEnded);
   sseClients.forEach(r => { try { r.write(`data: ${payload}\n\n`); } catch {} });
   saveQueue();
+}
+
+// SSE broadcast of reservations (for Day View real-time updates).
+// Called after any reservation create/update/delete/seat-assign so the manage
+// page reflects changes without needing a manual refresh.
+function broadcastReservations() {
+  const payload = JSON.stringify({ reservations });
+  sseClients = sseClients.filter(r => !r.writableEnded);
+  sseClients.forEach(r => { try { r.write(`data: ${payload}\n\n`); } catch {} });
 }
 
 function moveToWaitHistory(entry, outcome) {
@@ -1597,6 +1691,7 @@ app.post('/api/reserve', async (req, res) => {
       reservations.push(r); saveRes();
       sendReserveConfirmation(r);
       logReservationCreation(r);
+      broadcastReservations();
       console.log('🎫 Reservation: ' + name + ' / ' + date + ' ' + time + ' / ' + confirmCode);
       res.json({ ok: true, reservation: r });
     });
@@ -1653,6 +1748,7 @@ app.post('/api/staff/reserve', (req, res) => {
   };
   reservations.push(r); saveRes();
   logReservationCreation(r);
+  broadcastReservations();
   res.json({ ok: true, reservation: r });
 });
 
@@ -1734,6 +1830,19 @@ app.post('/api/sheet-setup', async (req, res) => {
   } catch(e) { res.json({ ok: false, error: e.message }); }
 });
 
+// Manual trigger for sheet → server sync (staff-only)
+app.post('/api/sheet-sync', async (req, res) => {
+  if (req.body.pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  const before = reservations.length;
+  try {
+    await syncReservationsFromSheet();
+    const added = reservations.length - before;
+    res.json({ ok: true, added, total: reservations.length });
+  } catch (e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
 // New reservations received today (not yet checked by staff)
 app.get('/api/new-today', (_req, res) => {
   const today = kstToday();
@@ -1780,6 +1889,7 @@ app.patch('/api/reservations/:id', (req, res) => {
   if (req.body.staffChecked !== undefined) { r.staffChecked = req.body.staffChecked; }
   if (ch.length) { if (!r.modLog) r.modLog = []; r.modLog.push({ action: ch.join(', '), by: req.body.staffName || 'Staff', at: new Date().toISOString() }); }
   saveRes();
+  broadcastReservations();
   res.json({ ok: true, reservation: r });
 });
 
@@ -1797,6 +1907,7 @@ app.post('/api/swap-seats', (req, res) => {
   r1.modLog.push({ action: 'swapped with '+r2.name+': '+s1.join(',')+'→'+r1.seats.join(','), by: staffName||'Staff', at: ts });
   r2.modLog.push({ action: 'swapped with '+r1.name+': '+r2.seats.join(',')+'→'+s1.join(','), by: staffName||'Staff', at: ts });
   saveRes();
+  broadcastReservations();
   res.json({ ok: true });
 });
 
@@ -1817,6 +1928,7 @@ app.post('/api/walkin', (req, res) => {
     modLog: [{ action: 'walk-in seated', by: staffName||'Staff', at: new Date().toISOString() }],
   };
   reservations.push(r); saveRes();
+  broadcastReservations();
   res.json({ ok: true, reservation: r });
 });
 
@@ -1824,6 +1936,7 @@ app.post('/api/walkin', (req, res) => {
 app.delete('/api/reservations/:id', (req, res) => {
   reservations = reservations.filter(r => r.id!==req.params.id);
   saveRes();
+  broadcastReservations();
   res.json({ ok: true });
 });
 
@@ -2175,6 +2288,9 @@ app.listen(CONFIG.PORT, () => {
   setInterval(sendReminders,       30 * 60000);
   setInterval(syncGoogleCalendar,  60 * 60000);
   setInterval(autoBackup,          60 * 60000);
+  // Recover from sheet: first pass 5 minutes after boot, then every hour
+  setTimeout(syncReservationsFromSheet, 5 * 60000);
+  setInterval(syncReservationsFromSheet, 60 * 60000);
 
   const kakaoReady = CONFIG.KAKAO_SENDER_KEY && CONFIG.KAKAO_SENDER_KEY.length > 0 && CONFIG.KAKAO_SENDER_KEY !== 'YOUR_SENDER_KEY';
   console.log(`\n${CONFIG.BUSINESS_EMOJI}  ${CONFIG.BUSINESS_NAME} Unified System started`);
