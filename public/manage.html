@@ -500,7 +500,7 @@ function connectWaitSSE(){
     wES.onmessage=function(e){
       try{
         var d=JSON.parse(e.data);
-        if(d&&d.queue){wQueue=d.queue;wHist=d.history||wHist;}
+        if(d&&d.queue){wQueue=d.queue;wHist=d.history||wHist;checkCantCome();}
         // Re-render visible waiting panels
         if(document.getElementById('vHome')&&document.getElementById('vHome').style.display!=='none')renderTodayWaitingMini();
         if(document.getElementById('vDay')&&document.getElementById('vDay').style.display!=='none')renderWaitSidebar();
@@ -854,6 +854,7 @@ async function ld(){
   aR=await fetch('/api/reservations/'+cD).then(function(r){return r.json();}).catch(function(){return [];});
   // Always re-fetch queue when entering Day View (SSE fallback)
   try{var qr=await fetch('/api/queue');if(qr.ok)wQueue=await qr.json();}catch(e){}
+  checkCantCome();
   var slots=Object.keys(av);
   if(!cT||(!slots.includes(cT)&&cT!=='ALL'))cT='ALL';
   rtb(slots);rf();rl();autoSuggestSeats();
@@ -1161,6 +1162,9 @@ function seatClick(evt,seatId){
   }else{
     // Empty seat
     h+='<h4>'+seatId+' — 빈 좌석</h4>';
+    // 오늘 + 대기 손님이 있으면 이 자리로 부르기(노티) 제공
+    var _waitN=(cD===businessDay())?(wQueue||[]).filter(function(q){return q.status==='waiting';}).length:0;
+    if(_waitN)h+='<button class="primary" onclick="showWaitChooser(\''+seatId+'\')">🔔 이 자리로 웨이팅 손님 부르기 ('+_waitN+'팀 대기)</button>';
     h+='<button onclick="closePop();markOccupied(\''+seatId+'\')">🪑 손님 앉음 표시 (워크인)</button>';
     h+='<div style="border-top:1px solid rgba(0,0,0,.1);margin:8px 0;padding-top:8px;">';
     h+='<div style="font-size:11px;color:var(--gold);font-weight:500;margin-bottom:6px;">✏️ 이 좌석에 예약 추가</div>';
@@ -1358,7 +1362,11 @@ function renderWaitSidebar(){
 }
 
 function waitCard(e,called){
-  var h='<div class="wc'+(called?' called':'')+'">';
+  var h='<div class="wc'+(called?' called':'')+'"'+(e.guestCantCome?' style="border:1px solid #c0392b;background:rgba(192,57,43,.06);"':'')+'>';
+  if(e.guestCantCome){
+    h+='<div style="font-size:11px;font-weight:700;color:#c0392b;margin-bottom:6px;">🚫 못 온다고 함 · '+hm(e.guestCantCome)
+      +' <button onclick="confirmCantCome(\''+e.id+'\')" style="margin-left:4px;padding:2px 8px;border:none;border-radius:5px;background:#c0392b;color:#fff;font-size:10px;cursor:pointer;">제거</button></div>';
+  }
   h+='<div><span class="wc-num">#'+e.number+'</span> <span class="wc-name">'+esc(e.name)+'</span></div>';
   h+='<div class="wc-meta">'+(e.partySize||2)+'명';
   if(e.phone)h+=' · '+esc(e.phone);
@@ -1582,6 +1590,85 @@ function wClosePicker(){
   sp.innerHTML='';
   wPickerEntryId=null;
   wPickedSeats=[];
+}
+
+// ═══════════ FEATURE: 빈자리에서 웨이팅 손님 부르기(노티) ═══════════
+// Day View 빈 좌석 팝업에서 이 자리로 대기 손님을 호출한다. 기존 좌석 피커를
+// 클릭한 좌석으로 미리 채워 재사용하므로 인원수 규칙(바=인원수, 그 외=1)이 유지됨.
+function showWaitChooser(seatId){
+  var pop=document.getElementById('spPop');
+  if(!pop)return;
+  var waiting=(wQueue||[]).filter(function(q){return q.status==='waiting';});
+  var h='<button class="sp-close" onclick="closePop()" title="Close">×</button>';
+  h+='<h4>'+seatId+' — 🔔 이 자리로 부를 웨이팅 손님</h4>';
+  if(!waiting.length){
+    h+='<div class="si2">대기 중인 웨이팅 손님이 없습니다.</div>';
+  }else{
+    waiting.forEach(function(e){
+      var meta=(e.partySize||2)+'명'+(e.phone?' · '+esc(e.phone):'')+' · '+timeAgo(e.joinedAt)+' 전';
+      h+='<button onclick="pickWaitForSeat(\''+e.id+'\',\''+seatId+'\')" style="text-align:left;">'
+        +'<strong>#'+e.number+' '+esc(e.name)+'</strong><br><span style="font-size:11px;color:var(--mu);">'+meta+'</span></button>';
+    });
+  }
+  pop.innerHTML=h;
+}
+function pickWaitForSeat(id,seatId){
+  var g=(wQueue||[]).find(function(q){return q.id===id;});
+  if(!g){fl('웨이팅을 찾을 수 없습니다');return;}
+  closePop();
+  wPickerEntryId=id;wPickedSeats=[];wPickerPartySize=parseInt(g.partySize)||1;
+  wShowSeatPicker(g);
+  wPickSeat(seatId); // 클릭한 좌석을 미리 선택 (하이라이트 + NOTIFY 버튼 상태 갱신)
+}
+
+// ═══════════ FEATURE: 손님이 "못 온다" → 직원 확인창 ═══════════
+// 손님이 이메일/상태페이지에서 "Can't go" 를 누르면 서버가 guestCantCome 플래그만
+// 세운다(즉시 삭제 안 함). 여기서 그 플래그를 감지해 직원에게 확인 모달을 띄우고,
+// 직원이 확인하면 /api/queue/decline 로 실제 제거 + 시트 저장한다.
+var cantShown={};
+function hm(ts){try{return new Date(ts).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false});}catch(e){return '';}}
+function checkCantCome(){
+  var flagged=(wQueue||[]).filter(function(q){return q.guestCantCome;});
+  if(!flagged.length){closeCantModal();return;}
+  var fresh=flagged.some(function(q){return !cantShown[q.id];});
+  flagged.forEach(function(q){cantShown[q.id]=1;});
+  if(fresh){try{fl('🚫 손님이 못 온다고 알려왔습니다');}catch(e){}}
+  showCantModal();
+}
+function showCantModal(){
+  var flagged=(wQueue||[]).filter(function(q){return q.guestCantCome;});
+  if(!flagged.length){closeCantModal();return;}
+  var ov=document.getElementById('cantOv');
+  if(!ov){
+    ov=document.createElement('div');ov.id='cantOv';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    document.body.appendChild(ov);
+  }
+  var h='<div style="background:var(--bg,#fafaf7);color:var(--tx,#2a2118);max-width:380px;width:100%;border-radius:14px;padding:20px;box-shadow:0 12px 48px rgba(0,0,0,.4);border-top:4px solid #c0392b;">';
+  h+='<div style="font-size:15px;font-weight:700;color:#c0392b;margin-bottom:4px;">🚫 못 온다고 알려온 손님</div>';
+  h+='<div style="font-size:12px;color:var(--mu,#8a7560);margin-bottom:14px;">확인하면 웨이팅에서 제거되고 시트에 저장됩니다.</div>';
+  flagged.forEach(function(e){
+    var t=e.status==='called'?'호출됨 '+hm(e.calledAt):'등록 '+hm(e.joinedAt);
+    h+='<div style="border:1px solid rgba(0,0,0,.1);border-radius:10px;padding:12px;margin-bottom:10px;">';
+    h+='<div style="font-size:14px;font-weight:600;">#'+e.number+' '+esc(e.name)+' <span style="font-weight:400;color:var(--mu,#8a7560);">('+(e.partySize||2)+'명)</span></div>';
+    h+='<div style="font-size:12px;color:var(--mu,#8a7560);margin:2px 0 10px;">'+t+(e.phone?' · '+esc(e.phone):'')+'</div>';
+    h+='<button onclick="confirmCantCome(\''+e.id+'\')" style="width:100%;padding:9px;border:none;border-radius:7px;background:#c0392b;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">확인 · 웨이팅에서 제거</button>';
+    h+='</div>';
+  });
+  h+='<button onclick="closeCantModal()" style="width:100%;padding:9px;border:1px solid rgba(0,0,0,.15);border-radius:7px;background:none;color:var(--mu,#8a7560);font-size:12px;cursor:pointer;">나중에 (닫기)</button>';
+  h+='</div>';
+  ov.innerHTML=h;
+}
+function closeCantModal(){var ov=document.getElementById('cantOv');if(ov)ov.remove();}
+async function confirmCantCome(id){
+  var e=(wQueue||[]).find(function(q){return q.id===id;});
+  var nm=e?e.name:'';
+  try{await fetch('/api/queue/decline/'+id,{method:'POST'});}catch(err){}
+  delete cantShown[id];
+  wQueue=(wQueue||[]).filter(function(q){return q.id!==id;}); // 낙관적 제거
+  fl('✅ '+nm+' 웨이팅에서 제거 (시트 저장됨)');
+  showCantModal();      // 남은 플래그 있으면 계속 표시, 없으면 자동 닫힘
+  renderWaitSidebar();
 }
 
 // Tap outside the picker box to cancel

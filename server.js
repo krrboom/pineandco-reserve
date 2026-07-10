@@ -243,6 +243,7 @@ function loadQueue() {
       assignedSeat: e.assignedSeat || null,
       calledAt: typeof e.calledAt === 'number' ? e.calledAt : null,
       notifiedVia: e.notifiedVia || null,
+      guestCantCome: typeof e.guestCantCome === 'number' ? e.guestCantCome : null,
     }));
     if (queue.length !== parsed.length) {
       console.warn(`⚠️  Removed ${parsed.length - queue.length} invalid entries from queue`);
@@ -463,17 +464,29 @@ async function syncReservationsFromSheet() {
   }
 }
 
-// Waiting check-in log → Apps Script webhook (via HTTPS redirect follow)
-function logWaitingCheckin(entry) {
-  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+// Waiting event log → Apps Script webhook (via HTTPS redirect follow)
+// Fires for EVERY outcome (checked_in / cancelled / declined / auto_cancelled),
+// not just check-ins, so cancelled + no-show teams persist for monthly stats and
+// re-contact. Timing fields (joinedAt/calledAt/completedAt) are sent raw so the
+// Apps Script side can compute wait minutes, weekday, hour, and business date.
+// date/time here reflect when the guest JOINED the queue (i.e. when demand hit),
+// which is what the "busiest weekday / time" analysis needs.
+function logWaitingEvent(entry) {
+  const joinedMs = typeof entry.joinedAt === 'number' ? entry.joinedAt : Date.now();
+  const kst = new Date(joinedMs + 9 * 60 * 60 * 1000);
   const payload = JSON.stringify({
+    outcome: entry.outcome || 'checked_in',
     name: entry.name,
     phone: entry.phone ? toE164(entry.phone) : '',
     email: entry.email || '',
     partySize: entry.partySize || 2,
+    number: entry.number,
     date: kst.toISOString().split('T')[0],
     time: kst.toISOString().split('T')[1].slice(0,5),
-    number: entry.number,
+    joinedAt: joinedMs,
+    calledAt: typeof entry.calledAt === 'number' ? entry.calledAt : '',
+    completedAt: typeof entry.completedAt === 'number' ? entry.completedAt : Date.now(),
+    assignedSeat: entry.assignedSeat || '',
   });
   function postWithRedirect(targetUrl, body) {
     const u = new URL(targetUrl);
@@ -485,7 +498,7 @@ function logWaitingCheckin(entry) {
     const req = https.request(opts, (res) => {
       if (res.statusCode === 302 || res.statusCode === 301) {
         https.get(res.headers.location, (r2) => {
-          let b=''; r2.on('data',d=>b+=d); r2.on('end',()=>console.log(`📊 Sheets saved: ${entry.name}`));
+          let b=''; r2.on('data',d=>b+=d); r2.on('end',()=>console.log(`📊 Sheets saved: ${entry.name} (${entry.outcome})`));
         }).on('error', e => console.error('Sheets redirect error:', e.message));
       } else {
         let b=''; res.on('data',d=>b+=d); res.on('end',()=>console.log(`📊 Sheets: ${b.slice(0,80)}`));
@@ -693,6 +706,9 @@ function buildWaitEmailHTML(type, entry, url, extra) {
   const min = CONFIG.AUTO_CANCEL_MIN;
   const biz = CONFIG.BUSINESS_PHONE;
   const btnStyle = 'display:inline-block;padding:16px 44px;background:#b8935a;color:#1e1208;text-decoration:none;border-radius:8px;font-family:Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;';
+  // Secondary / "can't go" button — muted so it never competes with the primary CTA
+  const btn2Style = 'display:inline-block;padding:12px 32px;background:transparent;color:#a89478;text-decoration:none;border:1px solid rgba(184,147,90,.35);border-radius:8px;font-family:Georgia,serif;font-size:12px;font-weight:500;letter-spacing:1px;';
+  const cantBtn = `<p style="margin:8px 0 4px;"><a href="${url}?cant=1" style="${btn2Style}">Can't go this time / 못 갈 것 같아요</a></p>`;
   const dividerStyle = 'border:none;border-top:1px solid rgba(184,147,90,.25);margin:28px auto;width:60px;';
 
   const templates = {
@@ -707,7 +723,8 @@ function buildWaitEmailHTML(type, entry, url, extra) {
         <p style="color:#a89478;font-size:12px;letter-spacing:2px;margin:0 0 8px;">YOUR NUMBER</p>
         <p style="color:#c9a96e;font-size:13px;margin:8px 0 28px;">${entry.partySize||2} guest${(entry.partySize||2)>1?'s':''} · ${(extra.myPos||1)-1===0?'You\'re next!':`${(extra.myPos||1)-1} ahead of you / 앞에 ${(extra.myPos||1)-1}팀`}</p>
 
-        <p style="margin:28px 0;"><a href="${url}" style="${btnStyle}">Check Your Status</a></p>
+        <p style="margin:28px 0 4px;"><a href="${url}" style="${btnStyle}">Check Your Status</a></p>
+        ${cantBtn}
 
         <hr style="${dividerStyle}"/>
 
@@ -728,7 +745,8 @@ function buildWaitEmailHTML(type, entry, url, extra) {
           <span style="color:#7a6550;">${min}분 내로 방문 부탁드리겠습니다.</span>
         </p>
 
-        <p style="margin:28px 0;"><a href="${url}" style="${btnStyle}">View Details</a></p>
+        <p style="margin:28px 0 4px;"><a href="${url}" style="${btnStyle}">View Details</a></p>
+        ${cantBtn}
 
         <hr style="${dividerStyle}"/>
 
@@ -1039,7 +1057,10 @@ function moveToWaitHistory(entry, outcome) {
   waitHistory.push(h);
   saveWaitHist();
   console.log(`📋 Wait history: ${entry.name} (#${entry.number}) → ${outcome}`);
-  if (outcome === 'checked_in') logWaitingCheckin(entry);
+  // Log EVERY outcome to the sheet (not just check-ins) so cancelled + no-show
+  // teams persist beyond the 2AM reset — needed for monthly stats and re-contact.
+  // Pass `h` (the enriched copy) so outcome + completedAt travel with the payload.
+  logWaitingEvent(h);
 }
 
 function startCancelTimer(id) {
@@ -1456,6 +1477,28 @@ app.post('/api/queue/swap', async (req, res) => {
     });
     res.json({ ok: true });
   } catch (e) { console.error('SWAP error:', e); res.status(500).json({ error: 'Server error.' }); }
+});
+
+// ── Guest: "can't go this time" → FLAG only, don't remove yet ──
+// Guest taps this from the email / status page. The entry stays in the queue but
+// is flagged so staff get a confirmation popup on manage.html ("OO님이 못 온다고
+// 합니다"). Staff then confirm, which calls /decline to actually remove + log to
+// the sheet. We clear the auto-cancel timer so the guest doesn't also get the
+// "spot expired" message after they proactively told us.
+app.post('/api/queue/cant-come/:id', async (req, res) => {
+  try {
+    let flagged = false;
+    await withQueueLock(async () => {
+      const entry = queue.find(q => q.id === req.params.id);
+      if (!entry) return;
+      if (cancelTimers[entry.id]) { clearTimeout(cancelTimers[entry.id]); delete cancelTimers[entry.id]; }
+      entry.guestCantCome = Date.now();
+      flagged = true;
+      console.log(`🚫 Guest says can't come: ${entry.name} (#${entry.number}) — awaiting staff confirm`);
+      broadcastQueue();
+    });
+    res.json({ ok: true, flagged });
+  } catch (e) { console.error('CANT-COME error:', e); res.status(500).json({ error: 'Server error.' }); }
 });
 
 // ── Guest: can't come (cancel immediately) ──

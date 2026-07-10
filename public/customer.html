@@ -168,6 +168,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cre
 <script>
 /* ─── App Logic ─── */
 let cfg={},queue=[],myId=new URLSearchParams(location.search).get('id'),submitted=false,partySize=2;
+// Deep-link from the "Can't go this time" email button → show a focused confirm screen
+let cantMode=new URLSearchParams(location.search).get('cant')==='1';
 
 // Country codes — Korea first, then common tourist countries
 const COUNTRIES=[
@@ -376,6 +378,17 @@ async function declineWaiting(){
   await reloadQueue();render();
 }
 
+// "못 갈 것 같아요" → 즉시 사라지지 않고 직원에게 알림만. 직원이 확인창에서
+// 확정하면 그때 웨이팅에서 제거되고 시트에 저장됨.
+async function cantCome(){
+  if(!myId)return;
+  if(!confirm('이번엔 방문이 어려우신가요?\nCan\'t make it this time?'))return;
+  try{await fetch(`/api/queue/cant-come/${myId}`,{method:'POST'});}catch{}
+  cantMode=false;
+  flash('직원에게 전달했습니다. / We\'ve let the staff know.');
+  await reloadQueue();render();
+}
+
 let _ti=null;
 function startTimer(ca){
   if(_ti)clearInterval(_ti);
@@ -400,6 +413,35 @@ function render(){
   if(!app)return;
   const W=(queue||[]).filter(q=>q.status==='waiting'),me=myId?(queue||[]).find(q=>q.id===myId):null;
 
+  // 못 온다고 이미 전달한 상태 — 직원 확인 대기
+  if(me&&me.guestCantCome){
+    app.innerHTML=`
+      <div class="my-card">
+        <div class="my-num">${me.number}</div>
+        <div class="my-label">YOUR NUMBER</div>
+        <p class="my-pos" style="margin-top:16px;">말씀 감사합니다 🙏</p>
+        <p style="font-size:14px;color:var(--muted);margin-top:6px;line-height:1.6;">
+          직원에게 전달했습니다.<br>We've let the staff know. Thank you.</p>
+      </div>
+      <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>`;
+    return;
+  }
+
+  // 이메일 "Can't go this time" 버튼으로 들어옴 (?cant=1) — 확인 화면
+  if(cantMode&&me){
+    app.innerHTML=`
+      <div class="my-card">
+        <div class="my-num">${me.number}</div>
+        <div class="my-label">YOUR NUMBER</div>
+        <p class="my-pos" style="margin-top:16px;">못 오시나요?</p>
+        <p style="font-size:14px;color:var(--muted);margin-top:6px;line-height:1.6;">
+          이번엔 방문이 어려우신가요?<br>Can't make it this time?</p>
+      </div>
+      <button class="btn-primary" style="margin-top:16px;background:rgba(160,80,80,.6);" onclick="cantCome()">네, 못 갑니다 / Yes, can't go</button>
+      <button class="btn-cancel" style="margin-top:8px;" onclick="cantMode=false;render();">아니요, 갈게요 / No, I'll come</button>`;
+    return;
+  }
+
   // 입장 안내 받은 상태 — 5분 타이머 + 못 갈 것 같아요
   if(me&&me.status==='called'){
     app.innerHTML=`
@@ -417,7 +459,7 @@ function render(){
         <div id="tb" class="timer-bar" style="width:100%"></div>
         <div id="tt" class="timer-text"></div>
       </div>
-      <button class="btn-primary" style="margin-top:16px;background:rgba(160,80,80,.5);font-size:11px;" onclick="declineWaiting()">CAN'T MAKE IT / 못 갈 것 같아요</button>
+      <button class="btn-primary" style="margin-top:16px;background:rgba(160,80,80,.5);font-size:11px;" onclick="cantCome()">CAN'T MAKE IT / 못 갈 것 같아요</button>
       <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>`;
     startTimer(me.calledAt);return;
   }
@@ -459,7 +501,7 @@ function render(){
         <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:11px;letter-spacing:.12em;">PINE & CO'S SISTER BAR</span><br>
         🦗 Loved Pine & Co? Come find <strong style="color:var(--gold);">Cricket</strong> — our second spot is just around the corner.
       </a>
-      <button class="btn-cancel" onclick="cancel()">CANCEL WAITING</button>`;
+      <button class="btn-cancel" onclick="cantCome()">CANCEL WAITING / 못 갈 것 같아요</button>`;
     return;
   }
 
