@@ -176,7 +176,86 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('웨이팅 통계')
     .addItem('통계 새로고침', 'refreshStats')
+    .addItem('과거 체크인 불러오기 (최초 1회)', 'migrateLegacy')
     .addToUi();
+}
+
+/* ── 과거 체크인 로그 → 웨이팅전체 + 들어온손님 (최초 1회) ─────────
+ * 기존 시트(Date/Time/Number/Name/Phone/Email/Party 로그)를 새 탭 구조로
+ * 옮겨, 배포 첫날부터 월간통계·히트맵에 과거 데이터가 반영되게 한다.
+ * 과거 로그는 전부 '들어옴'(체크인)이다. 대기시간·취소·노쇼 정보는 없음.
+ * 두 번 돌리면 중복되므로, 웨이팅전체에 이미 데이터가 있으면 중단한다.       */
+function migrateLegacy() {
+  var ui = SpreadsheetApp.getUi();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  var all = ss.getSheetByName(SHEETS.ALL);
+  if (all && all.getLastRow() > 1) {
+    ui.alert('이미 웨이팅전체에 데이터가 있어 중단합니다.\n(중복 방지 — 최초 1회만 실행하세요.)');
+    return;
+  }
+
+  // 레거시 시트 찾기: 헤더가 Date/Time/Number... 인 시트 (새 탭 제외)
+  var known = [SHEETS.ALL, SHEETS.NOSHOW, SHEETS.IN, SHEETS.STATS];
+  var legacy = null;
+  ss.getSheets().forEach(function (sh) {
+    if (known.indexOf(sh.getName()) >= 0) return;
+    if (sh.getLastRow() < 2 || sh.getLastColumn() < 4) return;
+    var hdr = sh.getRange(1, 1, 1, Math.min(7, sh.getLastColumn())).getValues()[0].map(String);
+    var joined = hdr.join('|').toLowerCase();
+    if (joined.indexOf('date') >= 0 && joined.indexOf('name') >= 0 && !legacy) legacy = sh;
+  });
+  if (!legacy) { ui.alert('과거 체크인 시트를 찾지 못했습니다. (Date/Time/Number/Name/Phone/Email/Party 형식)'); return; }
+
+  var rows = legacy.getRange(2, 1, legacy.getLastRow() - 1, 7).getValues();
+  var out = [];
+  rows.forEach(function (r) {
+    var dateStr = String(r[0] || '').trim();
+    var timeStr = String(r[1] || '').trim();
+    if (!dateStr || !r[3]) return; // Date 나 Name 없으면 스킵 (빈 줄)
+    var biz = legacyBiz(dateStr, timeStr);
+    if (!biz) return;
+    out.push([
+      dateStr + (timeStr ? ' ' + timeStr : ''), // 기록시각(과거는 체크인 시각)
+      biz.dateStr,                               // 영업일
+      WEEKDAYS[biz.weekday],                     // 요일
+      timeStr,                                   // 등록시각
+      '',                                        // 대기(분) 과거 미상
+      r[2] || '',                                // 번호
+      r[3] || '',                                // 이름
+      r[6] || '',                                // 인원
+      "'" + String(r[4] || ''),                  // 전화
+      r[5] || '',                                // 이메일
+      '들어옴',                                   // 결과
+      '들어옴',                                   // 구분
+      '',                                        // 좌석
+    ]);
+  });
+  if (!out.length) { ui.alert('옮길 데이터가 없습니다.'); return; }
+
+  ['ALL', 'IN'].forEach(function (k) {
+    var sh = ss.getSheetByName(SHEETS[k]);
+    if (!sh) { sh = ss.insertSheet(SHEETS[k]); sh.appendRow(HEADERS); sh.getRange(1,1,1,HEADERS.length).setFontWeight('bold'); sh.setFrozenRows(1); }
+    sh.getRange(sh.getLastRow() + 1, 1, out.length, HEADERS.length).setValues(out);
+  });
+  refreshStats();
+  ui.alert('과거 체크인 ' + out.length + '건을 불러왔습니다. 월간통계가 갱신되었습니다.');
+}
+
+// 레거시 Date('2026-04-10') + Time('16:41' 또는 '0:43') → 영업일/요일
+function legacyBiz(dateStr, timeStr) {
+  var dm = dateStr.match(/(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})/);
+  if (!dm) return null;
+  var y = +dm[1], mo = +dm[2], d = +dm[3];
+  var hr = 0;
+  var tm = String(timeStr).match(/(\d{1,2})\s*:/);
+  if (tm) hr = +tm[1];
+  var base = new Date(Date.UTC(y, mo - 1, d));
+  if (hr < 6) base = new Date(base.getTime() - 24 * 3600 * 1000); // 새벽 → 전날 영업
+  return {
+    dateStr: base.getUTCFullYear() + '-' + pad(base.getUTCMonth() + 1) + '-' + pad(base.getUTCDate()),
+    weekday: base.getUTCDay(),
+  };
 }
 
 /* ── 유틸 ─────────────────────────────────────────────────────── */
