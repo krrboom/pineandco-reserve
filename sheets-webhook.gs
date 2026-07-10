@@ -96,7 +96,7 @@ function refreshStats() {
   var all = ss.getSheetByName(SHEETS.ALL);
   if (!all || all.getLastRow() < 2) { SpreadsheetApp.getUi().alert('데이터가 아직 없어요.'); return; }
 
-  var data = all.getRange(2, 1, all.getLastRow() - 1, HEADERS.length).getValues();
+  var data = all.getRange(2, 1, all.getLastRow() - 1, HEADERS.length).getDisplayValues();
 
   // 월별 집계 + 요일 카운트 + 요일×시간 히트맵
   var months = {};                 // 'YYYY-MM' → {total,in,cancel,noshow}
@@ -130,6 +130,7 @@ function refreshStats() {
   // ── 월간통계 탭 그리기 ──
   var s = ss.getSheetByName(SHEETS.STATS) || ss.insertSheet(SHEETS.STATS);
   s.clear();
+  s.clearFormats();
   var out = [];
   out.push(['월간 통계  (마지막 갱신: ' + fmtDateTime(kst(Date.now())) + ')']);
   out.push([]);
@@ -168,6 +169,8 @@ function refreshStats() {
   out = out.map(function (r) { while (r.length < width) r.push(''); return r; });
   s.getRange(1, 1, out.length, width).setValues(out);
   s.getRange(3, 1, 1, 7).setFontWeight('bold');
+  // 히트맵 숫자 칸을 정수 서식으로 고정 (입장률 '%' 서식이 같은 열로 번지는 것 방지)
+  s.getRange(out.length - 6, 2, 7, HOUR_COLS.length + 1).setNumberFormat('0');
   s.setFrozenRows(1);
 }
 
@@ -207,7 +210,7 @@ function migrateLegacy() {
   });
   if (!legacy) { ui.alert('과거 체크인 시트를 찾지 못했습니다. (Date/Time/Number/Name/Phone/Email/Party 형식)'); return; }
 
-  var rows = legacy.getRange(2, 1, legacy.getLastRow() - 1, 7).getValues();
+  var rows = legacy.getRange(2, 1, legacy.getLastRow() - 1, 7).getDisplayValues();
   var out = [];
   rows.forEach(function (r) {
     var dateStr = String(r[0] || '').trim();
