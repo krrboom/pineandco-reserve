@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#241a0f">
+<title>CRICKET SEOUL · Menu &amp; 전통주 도감</title>
+<style>
+:root{
+  --paper:#e9e2d3;--paper2:#f0e9db;--sage:#d5ddc4;--sage2:#c7d1b3;
+  --ink:#38291a;--ink2:#5f4f3c;--mut:#8a7a63;--gold:#a4854f;
+  --dark:#241a0f;--dark2:#170f07;--line:rgba(56,41,26,.16);--cream:#e9e1d1;
+  --serif:Georgia,'Times New Roman','Nanum Myeongjo','Apple SD Gothic Neo',serif;
+  --kr:'Nanum Myeongjo','Apple SD Gothic Neo','Malgun Gothic',serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--serif);line-height:1.6;padding-bottom:60px;overflow-x:hidden}
+body.night .cover .logo{filter:brightness(0) invert(.9) sepia(.18) saturate(1.3)}
+.cover .logo{transition:filter .7s ease}
+/* 낮↔밤 전환을 부드럽게 (개별 규칙이 있는 요소는 그 규칙이 우선) */
+body,nav,.wrap,.wrap *{transition:color .55s ease}
+.wrap{max-width:560px;margin:0 auto}
+.sc{font-variant-caps:small-caps;letter-spacing:.06em}
+.hide{display:none}
+
+/* 커버 */
+.cover{position:relative;background:radial-gradient(120% 80% at 50% -5%,var(--paper2),var(--paper));text-align:center;padding:38px 26px 30px;border-bottom:1px solid var(--line)}
+.logo{width:210px;max-width:66%;margin:0 auto 10px;display:block}
+.brandsub{font-variant-caps:small-caps;letter-spacing:.5em;font-size:10px;color:var(--gold);padding-left:.5em}
+.philo{font-family:var(--kr);font-size:12.5px;line-height:1.9;color:var(--ink2);margin:18px auto 0;max-width:400px}
+.philo .en{font-family:var(--serif);font-variant-caps:small-caps;letter-spacing:.03em;font-size:12px;color:var(--mut);margin-top:12px;line-height:1.8}
+
+/* 스트립 */
+.strip{background:var(--dark);color:#c8ba9f;padding:14px 20px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.06)}
+.strip .item{display:flex;align-items:center;gap:7px;font-size:10.5px;font-variant-caps:small-caps;letter-spacing:.08em}
+
+/* 네비 */
+nav{position:sticky;top:0;z-index:50;background:var(--paper);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.navin{display:flex;gap:0;overflow-x:auto;max-width:560px;margin:0 auto;padding:0 6px;scrollbar-width:none}
+.navin::-webkit-scrollbar{display:none}
+.nav-b{flex:0 0 auto;background:none;border:none;color:var(--mut);font-family:var(--serif);letter-spacing:.06em;font-size:13.5px;padding:13px 11px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.nav-b .kr{font-family:var(--kr)}
+.nav-b.on{color:var(--ink);border-bottom-color:var(--gold)}
+
+section{padding:28px 20px 8px;scroll-margin-top:60px}
+section+section{border-top:1px solid var(--line);margin-top:14px;padding-top:36px}
+.sec-h{text-align:center;margin-bottom:20px}
+.sec-h .t{font-variant-caps:small-caps;letter-spacing:.16em;font-size:23px;padding-left:.16em}
+.sec-h .t.kr{font-family:var(--kr);font-variant-caps:normal;letter-spacing:.05em}
+.sec-h .d{font-family:var(--kr);font-size:11.5px;color:var(--mut);margin-top:4px}
+.rule{width:32px;height:1px;background:var(--gold);margin:9px auto 0}
+.unit{text-align:center;font-family:var(--kr);font-size:10.5px;color:var(--mut);margin:-8px 0 16px}
+
+/* 메뉴 아이템 */
+.item-c{border-bottom:1px solid var(--line);padding:14px 2px}
+.item-c:last-child{border-bottom:none}
+.ih{display:flex;align-items:baseline;gap:8px;cursor:pointer}
+.iname{font-size:17px;font-variant-caps:small-caps;letter-spacing:.02em}
+.itw{font-size:11px;color:var(--mut);font-style:italic;font-variant-caps:normal}
+.idot{flex:1;border-bottom:1px dotted var(--mut);transform:translateY(-4px);opacity:.45}
+.iprice{font-size:14px;color:var(--gold);white-space:nowrap}
+.idesc{font-family:var(--kr);font-size:12px;color:var(--ink2);margin-top:5px;line-height:1.6}
+.itags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tj{font-size:10px;font-variant-caps:small-caps;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:var(--sage);color:var(--ink);border:1px solid var(--sage2);cursor:pointer;font-family:var(--kr)}
+.tj.b{background:transparent;border-color:var(--line);color:var(--mut)}
+
+/* 플라이트 */
+.flight{background:var(--sage);border:1px solid var(--sage2);border-radius:4px;padding:18px;margin-bottom:14px;text-align:center}
+.flight .fn{font-variant-caps:small-caps;letter-spacing:.08em;font-size:19px}
+.flight .fp{color:var(--gold);font-size:16px;margin:3px 0 7px}
+.flight .fc{font-variant-caps:small-caps;letter-spacing:.05em;font-size:11.5px;color:var(--ink2)}
+.catrow{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);text-align:left;font-size:12px}
+.catrow:last-child{border-bottom:none}
+.catk{flex:0 0 92px;font-variant-caps:small-caps;letter-spacing:.05em;color:var(--gold);font-size:12.5px}
+.catv{flex:1;font-family:var(--kr);color:var(--ink2)}
+.note-line{text-align:center;font-family:var(--kr);font-size:11px;color:var(--mut);margin-top:8px}
+
+/* 전통주 도감 */
+.primer{background:var(--paper2);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:18px}
+.primer p{font-family:var(--kr);font-size:12px;color:var(--ink2);line-height:1.85}
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--paper2);color:var(--mut);padding:7px 13px;border-radius:999px;font-size:12px;cursor:pointer;white-space:nowrap;font-family:var(--kr)}
+.chip.on{background:var(--gold);color:#fff;border-color:var(--gold)}
+.catblock{margin-bottom:8px}
+.catlabel{font-family:var(--kr);font-size:13px;color:var(--gold);border-bottom:1px solid var(--gold);padding-bottom:5px;margin:18px 0 4px;letter-spacing:.03em}
+.catdesc{font-family:var(--kr);font-size:11px;color:var(--mut);margin-bottom:6px;line-height:1.6}
+.b-c{border-bottom:1px solid var(--line);padding:12px 2px}
+.b-h{display:flex;align-items:baseline;gap:7px;cursor:pointer}
+.b-nm{flex:1;min-width:0}
+.b-kr{font-family:var(--kr);font-size:15px;line-height:1.3}
+.b-en{font-variant-caps:small-caps;letter-spacing:.03em;font-size:10.5px;color:var(--mut);margin-top:1px}
+.b-pr{text-align:right;white-space:nowrap;padding-top:2px}
+.b-abv{font-size:11px;color:var(--ink2);white-space:nowrap}
+.b-price{font-size:12px;color:var(--gold);white-space:nowrap;margin-left:8px}
+.b-sub{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
+.b-reg{font-family:var(--kr);font-size:11px;color:var(--ink);background:var(--sage);border:1px solid var(--sage2);border-radius:999px;padding:2px 9px;cursor:pointer}
+.b-reg::before{content:"📍 "}
+.b-body{max-height:0;overflow:hidden;transition:max-height .45s ease}
+.b-c.open .b-body{max-height:680px}
+.rz-one{font-family:var(--kr);font-size:12.5px;color:var(--gold);line-height:1.6;padding:10px 0 8px;border-top:1px dashed var(--line);margin-top:8px}
+.rz-row{display:flex;gap:8px;padding:5px 0;font-family:var(--kr);font-size:12px;line-height:1.65}
+.rz-k{flex:0 0 30px;color:var(--ink);font-weight:700;font-size:11px}
+.rz-v{flex:1;color:var(--ink2)}
+.b-desc{font-family:var(--kr);font-size:12px;color:var(--ink2);line-height:1.7;padding:9px 0 2px;border-top:1px dashed var(--line);margin-top:8px}
+.flag{font-family:var(--kr);font-size:9.5px;color:#9a6a3a;background:rgba(164,133,79,.14);border:1px dashed var(--gold);border-radius:4px;padding:1px 6px}
+
+/* 지도 */
+.mapwrap{background:transparent;padding:4px;position:relative}
+.mapstage{position:relative;width:100%;max-width:400px;margin:0 auto;aspect-ratio:571/764}
+.mapsvg{width:100%;height:100%;display:block}
+.prov{fill:#dde2cd;stroke:#a89f86;stroke-width:.9;cursor:pointer;vector-effect:non-scaling-stroke;
+  transition:fill .35s,opacity .35s}
+.prov.has{fill:#c4d0a6}
+.prov:hover{fill:#a9ba84}
+.prov.active{fill:#a7ba7f;stroke:var(--gold);stroke-width:2}
+.prov.dim{opacity:.45}
+.muni{fill:none;stroke:rgba(70,60,35,.45);stroke-width:1;vector-effect:non-scaling-stroke;pointer-events:none;
+  animation:fadeIn .5s ease both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.map-back{position:absolute;left:8px;top:8px;z-index:5;display:none;background:var(--dark);color:#e9e1d1;
+  border:1px solid var(--gold);border-radius:999px;padding:7px 14px;font-family:var(--kr);font-size:12px;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.map-back.show{display:block;animation:fadeUp .3s ease both}
+.prov-label{font-family:var(--kr);font-weight:700;font-size:14px;fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:3px;animation:fadeUp .4s ease both}
+.mdot{fill:var(--gold);stroke:#fff;stroke-width:1.4;cursor:pointer;transform-box:fill-box;transform-origin:center;animation:dotPop .35s ease both}
+.mdot:hover{fill:#8a5a2a}
+.mdot-label{font-family:var(--kr);font-size:8px;fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:2.4px;animation:fadeUp .4s ease both;pointer-events:none}
+@keyframes dotPop{from{opacity:0;transform:scale(0)}60%{transform:scale(1.35)}to{opacity:1;transform:scale(1)}}
+.maphint{text-align:center;font-family:var(--kr);font-size:11px;color:var(--mut);margin:8px 0}
+.mappanel{background:var(--paper2);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:12px;min-height:60px}
+.mappanel .mpt{font-family:var(--kr);font-size:14px;color:var(--gold);margin-bottom:8px}
+.mplist a{display:block;font-family:var(--kr);font-size:12.5px;color:var(--ink);text-decoration:none;padding:6px 0;border-bottom:1px dashed var(--line);cursor:pointer}
+.mplist a:last-child{border-bottom:none}
+.mplist .mpc{font-variant-caps:small-caps;color:var(--mut);font-size:11px;margin-left:4px}
+
+/* 소개 */
+.about-block{margin-bottom:22px}
+.about-block .abt{font-variant-caps:small-caps;letter-spacing:.1em;font-size:14px;color:var(--gold);margin-bottom:7px}
+.about-block p{font-family:var(--kr);font-size:12.5px;color:var(--ink2);line-height:1.85}
+.collab{background:var(--dark);color:var(--cream);border-radius:6px;padding:16px;margin-bottom:10px}
+.collab .ct{font-variant-caps:small-caps;letter-spacing:.06em;font-size:14px;color:var(--gold)}
+.collab p{font-family:var(--kr);font-size:12px;color:#d3c7b0;line-height:1.8;margin-top:5px}
+
+footer{background:var(--dark2);color:#b9a985;text-align:center;padding:30px 24px 36px;margin-top:18px}
+footer .fq{font-variant-caps:small-caps;letter-spacing:.05em;font-size:11.5px;line-height:1.8}
+footer .fs{font-family:var(--kr);font-size:10px;color:#7a6c53;margin-top:12px}
+.sample{background:rgba(164,133,79,.13);border:1px dashed var(--gold);color:#8a6a3a;font-family:var(--kr);font-size:10.5px;text-align:center;padding:8px 12px;border-radius:6px;margin:14px 20px 0;line-height:1.6}
+
+/* ===== 웰컴 스플래시 ===== */
+.splash{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+  background:radial-gradient(120% 70% at 50% 30%,#3a2612,#1a1108 70%);
+  transition:opacity .9s ease, visibility .9s}
+.splash.gone{opacity:0;visibility:hidden}
+.splash-logo{width:200px;max-width:60%;filter:brightness(0) invert(.86) sepia(.25) saturate(1.3) hue-rotate(3deg);
+  animation:floatY 4s ease-in-out infinite, fadeUp 1s ease both}
+.splash-welcome{font-family:var(--kr);font-size:19px;color:#efe4cf;letter-spacing:.02em;margin-top:14px;animation:fadeUp 1s .35s ease both}
+.splash-en{font-variant-caps:small-caps;letter-spacing:.28em;font-size:11px;color:var(--gold);padding-left:.28em;animation:fadeUp 1s .55s ease both}
+.splash-enter{margin-top:26px;background:none;border:1px solid rgba(216,178,90,.55);color:#efe4cf;font-family:var(--serif);
+  font-variant-caps:small-caps;letter-spacing:.14em;font-size:13px;padding:11px 26px;border-radius:999px;cursor:pointer;
+  animation:fadeUp 1s .75s ease both, pulse 2.4s 1.6s ease-in-out infinite}
+.splash-hint{font-family:var(--kr);font-size:11px;color:#8a795c;margin-top:16px;animation:fadeUp 1s .95s ease both}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(216,178,90,.35)}50%{box-shadow:0 0 0 10px rgba(216,178,90,0)}}
+
+/* ===== 사운드/언어 토글 ===== */
+.sound-toggle{position:fixed;right:14px;bottom:14px;z-index:900;width:42px;height:42px;border-radius:50%;
+  background:var(--dark);color:#e9e1d1;border:1px solid var(--gold);font-size:17px;cursor:pointer;
+  box-shadow:0 3px 10px rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;padding:0}
+.sound-toggle.show{display:flex}
+.lang-toggle{position:fixed;left:14px;bottom:14px;z-index:900;width:42px;height:42px;border-radius:50%;
+  background:var(--dark);color:#e9e1d1;border:1px solid var(--gold);font-size:17px;cursor:pointer;
+  box-shadow:0 3px 10px rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;padding:0}
+.lang-toggle.show{display:flex}
+.lang-pop{position:fixed;left:14px;bottom:64px;z-index:901;background:var(--paper2);border:1px solid var(--line);
+  border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none;flex-direction:column;gap:2px}
+.lang-pop.show{display:flex}
+.lang-pop .langbtn{font-family:var(--kr);font-size:13px;padding:8px 16px;border:none;background:none;color:var(--ink);cursor:pointer;text-align:left;border-radius:8px}
+.lang-pop .langbtn.on,.lang-pop .langbtn:hover{background:var(--sage);color:var(--ink)}
+/* 스플래시 언어 선택 */
+.langsel{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:22px;animation:fadeUp 1s .65s ease both}
+.langsel .langbtn{font-family:var(--kr);font-size:13px;color:#cdbf a6;color:#c8ba9f;background:none;border:1px solid rgba(216,178,90,.35);
+  border-radius:999px;padding:7px 16px;cursor:pointer;transition:.15s}
+.langsel .langbtn.on{background:var(--gold);color:#241a0f;border-color:var(--gold);font-weight:700}
+
+/* ===== 스크롤 리빌 애니메이션 ===== */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease, transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.splash-logo,.splash-welcome,.splash-en,.splash-enter,.splash-hint{animation:none}}
+</style>
+</head>
+<body>
+
+<div id="splash" class="splash">
+  <img class="splash-logo" src="logo.png" alt="Cricket Seoul">
+  <div class="splash-welcome" data-i18n="splash.welcome">크리켓에 오신 것을 환영합니다</div>
+  <div class="splash-en" data-i18n="splash.sub">Welcome to Cricket Seoul</div>
+  <div class="langsel" id="langsel">
+    <button class="langbtn on" data-l="ko">한국어</button>
+    <button class="langbtn" data-l="en">English</button>
+    <button class="langbtn" data-l="zh">中文</button>
+    <button class="langbtn" data-l="ja">日本語</button>
+  </div>
+  <button class="splash-enter" id="enterBtn" data-i18n="splash.enter">터치하여 입장</button>
+  <div class="splash-hint" data-i18n="splash.hint">🦗 귀뚜라미 소리와 함께 들어가세요</div>
+</div>
+
+<button id="soundToggle" class="sound-toggle" aria-label="sound">🔊</button>
+<button id="langToggle" class="lang-toggle" aria-label="language">🌐</button>
+<div id="langPop" class="lang-pop">
+  <button class="langbtn" data-l="ko">한국어</button>
+  <button class="langbtn" data-l="en">English</button>
+  <button class="langbtn" data-l="zh">中文</button>
+  <button class="langbtn" data-l="ja">日本語</button>
+</div>
+
+<div class="wrap">
+
+<div class="cover">
+  <img class="logo" src="logo.png" alt="Cricket Seoul">
+  <div class="philo" data-i18n="cover.philo">모두가 들을 수 있는 귀뚜라미의 울음은 사회적 지위에 상관없이 자연에서 들리는 아름다운 소리 중 하나입니다. 우리는 귀뚜라미의 소리처럼 많은 사람들에게 한국적인 술과 음식을 들려주려 합니다.</div>
+</div>
+
+<nav><div class="navin" id="nav">
+  <button class="nav-b on" data-t="cocktail">Cocktail</button>
+  <button class="nav-b" data-t="food">Food</button>
+  <button class="nav-b" data-t="flight">Flight</button>
+  <button class="nav-b" data-t="sool"><span class="kr">전통주 도감</span></button>
+  <button class="nav-b" data-t="map"><span class="kr">지도</span></button>
+  <button class="nav-b" data-t="about">About</button>
+</div></nav>
+
+<section data-p="cocktail">
+  <div class="sec-h"><div class="t sc" data-i18n="sec.cocktail.t">Cocktail</div><div class="d" data-i18n="sec.cocktail.d">클래식을 한국 전통주로 비틀다</div><div class="rule"></div></div>
+  <div class="unit" data-i18n="unit.cocktail">모든 칵테일 ₩25,000 · 탭 시스템으로 알콜/무알콜 선택 가능</div>
+  <div id="cocktailList"></div>
+</section>
+
+<section data-p="food">
+  <div class="sec-h"><div class="t sc" data-i18n="sec.food.t">Food</div><div class="d" data-i18n="sec.food.d">사계절과 도시, 시골이 담긴 안주</div><div class="rule"></div></div>
+  <div class="unit" data-i18n="unit.food">가격 단위 1,000원</div>
+  <div id="foodList"></div>
+</section>
+
+<section data-p="flight">
+  <div class="sec-h"><div class="t sc" data-i18n="sec.flight.t">Flight Set</div><div class="d" data-i18n="sec.flight.d">한국의 술을 다양하게 즐기는 꾸러미</div><div class="rule"></div></div>
+  <div class="flight"><div class="fn sc">3 Glass Flight</div><div class="fp">29,000</div><div class="fc">Takju · Yakju or Sparkling · Jeontongju</div></div>
+  <div class="flight"><div class="fn sc">5 Glass Flight</div><div class="fp">49,000</div><div class="fc">Takju · Yakju · Sparkling · Jeontongju · Spirit</div></div>
+  <div>
+    <div class="catrow"><div class="catk sc">Takju</div><div class="catv" data-i18n="flight.def.takju">쌀과 누룩으로 빚어 거르지 않은 탁한 술. 은은한 탄산과 새콤달콤함.</div></div>
+    <div class="catrow"><div class="catk sc">Yakju</div><div class="catv" data-i18n="flight.def.yakju">탁주를 맑게 거른 청주 계열. 약재나 꽃을 더하기도 한다.</div></div>
+    <div class="catrow"><div class="catk sc">Jeontongju</div><div class="catv" data-i18n="flight.def.jeontongju">발효주를 증류한 전통 소주와 리큐르.</div></div>
+    <div class="catrow"><div class="catk sc">Sparkling</div><div class="catv" data-i18n="flight.def.sparkling">국산 과일이나 쌀로 빚은 스파클링.</div></div>
+    <div class="catrow"><div class="catk sc">Spirit</div><div class="catv" data-i18n="flight.def.spirit">한국의 증류주.</div></div>
+  </div>
+  <div class="note-line" data-i18n="flight.note">* 구성은 매달 바뀝니다 · Selections vary each month</div>
+</section>
+
+<section data-p="sool">
+  <div class="sec-h"><div class="t kr" data-i18n="sec.sool.t">전통주 도감</div><div class="d" data-i18n="sec.sool.d">크리켓 서울이 담은 한국의 술</div><div class="rule"></div></div>
+  <div class="primer"><p data-i18n="primer"><b>전통주(傳統酒)</b>란 우리 쌀과 누룩으로, 우리 땅의 방식으로 빚어온 술을 말합니다. 거르지 않은 <b>탁주(막걸리)</b>, 맑게 거른 <b>약주·청주</b>, 이를 증류한 <b>소주</b>, 과일로 빚은 <b>과실주</b>까지. 크리켓 서울은 전국 각지의 양조장에서 온 술을 소개하고, 그 술이 태어난 자리를 <b>지도</b>로 보여줍니다.</p></div>
+  <div class="chips" id="soolChips"></div>
+  <div class="unit" data-i18n="unit.sool">가격 = 잔 / 병 (단위 1,000원)</div>
+  <div id="soolList"></div>
+</section>
+
+<section data-p="map">
+  <div class="sec-h"><div class="t kr" data-i18n="sec.map.t">전통주 지도</div><div class="d" data-i18n="sec.map.d">지역에 손을 올리면 그곳의 술이 보입니다</div><div class="rule"></div></div>
+  <div class="mapwrap"><div class="mapstage" id="mapStage"><svg class="mapsvg" id="mapsvg" xmlns="http://www.w3.org/2000/svg"></svg><button id="mapBack" class="map-back">← 전체 지도</button></div></div>
+  <div class="maphint" data-i18n="map.hint">🖐️ 지역을 누르면 확대되고, 그 안의 점(양조지)을 누르면 술이 아래에 나옵니다</div>
+  <div class="mappanel" id="mapPanel"><div class="mpt">지역을 선택하세요</div><div class="mplist" style="font-family:var(--kr);font-size:12px;color:var(--mut)">시·도에 손을 올리거나 누르면 그 지역이 커지고, 전통주가 생산된 자리에 점이 찍힙니다.</div></div>
+</section>
+
+<section data-p="about">
+  <div class="sec-h"><div class="t sc" data-i18n="sec.about.t">About</div><div class="d" data-i18n="sec.about.d">크리켓 서울이 일하는 방식</div><div class="rule"></div></div>
+  <div class="about-block"><div class="abt sc" data-i18n="about.1.t">One Menu, Every Korea</div><p data-i18n="about.1.b">크리켓 서울의 메뉴는 한국의 모든 면에서 영감을 얻습니다. 음식 문화, 도시와 시골의 대비, 뚜렷한 사계절, 그리고 한국만의 감성. 이 요소들을 크리켓의 시선으로 풀어 동시대의 칵테일로 옮깁니다.</p></div>
+  <div class="about-block"><div class="abt sc" data-i18n="about.2.t">Tap System</div><p data-i18n="about.2.b">한국식 칵테일을 탭 시스템으로 제공해 가볍고 편하게 즐기도록 했습니다. 손님은 무알콜과 알콜 중에서 고를 수 있습니다.</p></div>
+  <div class="about-block"><div class="abt sc" data-i18n="about.3.t">Onggi &amp; Bamboo Aging</div><p data-i18n="about.3.b">옹기와 대나무에 숙성한 칵테일은 오크와 달리 더 부드럽고, 은은한 산미를 더합니다. 나무통이 아닌 한국의 그릇으로 시간을 담습니다.</p></div>
+  <div class="about-block"><div class="abt sc" data-i18n="about.4.t">Locally Sourced</div><p data-i18n="about.4.b">음식과 칵테일을 오직 한국 현지 재료로만 만듭니다. 지역 자원을 산업 안에서 실제로 지속 가능하게 쓰는 방식을 믿습니다.</p></div>
+</section>
+
+<footer>
+  <img src="logo.png" alt="Cricket Seoul" style="width:120px;margin:0 auto 14px;display:block;filter:brightness(0) invert(.78) sepia(.3) saturate(1.2) hue-rotate(5deg)">
+  <div class="fq sc" data-i18n="footer.q">Like a sound of cricket,<br>we share Korea with everyone.</div>
+  <div class="fs" data-i18n="footer.loc">Cricket Seoul · Seoul, Korea</div>
+</footer>
+</div>
+
+<script src="i18n_ko.js"></script>
+<script src="i18n_en.js"></script>
+<script src="i18n_zh.js"></script>
+<script src="i18n_ja.js"></script>
+<script src="map_data.js"></script>
+<script src="map_muni.js"></script>
+<script src="research_data.js"></script>
+<script>
+/* ===== 다국어(i18n) 프레임워크 ===== */
+const DICT={ko:window.I18N_KO||{}, en:(window.I18N_EN||{}).ui, zh:(window.I18N_ZH||{}).ui, ja:(window.I18N_JA||{}).ui};
+const RES={ko:window.RESEARCH, en:(window.I18N_EN||{}).research, zh:(window.I18N_ZH||{}).research, ja:(window.I18N_JA||{}).research};
+let LANG=localStorage.getItem("cricketLang")||"ko";
+if(!DICT[LANG]) LANG="ko";
+function t(k){const d=DICT[LANG]||{};return (d&&d[k]!=null)?d[k]:(DICT.ko[k]!=null?DICT.ko[k]:k);}
+function rzOf(id){const r=(RES[LANG]||{})[id];const rk=(RES.ko||{})[id];if(!rk)return r||null;return r?Object.assign({},rk,r):rk;}
+const LBL={taste:{ko:"맛",en:"Taste",zh:"风味",ja:"味"},feature:{ko:"특색",en:"Character",zh:"特色",ja:"特徴"},history:{ko:"역사",en:"History",zh:"历史",ja:"歴史"}};
+function lbl(k){return LBL[k][LANG]||LBL[k].ko;}
+const FLAG={unknown:{ko:"지역 미상",en:"Region N/A",zh:"产地不明",ja:"産地不明"},
+            verify:{ko:"표기 확인 필요",en:"Label TBC",zh:"标注待确认",ja:"表記要確認"},
+            low:{ko:"자료 부족",en:"Limited info",zh:"资料有限",ja:"資料不足"}};
+function fl(k){return FLAG[k][LANG]||FLAG[k].ko;}
+// 지역명: 한국어는 REG.kr, 그 외는 로마자
+const REG_ROM={seoul:"Seoul",incheon:"Incheon·Ganghwa",yangpyeong:"Gyeonggi·Yangpyeong",hwaseong:"Gyeonggi·Hwaseong",yongin:"Gyeonggi·Yongin",yeoju:"Gyeonggi·Yeoju",gimpo:"Gyeonggi·Gimpo",guri:"Gyeonggi·Guri",namyangju:"Gyeonggi·Namyangju",hoengseong:"Gangwon·Hoengseong",chuncheon:"Gangwon·Chuncheon",cheongju:"Chungbuk·Cheongju",chungju:"Chungbuk·Chungju",yeongdong:"Chungbuk·Yeongdong",gongju:"Chungnam·Gongju",yesan:"Chungnam·Yesan",daejeon:"Daejeon",daegu:"Daegu",andong:"Gyeongbuk·Andong",sangju:"Gyeongbuk·Sangju",mungyeong:"Gyeongbuk·Mungyeong",gimhae:"Gyeongnam·Gimhae",hamyang:"Gyeongnam·Hamyang",changwon:"Gyeongnam·Changwon",sacheon:"Gyeongnam·Sacheon",ulsan:"Ulsan",jeonju:"Jeonbuk·Jeonju",sunchang:"Jeonbuk·Sunchang",gochang:"Jeonbuk·Gochang",damyang:"Jeonnam·Damyang",naju:"Jeonnam·Naju",jeju:"Jeju"};
+const PROV_ROM={"11":"Seoul","21":"Busan","22":"Daegu","23":"Incheon","24":"Gwangju","25":"Daejeon","26":"Ulsan","29":"Sejong","31":"Gyeonggi","32":"Gangwon","33":"Chungbuk","34":"Chungnam","35":"Jeonbuk","36":"Jeonnam","37":"Gyeongbuk","38":"Gyeongnam","39":"Jeju"};
+function regName(k){return LANG==="ko"?REG[k].kr:(REG_ROM[k]||k);}
+function cityName(k){return LANG==="ko"?REG[k].kr.replace(/^.. /,''):(REG_ROM[k]||k).split("·").pop();}
+function provName(code,kr){return LANG==="ko"?kr:(PROV_ROM[code]||kr);}
+
+/* ===== 메뉴 데이터 ===== */
+const COCKTAILS=[
+ {name:"Flower Peak Tree 60",tw:"",desc:"삼겹살 진, 피노 셰리, 코코넛, 깻잎",link:null},
+ {name:"Makgeolli Fizz",tw:"Piña Colada twist",desc:"막걸리, 수제 코코넛 소다, 오렌지",link:"takju"},
+ {name:"Andong Mule",tw:"Moscow Mule twist",desc:"안동소주 베이스, 수제 배·생강 비어",link:"andong-jinmaek"},
+ {name:"Nokcha Gin Tonic",tw:"G&T twist",desc:"한국 진, 수제 녹차 토닉워터",link:null},
+ {name:"Hyunmi & Corn",tw:"Whisky Highball twist",desc:"소주, 옥수수수염·현미 소다, 수제 옥수수 크림 타르트",link:null},
+ {name:"Maesil & Cucumber",tw:"Gin Fizz twist",desc:"대나무 숙성 약주, 매실·오이 소다, 유산발효 오이 피클",link:"daetong-daeip"},
+ {name:"Gwahaju on the Lotus Leaf",tw:"bamboo twist",desc:"과하주, 연꽃 인퓨즈 약주, 연잎 압생트, 무화과 피클",link:"gyeongseong-gwahaju"},
+ {name:"Yin & Yang",tw:"Whisky Sour twist",desc:"약주, 살구주, 한국 베리 리큐르, 레몬",link:"yakju"},
+ {name:"Tomato & spicy",tw:"Bloody Mary twist",desc:"토마토 막걸리, 불닭 팅크, 우스터 소스, 바질",link:"takju"},
+ {name:"Mushroom & Coffee",tw:"Espresso Martini twist",desc:"밤 소주, 버섯 간장 시럽, 에스프레소, 버섯 젤리",link:null},
+ {name:"Ube Alexander",tw:"Brandy Alexander twist",desc:"고구마 소주, 우베 막걸리, 스모키 솔트, 라임",link:null},
+];
+const FOODS=[
+ {name:"Namul Jeon",p:"23,000",desc:"나물과 오징어·새우로 부친 한국식 전"},
+ {name:"Acorn Rabokki",p:"25,000",desc:"떡 대신 도토리묵, 고추장 소스에 라면사리"},
+ {name:"Golbengi Somyeon",p:"25,000",desc:"골뱅이·올리브·마늘을 감칠맛 소스에 무친 소면"},
+ {name:"Bekhap Sujebi",p:"25,000",desc:"바지락과 무로 끓인 육수의 손수제비"},
+ {name:"Deaha Gambas",p:"28,000",desc:"들기름과 김치로 만든 새우 감바스, 마늘·후추"},
+ {name:"Dombegogi",p:"33,000",desc:"제주식 돔베고기, 누룩 소금·젓갈·무김치"},
+ {name:"Mungtigi",p:"35,000",desc:"한국식 소고기 육회, 수제 마늘·후추 소스"},
+ {name:"Makgeolli Bingsu",p:"23,000",desc:"크리미한 막걸리 빙수, 누룽지 밀크, 이화주와 밤"},
+];
+
+/* ===== 지역 ===== */
+const REG={
+ seoul:{kr:"서울",la:37.57,lo:126.98}, incheon:{kr:"인천 강화",la:37.55,lo:126.60},
+ yangpyeong:{kr:"경기 양평",la:37.49,lo:127.49}, hwaseong:{kr:"경기 화성",la:37.20,lo:126.83},
+ yongin:{kr:"경기 용인",la:37.24,lo:127.18}, yeoju:{kr:"경기 여주",la:37.30,lo:127.64},
+ gimpo:{kr:"경기 김포",la:37.62,lo:126.72}, guri:{kr:"경기 구리",la:37.60,lo:127.14},
+ namyangju:{kr:"경기 남양주",la:37.64,lo:127.22}, hoengseong:{kr:"강원 횡성",la:37.49,lo:127.99},
+ chuncheon:{kr:"강원 춘천",la:37.88,lo:127.73}, cheongju:{kr:"충북 청주",la:36.64,lo:127.49},
+ chungju:{kr:"충북 충주",la:36.99,lo:127.93}, yeongdong:{kr:"충북 영동",la:36.17,lo:127.78},
+ gongju:{kr:"충남 공주",la:36.45,lo:127.12}, yesan:{kr:"충남 예산",la:36.68,lo:126.84},
+ daejeon:{kr:"대전",la:36.35,lo:127.38}, daegu:{kr:"대구",la:35.87,lo:128.60},
+ andong:{kr:"경북 안동",la:36.57,lo:128.73}, sangju:{kr:"경북 상주",la:36.41,lo:128.16},
+ mungyeong:{kr:"경북 문경",la:36.59,lo:128.19}, gimhae:{kr:"경남 김해",la:35.23,lo:128.89},
+ hamyang:{kr:"경남 함양",la:35.52,lo:127.73}, changwon:{kr:"경남 창원",la:35.23,lo:128.68},
+ sacheon:{kr:"경남 사천",la:35.00,lo:128.06}, ulsan:{kr:"울산",la:35.54,lo:129.31},
+ jeonju:{kr:"전북 전주",la:35.82,lo:127.15}, sunchang:{kr:"전북 순창",la:35.37,lo:127.14},
+ gochang:{kr:"전북 고창",la:35.44,lo:126.70}, damyang:{kr:"전남 담양",la:35.32,lo:126.99},
+ naju:{kr:"전남 나주",la:35.03,lo:126.71}, jeju:{kr:"제주",la:33.50,lo:126.53},
+};
+
+/* ===== 전통주 바틀 ===== */
+const CATS=[
+ {k:"takju",label:"탁주 · 막걸리",desc:"쌀과 누룩으로 빚어 거르지 않은 탁한 술. 은은한 탄산과 새콤달콤함."},
+ {k:"yakju",label:"약주 · 청주",desc:"탁주를 맑게 거른 술. 곡물의 깨끗한 단맛에 약재나 꽃을 더하기도."},
+ {k:"gwasil",label:"과실주 · 와인",desc:"국산 과일이나 포도로 빚은 술. 오미자·복분자·키위·유자."},
+ {k:"soju",label:"증류식 소주",desc:"발효주를 증류한 맑고 강한 술. 곡물·과일의 풍미가 살아있다."},
+ {k:"aged",label:"숙성주",desc:"오크·백자·대나무에 숙성한 증류주. 위스키 같은 깊이."},
+ {k:"whisky",label:"위스키",desc:"국내 증류소가 만든 한국 싱글몰트."},
+ {k:"beer",label:"맥주",desc:"국산 크래프트 맥주."},
+];
+const B=(id,kr,name,cat,abv,g,b,region,desc,flag)=>({id,kr,name,cat,abv,g,b,region,desc,flag});
+const BOTTLES=[
+ // 탁주
+ B("cricket-seasonal","크리켓 제철 막걸리","Cricket Seasonal Makgeolli","takju",10,0,55,"seoul","제철 과일과 쌀로 빚은 크리켓 하우스 막걸리.",false),
+ B("boksundoga","복순도가 손 막걸리","Boksundoga Handmade Makgeolli","takju",6.5,0,50,"ulsan","멥쌀과 누룩으로 빚어 자연 탄산이 살아있는 막걸리.",false),
+ B("sucre","쑥크레 막걸리","Sucre Makgeolli","takju",10,22,75,"daejeon","쌀·누룩·쑥으로 빚어 은은한 허브향과 크리미한 질감, 산뜻한 산미와 깔끔한 피니시.",false),
+ B("fogmag","포그마 막걸리","Fogmag Makgeolli","takju",10,18,52,"daegu","물을 더하지 않은 전내기 방식, 찹쌀과 사워 이스트로 빚은 상쾌한 막걸리.",false),
+ B("ellyeop-takju","일엽편주 탁주","Ellyeop Pyunjoo Takju","takju",12,23,80,"andong","600년 농암종택에서 멥쌀과 전통 누룩으로 빚은 탁주.",false),
+ B("seoul-gold","서울 골드 막걸리","Seoul Gold Makgeolli","takju",15,45,400,"seoul","가양주연구소가 오양주 방식으로 빚은 프리미엄 전내기 막걸리.",false),
+ B("ihwaju","국순당 이화주","Kooksoondang Ihwaju","takju",12.5,20,75,"hoengseong","배꽃 필 때 쌀누룩과 떡으로 빚어 요구르트처럼 걸쭉한 전통주.",false),
+ B("minhwaju","민화주","Minhwaju","takju",8,17,60,"incheon","야생 효모와 전통 기법으로 빚은 부드럽고 크리미한 프리미엄 막걸리.",false),
+ B("chorokseom-sonamu","초록섬 소나무","Chorokseom Sonamu Takju","takju",12,23,80,"yangpyeong","쌀과 솔순을 더해 빚어 솔향과 허브, 곡물향이 은은한 탁주.",false),
+ B("inner-nectar","이너피스 넥타","Inner Peace Nectar","takju",10,18,62,"sangju","쌀·복숭아·민트로 빚어 달콤한 복숭아향과 산뜻한 허브 피니시.",false),
+ B("inner-flow","이너피스 플로우","Inner Peace Flow","takju",12,18,62,"sangju","쌀·포도·라벤더·민트, 은은한 꽃향과 깔끔한 과일 단맛.",false),
+ B("inner-calm","이너피스 캄","Inner Peace Calm","takju",12,18,62,"sangju","딜과 민트를 더한 허브 막걸리, 차분하고 상쾌한 한 잔.",false),
+ B("jiranjigyo-fig","지란지교 무화과","Jiranjigyo Fig","takju",12,18,50,"sunchang","찹쌀·누룩·국산 무화과로 빚어 달콤한 무화과향과 루비빛 피니시.",false),
+ B("mars-sour","마스 사워","MARS Sour","takju",12,20,65,"hwaseong","청수 포도의 상큼함과 사워비어 효모가 어우러진 크래프트 발효주.",false),
+ B("mars-rose","마스 로제","MARS Rose","takju",12,20,65,"hwaseong","캠벨 포도의 향과 전통 누룩이 어우러진 크래프트 발효주.",false),
+ // 약주
+ B("pungjeong","풍정사계 춘","Pungjeong Sagye Chun","yakju",15,18,75,"cheongju","지역 쌀과 손녹두누룩으로 빚은 청주, 배꽃과 풋사과향, 깔끔한 피니시.",false),
+ B("maruna","마루나 약주","Maruna Yakju","yakju",13,20,60,"yongin","쌀과 누룩만으로 빚은 맑은 약주, 부드럽고 살짝 과일 같은 단맛.",false),
+ B("hangahanju","한가한주 청","Hangahanju Cheong","yakju",13,17,70,"chuncheon","지역 쌀·전통 누룩의 자연 발효, 섬세한 곡물향과 은은한 훈연, 깔끔한 산미.",false),
+ B("ellyeop-cheongju","일엽편주 청주","Ellyeop Pyunjoo Cheongju","yakju",15,25,75,"andong","농암종택에서 쌀·물·누룩만으로 빚은 청주, 복숭아·배·사과향.",false),
+ B("hwajeonilchwi","화전일취 백화","Hwajeonilchwi Baekhwa","yakju",18,33,100,"gongju","쌀·누룩에 여러 말린 꽃을 더한 화양주, 풍부한 꽃향과 달콤한 피니시.",false),
+ B("dudumulmul","두두물물 시다셔","Dudumulmul Sidasure","yakju",15,22,65,"jeonju","쌀과 누룩으로 빚은 약주, 레몬과 꽃향에 깔끔한 피니시.",false),
+ B("gyeongseong-gwahaju","경성 과하주","Gyeongseong Gwahaju","yakju",20,22,65,"yeoju","여주 쌀·누룩에 쌀 증류주를 더한 과하주, 꿀과 발효향, 우아한 단맛.",false),
+ B("chorokseom-spring","초록섬 맑은 술, 봄","Chorokseom Malgeun Sool, Spring","yakju",15,27,80,"yangpyeong","히읗 양조장의 계절 약주, 쌀·누룩·연잎, 섬세한 향과 감칠맛.",false),
+ B("daetong-daeip","대통대입술","Daetong Daeip Sul","yakju",13,17,70,"damyang","담양에서 쌀·누룩·보태니컬로 빚어 대나무에 숙성한 약주, 허브향과 깔끔한 피니시.",false),
+ B("naju-pear","나주 배 약주","Naju Pear Yakju","yakju",15,18,65,"naju","쌀과 나주 배로 빚은 약주, 은은한 배 단맛과 상쾌한 향.",false),
+ // 과실주 · 와인
+ B("sahwa-yuja","사화 유자주","Sahwa Yujaju","gwasil",7,17,65,"changwon","창원 맑은내일 양조장의 유자 과실주, 상큼한 시트러스향과 부드러운 단맛.",false),
+ B("seonunsan-bokbunja","선운산 복분자주","Seonunsan Bokbunjaju","gwasil",19,20,90,"gochang","고창 복분자로 빚은 고급 과실주, 균형 잡힌 단맛·산미와 복합적인 향.",false),
+ B("yul-white","율 화이트 드라이13","YUL White Dry 13","gwasil",13,20,95,"yeongdong","청수 100%로 빚은 드라이 화이트 와인, 상쾌한 산미와 깔끔한 피니시.",false),
+ B("yul-red","율 레드 드라이14","YUL Red Dry 14","gwasil",14,20,95,"yeongdong","블랙체리·자두향의 미디엄 드라이 레드, 부드러운 탄닌.",false),
+ B("omirose-premier","오미로제 프리미어","Omirose Premier","gwasil",12,0,150,"mungyeong","국산 오미자를 오크 발효한 오미자 와인, 깊은 붉은 과일향.",false),
+ B("omirose-yeon","오미로제 연","Omirose Yeon","gwasil",8,0,170,"mungyeong","루비빛 오미자 스파클링, 새콤달콤한 오미자와 상쾌한 피니시.",false),
+ B("omirose-gyeol","오미로제 결","Omirose Gyeol","gwasil",12,0,300,"mungyeong","국산 오미자로 빚어 다섯 가지 맛과 가벼운 기포가 어우러진 스파클링.",false),
+ B("kiwi-wine","키위와인","Kiwi Wine","gwasil",8,0,95,"sacheon","사천 키위로 빚은 과실주, 상큼달콤한 키위향과 산뜻한 산미.",false),
+ // 증류식 소주
+ B("tangja-c","탱자씨 소주","Tangja C Soju","soju",23,15,90,"gimhae","김해 가야양조의 증류주, 토종 탱자·진영 단감·김해 쌀로 빚음.",false),
+ B("moonbaesool","문배술 25","Moonbaesool","soju",25,15,90,"gimpo","좁쌀·수수·밀로 빚어 문배(돌배) 향이 나는 전통 증류주.",false),
+ B("ryu24","류 24 클래식","Ryu 24 Classic","soju",24,15,90,"incheon","강화 쌀과 자체 야생 효모로 빚은 모던 크래프트 소주, 부드럽고 깔끔.",false),
+ B("andong-jinmaek","안동소주 진맥 40","Andong Jinmaek Soju","soju",40,20,160,"andong","안동에서 유기농 밀로 빚은 프리미엄 증류주, 꽃·곡물향과 부드러움.",false),
+ B("hwasim-sweetpotato","화심 군고구마","Hwasim Roasted Sweet Potato","soju",40,20,160,"guri","느리게 구운 고구마의 진한 단맛과 캐러멜향을 담은 프리미엄 증류주.",false),
+ B("kiwi-sool","키위술","Kiwi Sool","soju",40,22,180,"jeju","제주 골드·그린 키위로 빚은 과실 증류주, 상큼하고 향긋한 키위.",false),
+ B("damsol","담솔 프리미엄","Damsol Premium","soju",40,20,160,"hamyang","솔잎(송진)을 더한 소나무 소주, 깨끗한 솔향과 부드러운 단맛.",false),
+ // 숙성주
+ B("hwayo-xp","화요 XP","Hwayo XP","aged",41,35,120,"yeoju","쌀 증류 소주를 아메리칸 오크에 숙성, 위스키 같은 깊이와 바닐라.",false),
+ B("soorok","수록 챕터2","Soorok","aged",59,31,400,"chungju","고도수 쌀 증류주를 오크에 숙성, 우디·바닐라향과 과일·견과 노트.",false),
+ B("chusa40","추사 40","Chusa 40","aged",40,22,200,"yesan","예산 사과로 빚어 오크 숙성한 애플브랜디 스타일, 사과 단맛과 오크·바닐라.",false),
+ B("chusa50","추사50 템프라니요 캐스크","Chusa 50 Tempranillo Cask","aged",50,28,250,"yesan","템프라니요 캐스크에 숙성한 사과 브랜디, 잘 익은 사과·건과일·바닐라.",false),
+ B("mongro","몽로","Mongro","aged",59,35,320,"yesan","추사증류소 첫 캐스크 스트렝스, 프렌치 오크의 구운 사과·캐러멜·향신료.",false),
+ B("gowoon-oak","고운달 오크","Gowoon Dal Oak","aged",52,60,500,"mungyeong","오미자 와인을 증류해 유럽 오크에 숙성, 스모키·우디에 오미자의 새콤함.",false),
+ B("gowoon-baekja","고운달 백자","Gowoon Dal Baekja","aged",52,60,500,"mungyeong","오미자 브랜디를 백자 항아리에 숙성, 부드럽고 우아한 향.",false),
+ // 위스키
+ B("kione-eagle","기원 독수리","Ki One Eagle","whisky",43,27,350,"namyangju","버번·뉴오크 캐스크 숙성 싱글몰트, 바닐라·캐러멜 단맛과 오크의 깊이.",false),
+ B("kione-tiger","기원 호랑이","Ki One Tiger","whisky",46,29,370,"namyangju","셰리·와인 캐스크 숙성, 달콤한 과일과 캐러멜·버터스카치.",false),
+ B("kione-unicorn","기원 유니콘","Ki One Unicorn","whisky",46,31,400,"namyangju","약 50ppm 피트, 스모키·흙내음에 오렌지필과 오크 스파이스.",false),
+ B("kione-signature","기원 시그니처","Ki One Signature","whisky",53.3,35,0,"namyangju","셰리 시즌드 유럽 오크 중심의 고도수 싱글몰트, 농축된 건과일과 스파이스.",false),
+ B("kione-batch8","기원 배치8","Ki One Batch 8","whisky",56.8,35,460,"namyangju","페일에일 몰트로 빚은 캐스크 스트렝스, 바닐라·꿀·토피·구운 견과.",false),
+ B("kione-edward","기원 X 에드워드 리 에디션","Ki One X Edward Lee Edition","whisky",57.5,38,490,"namyangju","고추 캐스크 피니시로 드라이한 스파이스를 담은 한정 블렌디드 몰트.",false),
+ // 맥주
+ B("ggeek-pale","끽비어 스밈 페일에일","Ggeek Smimm Pale Ale","beer",5.5,15,0,null,"레몬·자몽향과 꽃·솔 아로마의 페일에일.",false),
+ B("ggeek-porter","끽비어 캄캄 포터","Ggeek Calm Calm Porter","beer",4.8,15,0,null,"커피·초콜릿·바닐라 풍미의 포터, 7가지 몰트.",false),
+];
+
+/* ===== 유틸 ===== */
+function esc(s){return String(s).replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}
+function priceStr(bt){const g=bt.g,b=bt.b;if(g&&b)return`잔 ${g} / 병 ${b}`;if(b)return`병 ${b}`;if(g)return`잔 ${g}`;return"";}
+const byId=Object.fromEntries(BOTTLES.map(b=>[b.id,b]));
+
+/* ===== 칵테일/푸드 렌더 ===== */
+function renderCocktails(){
+ document.getElementById("cocktailList").innerHTML=COCKTAILS.map(d=>{
+  let tag="";
+  if(d.link){
+    if(byId[d.link]){const bt=byId[d.link];tag=`<span class="tj" onclick="gotoBottle('${d.link}')">📍 ${esc(bt.kr)}</span>`;}
+    else{const c=CATS.find(c=>c.k===d.link);if(c)tag=`<span class="tj" onclick="gotoCat('${d.link}')">${esc(t('cat.'+c.k+'.label'))}</span>`;}
+  }
+  return `<div class="item-c">
+    <div class="ih"><span class="iname">${esc(d.name)}${d.tw?` <span class="itw">(${esc(d.tw)})</span>`:""}</span><span class="idot"></span><span class="iprice">25,000</span></div>
+    <div class="idesc">${esc(t('ck.'+d.name))}</div>
+    <div class="itags">${tag}<span class="tj b">${esc(t('tap'))}</span></div>
+  </div>`;}).join("");
+}
+function renderFoods(){
+ document.getElementById("foodList").innerHTML=FOODS.map(d=>`
+  <div class="item-c"><div class="ih"><span class="iname">${esc(d.name)}</span><span class="idot"></span><span class="iprice">${d.p}</span></div>
+  <div class="idesc">${esc(t('fd.'+d.name))}</div></div>`).join("");
+}
+
+/* ===== 전통주 도감 렌더 ===== */
+let soolFilter="all";
+const soolChips=document.getElementById("soolChips");
+function renderSoolChips(){
+ soolChips.innerHTML=`<button class="chip" data-k="all">${esc(t('chips.all'))}</button>`+CATS.map(c=>`<button class="chip" data-k="${c.k}">${esc(t('cat.'+c.k+'.label'))}</button>`).join("");
+ soolChips.querySelectorAll(".chip").forEach(ch=>{ch.classList.toggle("on",ch.dataset.k===soolFilter);ch.onclick=()=>{soolFilter=ch.dataset.k;soolChips.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x===ch));renderSool();};});
+}
+function bBody(b){
+ const r=rzOf(b.id);
+ if(!r) return `<div class="b-desc">${esc(b.desc)}</div>`;
+ let h=`<div class="b-desc">`;
+ if(r.oneLine) h+=`<div class="rz-one">“${esc(r.oneLine)}”</div>`;
+ if(r.taste) h+=`<div class="rz-row"><span class="rz-k">${esc(lbl('taste'))}</span><span class="rz-v">${esc(r.taste)}</span></div>`;
+ if(r.feature) h+=`<div class="rz-row"><span class="rz-k">${esc(lbl('feature'))}</span><span class="rz-v">${esc(r.feature)}</span></div>`;
+ if(r.history) h+=`<div class="rz-row"><span class="rz-k">${esc(lbl('history'))}</span><span class="rz-v">${esc(r.history)}</span></div>`;
+ return h+`</div>`;
+}
+function renderSool(){
+ const host=document.getElementById("soolList");
+ const cats=CATS.filter(c=>soolFilter==="all"||c.k===soolFilter);
+ host.innerHTML=cats.map(c=>{
+   const list=BOTTLES.filter(b=>b.cat===c.k);
+   return `<div class="catblock"><div class="catlabel">${esc(t('cat.'+c.k+'.label'))} <span style="color:var(--mut);font-size:11px">${list.length}</span></div>
+     <div class="catdesc">${esc(t('cat.'+c.k+'.desc'))}</div>
+     ${list.map(b=>{const rk=(RES.ko||{})[b.id];return `<div class="b-c" id="b-${b.id}">
+        <div class="b-h" onclick="this.parentElement.classList.toggle('open')">
+          <div class="b-nm"><div class="b-kr">${esc(b.kr)}</div><div class="b-en">${esc(b.name)}</div></div>
+          <div class="b-pr"><span class="b-abv">${b.abv}%</span><span class="b-price">${priceStr(b)}</span></div>
+        </div>
+        <div class="b-sub">${b.region?`<span class="b-reg" onclick="event.stopPropagation();gotoMap('${b.region}')">${esc(regName(b.region))}</span>`:`<span class="flag">${esc(fl('unknown'))}</span>`}${b.flag?`<span class="flag">${esc(fl('verify'))}</span>`:''}${rk&&rk.conf==='low'?`<span class="flag">${esc(fl('low'))}</span>`:''}</div>
+        <div class="b-body">${bBody(b)}</div>
+     </div>`;}).join("")}</div>`;
+ }).join("");
+}
+renderSool();
+
+/* ===== 도별 인터랙티브 지도 ===== */
+const SVGNS="http://www.w3.org/2000/svg";
+// 도시(region) → 시도 코드
+const PROV_OF={seoul:'11',incheon:'23',yangpyeong:'31',hwaseong:'31',yongin:'31',yeoju:'31',gimpo:'31',guri:'31',namyangju:'31',hoengseong:'32',chuncheon:'32',cheongju:'33',chungju:'33',yeongdong:'33',gongju:'34',yesan:'34',daejeon:'25',daegu:'22',andong:'37',sangju:'37',mungyeong:'37',gimhae:'38',hamyang:'38',changwon:'38',sacheon:'38',ulsan:'26',jeonju:'35',sunchang:'35',gochang:'35',damyang:'36',naju:'36',jeju:'39'};
+function cityXY(la,lo){const p=MAPDATA.proj;return [(lo*p.cosLat-p.minX)*p.S+p.pad,(-la-p.minY)*p.S+p.pad];}
+let activeProv=null, zoomed=false, vbAnim=null;
+let VB={x:0,y:0,w:0,h:0};
+const BACKTXT={ko:"← 전체 지도",en:"← Whole map",zh:"← 全国地图",ja:"← 全体マップ"};
+function el(tag,attrs){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+function setVB(x,y,w,h){VB={x,y,w,h};document.getElementById("mapsvg").setAttribute("viewBox",x.toFixed(1)+" "+y.toFixed(1)+" "+w.toFixed(1)+" "+h.toFixed(1));}
+function animVB(tx,ty,tw,th,dur,done){
+ const s={...VB},t0=performance.now();
+ if(vbAnim)cancelAnimationFrame(vbAnim);
+ const ease=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+ (function step(now){
+   const k=Math.min(1,(now-t0)/dur),e=ease(k);
+   setVB(s.x+(tx-s.x)*e,s.y+(ty-s.y)*e,s.w+(tw-s.w)*e,s.h+(th-s.h)*e);
+   scaleOverlay();
+   if(k<1)vbAnim=requestAnimationFrame(step);else{vbAnim=null;if(done)done();}
+ })(performance.now());
+}
+// 줌 배율에 맞춰 글자·점·선 크기를 화면상 일정하게 유지
+function scaleOverlay(){
+ const s=VB.w/MAPDATA.vbW;
+ document.querySelectorAll("#mapMuni .muni").forEach(p=>{p.setAttribute("stroke-dasharray",(3.2*s).toFixed(2)+" "+(2.4*s).toFixed(2));});
+ document.querySelectorAll("#mapDyn .mdot").forEach(d=>d.setAttribute("r",(4.6*s).toFixed(2)));
+ document.querySelectorAll("#mapDyn .mdot-label").forEach(t=>t.setAttribute("font-size",(9*s).toFixed(2)));
+ document.querySelectorAll("#mapDyn .prov-label").forEach(t=>t.setAttribute("font-size",(16*s).toFixed(2)));
+}
+function buildMap(){
+ const svg=document.getElementById("mapsvg");
+ svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+ setVB(0,0,MAPDATA.vbW,MAPDATA.vbH);
+ const provCount={};BOTTLES.forEach(b=>{if(b.region&&PROV_OF[b.region])provCount[PROV_OF[b.region]]=(provCount[PROV_OF[b.region]]||0)+1;});
+ svg.innerHTML="";
+ // 작은 광역시는 도에 가려지지 않게 나중에 그린다
+ const METRO=["11","21","22","23","24","25","26","29"];
+ const ordered=[...MAPDATA.provinces].sort((a,b)=>(METRO.indexOf(a.code)>=0?1:0)-(METRO.indexOf(b.code)>=0?1:0));
+ ordered.forEach(p=>{
+   const path=el("path",{class:"prov"+(provCount[p.code]?" has":"")+(METRO.indexOf(p.code)>=0?" metro":""),id:"prov-"+p.code,d:p.d});
+   path.addEventListener("click",e=>{e.stopPropagation();activateProv(p.code);});
+   svg.appendChild(path);
+ });
+ svg.appendChild(el("g",{id:"mapMuni"}));  // 시군구 점선
+ svg.appendChild(el("g",{id:"mapDyn"}));   // 라벨+양조지 점
+}
+function activateProv(code){
+ activeProv=code;zoomed=true;
+ const svg=document.getElementById("mapsvg");
+ [...svg.querySelectorAll(".prov")].forEach(pp=>{pp.classList.toggle("active",pp.id==="prov-"+code);pp.classList.toggle("dim",pp.id!=="prov-"+code);});
+ const activeEl=document.getElementById("prov-"+code);
+ const muni=document.getElementById("mapMuni"),dyn=document.getElementById("mapDyn");
+ svg.insertBefore(activeEl,muni);
+ // 시군구 경계(점선)
+ muni.innerHTML="";
+ ((window.MAPMUNI||{})[code]||[]).forEach(m=>muni.appendChild(el("path",{class:"muni",d:m.d})));
+ // 실제 화면 확대: viewBox를 그 도의 영역으로
+ const bb=activeEl.getBBox();
+ const aspect=MAPDATA.vbW/MAPDATA.vbH;
+ let w=bb.width,h=bb.height;
+ if(w/h<aspect)w=h*aspect;else h=w/aspect;
+ w*=1.3;h*=1.3;
+ const minW=MAPDATA.vbW*0.16; if(w<minW){w=minW;h=w/aspect;} // 너무 작은 광역시 과확대 방지
+ const cx=bb.x+bb.width/2,cy=bb.y+bb.height/2;
+ animVB(cx-w/2,cy-h/2,w,h,760);
+ // 라벨 + 양조지 점
+ const prov=MAPDATA.provinces.find(p=>p.code===code);
+ dyn.innerHTML="";
+ const label=el("text",{class:"prov-label",x:cx,y:bb.y-bb.height*0.04,"text-anchor":"middle"});
+ label.textContent=provName(prov.code,prov.kr);dyn.appendChild(label);
+ const cities=Object.keys(PROV_OF).filter(k=>PROV_OF[k]===code);
+ cities.forEach((k,i)=>{
+   const cnt=BOTTLES.filter(b=>b.region===k).length; if(!cnt) return;
+   const[x,y]=cityXY(REG[k].la,REG[k].lo);
+   const dot=el("circle",{class:"mdot",cx:x,cy:y,r:4.6,style:"animation-delay:"+(i*50)+"ms"});
+   dot.addEventListener("click",e=>{e.stopPropagation();selectCity(k);});
+   const tx=el("text",{class:"mdot-label",x:x,y:y-7,"text-anchor":"middle",style:"animation-delay:"+(i*50)+"ms"});
+   tx.textContent=cityName(k)+" ·"+cnt;
+   dyn.appendChild(dot);dyn.appendChild(tx);
+ });
+ scaleOverlay();
+ const bk=document.getElementById("mapBack");
+ bk.textContent=BACKTXT[LANG]||BACKTXT.ko;bk.classList.add("show");
+}
+function zoomOutMap(){
+ zoomed=false;activeProv=null;
+ const svg=document.getElementById("mapsvg");
+ [...svg.querySelectorAll(".prov")].forEach(pp=>pp.classList.remove("active","dim"));
+ document.getElementById("mapMuni").innerHTML="";
+ document.getElementById("mapDyn").innerHTML="";
+ document.getElementById("mapBack").classList.remove("show");
+ animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,700);
+ const panel=document.getElementById("mapPanel");
+ panel.innerHTML=`<div class="mpt">${esc(t('map.panel0.t'))}</div><div class="mplist" style="font-family:var(--kr);font-size:12px;color:var(--mut)">${esc(t('map.panel0.b'))}</div>`;
+}
+function selectCity(k){
+ const list=BOTTLES.filter(b=>b.region===k);
+ const panel=document.getElementById("mapPanel");
+ panel.innerHTML=`<div class="mpt">${esc(regName(k))} · ${list.length}${esc(t('map.count'))} <span style="color:var(--mut);font-size:11px">${esc(t('map.here'))}</span></div><div class="mplist">
+   ${list.map(b=>`<a onclick="gotoBottle('${b.id}')">${esc(b.kr)}<span class="mpc">${esc(t('cat.'+b.cat+'.label'))} · ${b.abv}%</span></a>`).join("")}</div>`;
+ document.querySelectorAll(".mdot").forEach(d=>d.classList.remove("sel"));
+}
+buildMap();
+document.getElementById("mapBack").addEventListener("click",e=>{e.stopPropagation();zoomOutMap();});
+function selectRegion(k){ // 도감/칵테일에서 지도로 올 때: 해당 도 활성 + 도시 선택
+ const code=PROV_OF[k]; if(code) activateProv(code);
+ selectCity(k);
+ document.getElementById("mapPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+/* ===== 한 페이지 스크롤 + 카테고리 바로가기 ===== */
+const secs=[...document.querySelectorAll("section[data-p]")];
+const navb=[...document.querySelectorAll(".nav-b")];
+function navH(){const n=document.querySelector("nav");return n?n.offsetHeight:0;}
+function jumpTo(p){
+ const s=document.querySelector('section[data-p="'+p+'"]');if(!s)return;
+ const y=s.getBoundingClientRect().top+window.scrollY-navH()-6;
+ window.scrollTo({top:Math.max(0,y),behavior:"smooth"});
+}
+function show(p){jumpTo(p);} // 기존 호출 호환
+navb.forEach(b=>b.onclick=()=>jumpTo(b.dataset.t));
+function spyNav(){
+ const line=navH()+70;let cur=secs[0];
+ for(const s of secs){if(s.getBoundingClientRect().top<=line)cur=s;}
+ navb.forEach(b=>b.classList.toggle("on",b.dataset.t===cur.dataset.p));
+}
+window.addEventListener("scroll",spyNav,{passive:true});
+function gotoMap(region){jumpTo("map");setTimeout(()=>selectRegion(region),450);}
+function gotoBottle(id){
+ if(!byId[id])return;
+ if(soolFilter!=="all"){soolFilter="all";renderSoolChips();renderSool();applyReveal();}
+ setTimeout(()=>{const e=document.getElementById("b-"+id);if(!e)return;
+   e.classList.add("in","open");
+   const y=e.getBoundingClientRect().top+window.scrollY-navH()-40;
+   window.scrollTo({top:Math.max(0,y),behavior:"smooth"});
+   e.animate([{background:"rgba(164,133,79,.28)"},{background:"transparent"}],{duration:1500});},60);
+}
+function gotoCat(k){soolFilter=k;renderSoolChips();renderSool();applyReveal();jumpTo("sool");}
+
+/* ===== 귀뚜라미 사운드 (랜덤 크로스페이드 루프) ===== */
+const CRICKET=["cricket1.mp3","cricket2.mp3","cricket3.mp3","cricket4.mp3"];
+const VOL=0.3;
+let audioOn=false, muted=false, lastIdx=-1;
+const vA=new Audio(), vB=new Audio();
+[vA,vB].forEach(a=>{a.preload="auto";a.volume=0;});
+let cur=vA, nxt=vB;
+function pickSrc(){let i;do{i=Math.floor(Math.random()*CRICKET.length);}while(i===lastIdx&&CRICKET.length>1);lastIdx=i;return CRICKET[i];}
+function fadeTo(a,target,ms,done){const start=a.volume,t0=performance.now();
+  function step(t){const k=Math.min(1,(t-t0)/ms);a.volume=Math.max(0,Math.min(1,start+(target-start)*k));if(k<1)requestAnimationFrame(step);else if(done)done();}
+  requestAnimationFrame(step);}
+let swapping=false;
+function crossfade(){if(swapping||!audioOn)return;swapping=true;
+  nxt.src=pickSrc();nxt.volume=0;nxt.currentTime=0;nxt.play().catch(()=>{});
+  fadeTo(nxt,muted?0:VOL,650);
+  fadeTo(cur,0,650,()=>{try{cur.pause();}catch(_){}});
+  cur.ontimeupdate=null;
+  const tmp=cur;cur=nxt;nxt=tmp;
+  cur.ontimeupdate=onTU;
+  setTimeout(()=>{swapping=false;},680);}
+function onTU(e){const a=e.target;if(a!==cur||swapping)return;
+  const ov=Math.min(0.45,(a.duration||1.2)*0.4);
+  if(a.duration && a.currentTime>=a.duration-ov) crossfade();}
+function startCricket(){if(audioOn)return;audioOn=true;
+  cur.src=pickSrc();cur.volume=0;cur.ontimeupdate=onTU;
+  cur.play().then(()=>fadeTo(cur,muted?0:VOL,900)).catch(()=>{});
+  soundToggle.classList.add("show");}
+// 안전장치: 혹시 둘 다 멈추면 즉시 재시작 (연속 재생 보장)
+setInterval(()=>{if(audioOn&&!muted&&cur.paused&&nxt.paused){swapping=false;cur.src=pickSrc();cur.volume=0;cur.ontimeupdate=onTU;cur.play().then(()=>fadeTo(cur,VOL,400)).catch(()=>{});}},2500);
+[vA,vB].forEach(a=>a.addEventListener("ended",()=>{if(audioOn&&!swapping&&a===cur)crossfade();}));
+const soundToggle=document.getElementById("soundToggle");
+soundToggle.onclick=()=>{muted=!muted;soundToggle.textContent=muted?"🔇":"🔊";
+  if(muted){[vA,vB].forEach(a=>fadeTo(a,0,300));}else{if(!audioOn)startCricket();else fadeTo(cur,VOL,300);}};
+
+/* ===== 웰컴 스플래시 입장 ===== */
+const splash=document.getElementById("splash");
+function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
+document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
+splash.addEventListener("click",enter);
+
+/* ===== 스크롤 리빌 애니메이션 ===== */
+const REVEAL_SEL=[".cover .philo",".sec-h",".unit",".item-c",".b-c",".catblock",".catlabel",".flight",".about-block",".mapwrap",".maphint",".mappanel",".primer",".chips"];
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}}),{threshold:0.05,rootMargin:"0px 0px -30px 0px"});
+function applyReveal(){
+ REVEAL_SEL.forEach(sel=>document.querySelectorAll(sel).forEach(e=>{
+   if(e.classList.contains("in")||e.classList.contains("reveal"))return;
+   e.classList.add("reveal");
+   const r=e.getBoundingClientRect();
+   if(r.top<window.innerHeight&&r.bottom>0)e.classList.add("in");else io.observe(e);
+ }));
+}
+applyReveal();
+
+/* ===== 스크롤 낮 → 밤 ===== */
+// 배경: 낮 → 파스텔 살구 → 노을 주황 → 짙은 갈색 → 어둠 (스크롤 내내 서서히)
+const BG_STOPS=[
+ {p:0.00,c:{paper:"#e9e2d3",paper2:"#f0e9db",sage:"#d5ddc4",sage2:"#c7d1b3",line:"#38291a29"}},
+ {p:0.22,c:{paper:"#f3e0c6",paper2:"#f9ecd9",sage:"#dcdcba",sage2:"#cdcda8",line:"#42301c2b"}},
+ {p:0.42,c:{paper:"#f5cfa4",paper2:"#fbdcb8",sage:"#ddcda3",sage2:"#ccbb92",line:"#4a2f1a33"}},
+ {p:0.60,c:{paper:"#e8a874",paper2:"#f0b986",sage:"#d3b98d",sage2:"#c2a77c",line:"#4a2a1238"}},
+ {p:0.76,c:{paper:"#a45d2c",paper2:"#b56d36",sage:"#98784c",sage2:"#886940",line:"#ffe9d033"}},
+ {p:0.90,c:{paper:"#543016",paper2:"#653a1c",sage:"#544226",sage2:"#665032",line:"#ffe9d02e"}},
+ {p:1.00,c:{paper:"#1d1409",paper2:"#2a1c0d",sage:"#33402a",sage2:"#44523a",line:"#e9e1d12a"}}
+];
+// 글자: 밝은 배경용 / 어두운 배경용 두 벌만 두고 한 지점에서 0.55초로 부드럽게 반전
+const TEXT_DAY  ={ink:"#2b1a0a",ink2:"#4a3319",mut:"#5e401f",gold:"#7d4a15"};
+const TEXT_NIGHT={ink:"#f6ecdc",ink2:"#dfd0b4",mut:"#bda684",gold:"#e8be74"};
+const FLIP_IN=0.74, FLIP_OUT=0.68;
+function hx(h){h=h.replace("#","");if(h.length===6)h+="ff";
+ return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),parseInt(h.slice(6,8),16)/255];}
+function mixc(a,b,k){const A=hx(a),B=hx(b);
+ return "rgba("+Math.round(A[0]+(B[0]-A[0])*k)+","+Math.round(A[1]+(B[1]-A[1])*k)+","+Math.round(A[2]+(B[2]-A[2])*k)+","+(A[3]+(B[3]-A[3])*k).toFixed(3)+")";}
+let nightK=-9, isNight=null;
+function updateDayNight(){
+ const max=Math.max(1,document.documentElement.scrollHeight-window.innerHeight);
+ const p=Math.min(1,Math.max(0,window.scrollY/max));
+ const s=document.documentElement.style;
+ // 배경: 구간별 보간으로 계속 서서히 변함
+ if(Math.abs(p-nightK)>=0.002){
+   nightK=p;
+   let i=0; while(i<BG_STOPS.length-2 && p>BG_STOPS[i+1].p) i++;
+   const a=BG_STOPS[i], b=BG_STOPS[i+1];
+   const k=Math.min(1,Math.max(0,(p-a.p)/(b.p-a.p)));
+   for(const key in a.c) s.setProperty("--"+key, mixc(a.c[key], b.c[key], k));
+ }
+ // 글자: 배경이 충분히 어두워지는 지점에서 한 번만 반전 (CSS transition으로 0.55초)
+ const want = isNight ? (p>FLIP_OUT) : (p>FLIP_IN);
+ if(want!==isNight){
+   isNight=want;
+   const T = isNight?TEXT_NIGHT:TEXT_DAY;
+   for(const key in T) s.setProperty("--"+key, T[key]);
+   document.body.classList.toggle("night",isNight);
+ }
+}
+window.addEventListener("scroll",updateDayNight,{passive:true});
+window.addEventListener("resize",updateDayNight);
+updateDayNight();
+spyNav();
+
+/* ===== 언어 전환 ===== */
+function applyLang(){
+ if(!DICT[LANG])LANG="ko";
+ try{localStorage.setItem("cricketLang",LANG);}catch(_){}
+ document.documentElement.lang=(LANG==="zh"?"zh-CN":LANG);
+ document.querySelectorAll("[data-i18n]").forEach(e=>{e.innerHTML=t(e.dataset.i18n);});
+ navb.forEach(b=>{b.textContent=t("nav."+b.dataset.t);});
+ renderCocktails();renderFoods();renderSoolChips();renderSool();
+ if(activeProv){const a=activeProv;activeProv=null;activateProv(a);}
+ else{const panel=document.getElementById("mapPanel");
+   panel.innerHTML=`<div class="mpt">${esc(t('map.panel0.t'))}</div><div class="mplist" style="font-family:var(--kr);font-size:12px;color:var(--mut)">${esc(t('map.panel0.b'))}</div>`;}
+ document.querySelectorAll(".langbtn").forEach(x=>x.classList.toggle("on",x.dataset.l===LANG));
+ const bk=document.getElementById("mapBack"); if(bk)bk.textContent=BACKTXT[LANG]||BACKTXT.ko;
+ applyReveal(); nightK=-1; updateDayNight();
+}
+function setLang(l){LANG=l;applyLang();}
+document.querySelectorAll(".langbtn").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();setLang(b.dataset.l);document.getElementById("langPop").classList.remove("show");}));
+const langPop=document.getElementById("langPop");
+document.getElementById("langToggle").onclick=e=>{e.stopPropagation();langPop.classList.toggle("show");};
+document.addEventListener("click",()=>langPop.classList.remove("show"));
+applyLang();
+</script>
+</body>
+</html>
