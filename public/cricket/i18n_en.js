@@ -10,6 +10,7 @@ window.I18N_EN={"ui":{
 
 "sec.cocktail.t":"Cocktail","sec.cocktail.d":"Classics reimagined with Korean traditional liquor",
 "sec.food.t":"Food","sec.food.d":"Dishes that hold the four seasons, city and countryside",
+"food.note":"<b>Namul jeon, rabokki, golbaengi somyeon, sujebi.</b> Every Korean pub has these names on its menu. We do not invent new dishes. We keep the familiar names and change only the hands that make them.",
 "sec.flight.t":"Flight Set","sec.flight.d":"A curated set to explore the range of Korean liquor",
 "sec.sool.t":"Korean Liquor Guide","sec.sool.d":"The Korean liquors gathered by Cricket Seoul",
 "sec.map.t":"Liquor Map","sec.map.d":"Rest your hand on a region to reveal its liquors",

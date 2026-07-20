@@ -11,6 +11,7 @@ window.I18N_KO = {
 
 "sec.cocktail.t":"Cocktail","sec.cocktail.d":"클래식을 한국 전통주로 비틀다",
 "sec.food.t":"Food","sec.food.d":"사계절과 도시, 시골이 담긴 안주",
+"food.note":"<b>나물전, 라볶이, 골뱅이 소면, 수제비.</b> 한국 주점이라면 어디에나 있는 이름들입니다. 크리켓은 없던 요리를 지어내지 않습니다. 익숙한 그 이름은 그대로 두고, 만드는 방식만 저희 것으로 바꿉니다.",
 "sec.flight.t":"Flight Set","sec.flight.d":"한국의 술을 다양하게 즐기는 꾸러미",
 "sec.sool.t":"전통주 도감","sec.sool.d":"크리켓 서울이 담은 한국의 술",
 "sec.map.t":"전통주 지도","sec.map.d":"지역에 손을 올리면 그곳의 술이 보입니다",
