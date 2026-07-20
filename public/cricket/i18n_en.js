@@ -37,6 +37,7 @@ window.I18N_EN={"ui":{
 "how.4.takju":"Through a sieve → Takju","how.4.yakju":"Drawn with a yongsu → Yakju",
 "how.5.t":"Distillation","how.5.d":"The clear liquor is set over a sojutgori still and heated. Alcohol rises first as vapour, then cools and falls as droplets. That is distilled soju.",
 "how.note":"Every Korean liquor at Cricket travelled this road to reach your table.",
+"how.zoom":"Tap the image to enlarge",
 "chips.all":"All",
 
 "cat.takju.label":"Takju · Makgeolli","cat.takju.desc":"A cloudy, unfiltered brew made from rice and nuruk. Gentle fizz with a sweet-and-sour lift.",
