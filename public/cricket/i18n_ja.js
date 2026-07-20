@@ -1,5 +1,5 @@
 window.I18N_JA={"ui": {
-"nav.cocktail":"カクテル","nav.food":"おつまみ","nav.flight":"フライト","nav.sool":"伝統酒図鑑","nav.map":"伝統酒マップ","nav.about":"紹介",
+"nav.cocktail":"カクテル","nav.food":"肴","nav.flight":"フライト","nav.sool":"図鑑","nav.map":"マップ","nav.about":"紹介",
 "splash.welcome":"Cricketへようこそ","splash.sub":"Welcome to Cricket Seoul","splash.enter":"タッチして入場","splash.hint":"🦗 コオロギの音とともにお入りください",
 "cover.philo":"誰もが耳にするコオロギの鳴き声は、社会的な地位に関わらず自然の中で聞こえる美しい音のひとつです。私たちはコオロギの音のように、多くの人々へ韓国らしいお酒と料理を届けたいと思っています。",
 "sec.cocktail.t":"Cocktail","sec.cocktail.d":"クラシックを韓国の伝統酒で捻る",
@@ -17,7 +17,7 @@ window.I18N_JA={"ui": {
 "flight.def.sparkling":"国産の果実や米で仕込んだスパークリング。",
 "flight.def.spirit":"韓国の蒸留酒。",
 "primer":"<b>伝統酒(傳統酒)</b>とは、韓国の米と麹で、この土地ならではの方法で仕込んできたお酒を指します。濾さない<b>濁酒(マッコリ)</b>、澄んで濾した<b>薬酒・清酒</b>、それを蒸留した<b>焼酎</b>、果実で仕込んだ<b>果実酒</b>まで。Cricket Seoulは全国各地の醸造所から届いたお酒を紹介し、そのお酒が生まれた場所を<b>マップ</b>でお見せします。",
-"nav.how":"伝統酒とは",
+"nav.how":"伝統酒",
 "sec.how.t":"伝統酒とは？","sec.how.d":"一粒の米が酒になるまで",
 "how.mode.takju":"濁酒","how.mode.yakju":"薬酒","how.mode.soju":"焼酎",
 "how.1.t":"米","how.1.d":"よく洗った米を甑で蒸し、コドゥパプ(硬めの蒸し飯)にします。この米粒の澱粉がやがて糖となり、その糖が酒になります。",

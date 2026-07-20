@@ -1,6 +1,6 @@
 /* 크리켓 서울 메뉴 UI/메뉴 텍스트 사전 (한국어 원본). 번역 대상. */
 window.I18N_KO = {
-"nav.cocktail":"칵테일","nav.food":"안주","nav.flight":"플라이트","nav.sool":"전통주 도감","nav.map":"전통주 지도","nav.about":"소개",
+"nav.cocktail":"칵테일","nav.food":"안주","nav.flight":"플라이트","nav.sool":"도감","nav.map":"지도","nav.about":"소개",
 
 "splash.welcome":"크리켓에 오신 것을 환영합니다",
 "splash.sub":"Welcome to Cricket Seoul",

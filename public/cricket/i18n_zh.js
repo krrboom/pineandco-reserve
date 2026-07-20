@@ -1,5 +1,5 @@
 window.I18N_ZH={"ui": {
-"nav.cocktail":"鸡尾酒","nav.food":"下酒菜","nav.flight":"品鉴套组","nav.sool":"传统酒图鉴","nav.map":"传统酒地图","nav.about":"关于",
+"nav.cocktail":"鸡尾酒","nav.food":"下酒菜","nav.flight":"套组","nav.sool":"图鉴","nav.map":"地图","nav.about":"关于",
 "splash.welcome":"欢迎来到蟋蟀","splash.sub":"Welcome to Cricket Seoul","splash.enter":"轻触进入","splash.hint":"🦗 伴着蟋蟀的鸣声入场",
 "cover.philo":"无论身份高低，人人都能听见的蟋蟀鸣声，是自然中最动人的声音之一。我们愿如蟋蟀的鸣唱一般，将韩国的酒与美食传递给更多人。",
 "sec.cocktail.t":"Cocktail","sec.cocktail.d":"以韩国传统酒重新诠释经典",
@@ -17,7 +17,7 @@ window.I18N_ZH={"ui": {
 "flight.def.sparkling":"以国产水果或米酿造的气泡酒。",
 "flight.def.spirit":"韩国的蒸馏酒。",
 "primer":"<b>传统酒(傳統酒)</b>是指用我们的米与酒曲、以本土方式酿成的酒。从未经过滤的<b>浊酒(马格利)</b>、澄清过滤的<b>药酒·清酒</b>、蒸馏而成的<b>烧酒</b>，到以水果酿造的<b>果酒</b>。蟋蟀首尔介绍来自全国各地酿造厂的酒，并以<b>地图</b>呈现每款酒诞生的地方。",
-"nav.how":"何谓传统酒",
+"nav.how":"传统酒",
 "sec.how.t":"何谓传统酒？","sec.how.d":"一粒米如何成为一杯酒",
 "how.mode.takju":"浊酒","how.mode.yakju":"药酒","how.mode.soju":"烧酒",
 "how.1.t":"米","how.1.d":"将洗净的米放入甑中蒸成硬饭。米粒中的淀粉日后化为糖，而糖便化为酒。",
