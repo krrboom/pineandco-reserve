@@ -1,5 +1,12 @@
 window.I18N_ZH={"ui": {
 "nav.cocktail":"鸡尾酒","nav.food":"下酒菜","nav.flight":"套组","nav.sool":"图鉴","nav.map":"地图","nav.about":"关于",
+"game.yut.d":"最多四人，每人两枚棋。抓子、叠子、走捷径，先回家者胜。",
+"game.yut.t":"Cricket 尤茨",
+"game.race.d":"六位员工赛跑。会摔倒、会喝醉、会被风吹、还会闹肚子。最后一名请喝一杯。",
+"game.race.t":"Cricket 赛马",
+"sec.game.d":"赌一杯的玩法",
+"sec.game.t":"酒桌游戏",
+"nav.game":"游戏",
 "splash.welcome":"欢迎来到蟋蟀","splash.sub":"Welcome to Cricket Seoul","splash.enter":"轻触进入","splash.hint":"🦗 伴着蟋蟀的鸣声入场",
 "cover.philo":"无论身份高低，人人都能听见的蟋蟀鸣声，是自然中最动人的声音之一。我们愿如蟋蟀的鸣唱一般，将韩国的酒与美食传递给更多人。",
 "sec.cocktail.t":"Cocktail","sec.cocktail.d":"以韩国传统酒重新诠释经典",

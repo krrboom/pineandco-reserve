@@ -1,0 +1,438 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>크리켓 경마 · Cricket Derby</title>
+<style>
+:root{
+  --paper:#f0ebe0; --paper2:#fafaf7; --ink:#2b1a0a; --ink2:#4a3319; --mut:#6d5334;
+  --gold:#b8935a; --dark:#1e1208; --line:#38291a2e; --sage:#d5ddc4; --sage2:#c7d1b3;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Apple Garamond","Times New Roman",serif;
+  overflow-x:hidden;overscroll-behavior:none}
+.kr{font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.app{max-width:640px;margin:0 auto;min-height:100vh;background:var(--paper);position:relative;overflow:hidden}
+
+/* 상단바 */
+.top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--dark);color:#e9e1d1}
+.top img{height:26px;width:auto;filter:brightness(0) invert(1) opacity(.92)}
+.top .ti{font-variant-caps:small-caps;letter-spacing:.16em;font-size:12px;color:var(--gold)}
+.top .back{margin-left:auto;font-size:12px;color:#c8ba9f;text-decoration:none;border:1px solid rgba(216,178,90,.4);
+  border-radius:999px;padding:5px 12px}
+
+/* 선택 화면 */
+.pick{padding:18px 14px 30px}
+.h1{text-align:center;font-variant-caps:small-caps;letter-spacing:.14em;font-size:22px;color:var(--ink)}
+.h2{text-align:center;font-size:12.5px;color:var(--mut);margin-top:5px}
+.rule{width:44px;height:1px;background:var(--gold);margin:11px auto 0}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:20px}
+.card{background:var(--paper2);border:1px solid var(--line);border-radius:12px;padding:9px 5px 8px;text-align:center;
+  cursor:pointer;position:relative;transition:.18s;overflow:hidden}
+.card.on{border-color:var(--gold);background:#fff;box-shadow:0 3px 12px rgba(120,80,30,.16)}
+.card .pf{height:86px;display:flex;align-items:flex-end;justify-content:center}
+.card .pf img{max-height:86px;width:auto;image-rendering:pixelated}
+.card .nm{font-variant-caps:small-caps;letter-spacing:.06em;font-size:12.5px;margin-top:6px;color:var(--ink)}
+.card .tag{font-size:9.5px;color:var(--mut);margin-top:1px}
+.card .no{position:absolute;top:5px;left:6px;width:19px;height:19px;border-radius:50%;background:var(--gold);color:#fff;
+  font-size:11px;line-height:19px;display:none}
+.card.on .no{display:block}
+.cnt{text-align:center;font-size:12px;color:var(--mut);margin-top:16px}
+.go{display:block;width:100%;margin-top:12px;padding:15px;border:none;border-radius:12px;background:var(--dark);
+  color:#f0e6d2;font-size:16px;letter-spacing:.1em;font-variant-caps:small-caps;cursor:pointer}
+.go:disabled{opacity:.35}
+.hint{text-align:center;font-size:11px;color:var(--mut);margin-top:12px;line-height:1.7}
+
+/* 경주 화면 */
+#race{display:none}
+.stage{position:relative;background:#000;overflow:hidden}
+#cv{display:block;width:100%;height:auto;image-rendering:pixelated}
+.hud{position:absolute;left:0;right:0;top:0;padding:8px 10px;display:flex;gap:8px;align-items:flex-start;
+  pointer-events:none;background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,0))}
+.hud .lap{font-variant-caps:small-caps;letter-spacing:.1em;font-size:12px;color:#ffe9c2;text-shadow:0 1px 3px #000}
+.hud .logo{margin-left:auto;height:20px;filter:brightness(0) invert(1) opacity(.75)}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:8px;background:rgba(20,12,4,.86);color:#ffe9c2;
+  font-size:13px;padding:8px 15px;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;
+  border:1px solid rgba(216,178,90,.45)}
+.toast.on{opacity:1}
+.board{padding:10px 12px 22px}
+.row{display:flex;align-items:center;gap:9px;padding:6px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.row .rk{width:20px;text-align:center;color:var(--gold);font-size:12px}
+.row .rn{width:78px;font-variant-caps:small-caps;letter-spacing:.05em}
+.row .bar{flex:1;height:7px;background:#0000000f;border-radius:99px;overflow:hidden}
+.row .bar i{display:block;height:100%;background:var(--gold);border-radius:99px}
+.row .st{width:26px;text-align:center;font-size:13px}
+
+/* 결과 */
+.res{position:fixed;inset:0;background:rgba(16,10,4,.93);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
+.res.on{display:flex}
+.resin{background:var(--paper);border-radius:16px;padding:24px 20px;max-width:340px;width:100%;text-align:center}
+.res .win{font-variant-caps:small-caps;letter-spacing:.1em;font-size:12px;color:var(--mut)}
+.res .wn{font-variant-caps:small-caps;letter-spacing:.08em;font-size:27px;color:var(--ink);margin:3px 0 8px}
+.res img.wp{height:120px;image-rendering:pixelated;margin-bottom:6px}
+.res ol{text-align:left;margin:14px 0 0;padding-left:22px;font-size:13.5px;color:var(--ink2);line-height:1.9}
+.res .pen{margin-top:14px;font-size:13px;color:#8a3b2a;background:#8a3b2a14;border:1px dashed #8a3b2a55;
+  border-radius:8px;padding:9px}
+.res button{margin-top:16px;width:100%;padding:13px;border:none;border-radius:10px;background:var(--dark);color:#f0e6d2;
+  font-size:15px;letter-spacing:.08em;font-variant-caps:small-caps;cursor:pointer}
+.res .again2{background:none;color:var(--mut);border:1px solid var(--line);margin-top:8px}
+</style>
+
+<div class="app">
+  <div class="top">
+    <img src="logo.png" alt="Cricket Seoul">
+    <span class="ti">Derby</span>
+    <a class="back" href="index.html">← 메뉴</a>
+  </div>
+
+  <!-- 선택 -->
+  <div class="pick" id="pick">
+    <div class="h1">Cricket Derby</div>
+    <div class="h2 kr">크리켓 직원들이 달립니다. 꼴찌가 한 잔.</div>
+    <div class="rule"></div>
+    <div class="grid" id="grid"></div>
+    <div class="cnt kr" id="cnt">2명 이상 골라주세요</div>
+    <button class="go" id="go" disabled>출발</button>
+    <div class="hint kr">달리다 보면 넘어지고, 취하고, 바람이 밀고, 볼일도 봅니다.<br>순위는 아무도 모릅니다.</div>
+  </div>
+
+  <!-- 경주 -->
+  <div id="race">
+    <div class="stage">
+      <canvas id="cv"></canvas>
+      <div class="hud">
+        <div class="lap" id="lap">READY</div>
+        <img class="logo" src="logo.png" alt="">
+      </div>
+      <div class="toast" id="toast"></div>
+    </div>
+    <div class="board" id="board"></div>
+  </div>
+</div>
+
+<div class="res" id="res"><div class="resin">
+  <div class="win kr">우승</div>
+  <div class="wn" id="wn">—</div>
+  <img class="wp" id="wp" src="" alt="">
+  <ol id="rank"></ol>
+  <div class="pen kr" id="pen"></div>
+  <button id="again">다시 달리기</button>
+  <button class="again2" id="again2">선수 다시 고르기</button>
+</div></div>
+
+<script>
+/* ===== 선수 ===== */
+const CHARS=[
+ {id:"pat",     name:"PAT",     kr:"팻",   tag:"대표 · 셰이커",     frames:3, run:[1,2]},
+ {id:"joe",     name:"JOE",     kr:"조",   tag:"공동창업 · 한 잔",  frames:3, run:[1,2]},
+ {id:"minguk",  name:"MINGUK",  kr:"민국", tag:"주방 · 앞치마",     frames:3, run:[1,2]},
+ {id:"mina",    name:"MINA",    kr:"미나", tag:"홀 · 재킷",         frames:4, run:[2,3]},
+ {id:"minyong", name:"MINYONG", kr:"민용", tag:"바 · 선글라스",     frames:4, run:[2,3]},
+ {id:"guentae", name:"GUENTAE", kr:"근태", tag:"바 · 만세",         frames:4, run:[2,3]}
+];
+const IMG={}, LOADED={};
+function loadSprites(cb){
+ let need=0, done=0;
+ CHARS.forEach(c=>{IMG[c.id]=[];
+  for(let i=0;i<c.frames;i++){need++;
+   const im=new Image(); im.src="sprites/"+c.id+"_"+i+".png";
+   im.onload=im.onerror=()=>{if(++done===need)cb();};
+   IMG[c.id][i]=im;}});
+ if(need===0)cb();
+}
+const track=new Image(); track.src="track.webp";
+
+/* ===== 선택 화면 ===== */
+let picked=[];
+const grid=document.getElementById("grid"), cntEl=document.getElementById("cnt"), goBtn=document.getElementById("go");
+CHARS.forEach((c,i)=>{
+ const d=document.createElement("div"); d.className="card"; d.dataset.i=i;
+ d.innerHTML='<div class="no"></div><div class="pf"><img src="sprites/'+c.id+'_0.png" alt=""></div>'+
+   '<div class="nm">'+c.name+'</div><div class="tag kr">'+c.tag+'</div>';
+ d.onclick=()=>{
+   const k=picked.indexOf(i);
+   if(k>=0)picked.splice(k,1); else {if(picked.length>=6)return; picked.push(i);}
+   syncPick();
+ };
+ grid.appendChild(d);
+});
+function syncPick(){
+ [...grid.children].forEach((d,i)=>{
+   const k=picked.indexOf(i);
+   d.classList.toggle("on",k>=0);
+   if(k>=0)d.querySelector(".no").textContent=k+1;
+ });
+ cntEl.textContent = picked.length<2 ? "2명 이상 골라주세요" : picked.length+"명 출전";
+ goBtn.disabled = picked.length<2;
+}
+goBtn.onclick=()=>{ loadSprites(()=>startRace()); };
+
+/* ===== 경기장 좌표 (원본 track.webp 기준) ===== */
+const TILE_W=1800, TILE_H=1536;
+const LANE_Y=[486,627,768,909,1049,1190];   // 6개 레인 중심선
+const VIS_Y0=95, VIS_H=1290;                 // 화면에 보여줄 세로 구간
+const RACE_LEN=5400;                         // 결승선까지 월드 거리
+const START_X=170;
+
+const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
+const toastEl=document.getElementById("toast"), lapEl=document.getElementById("lap"),
+      boardEl=document.getElementById("board");
+let S=1, CW=0, CH=0, camX=0, runners=[], raceOn=false, t0=0, finished=[], toastT=0;
+
+function fit(){
+ const wrap=cv.parentElement;
+ CW=wrap.clientWidth;
+ CH=Math.round(Math.min(Math.max(window.innerHeight*0.60,300), CW*1.05));
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ cv.width=Math.round(CW*dpr); cv.height=Math.round(CH*dpr);
+ cv.style.height=CH+"px";
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ ctx.imageSmoothingEnabled=false;
+ S=CH/VIS_H;                       // 원본 px → 화면 px
+}
+window.addEventListener("resize",()=>{if(raceOn){fit();}});
+
+/* ===== 사건 ===== */
+const EVENTS=[
+ {k:"fall",  w:15, dur:1.25, msg:"넘어졌다!",            emo:"💫"},
+ {k:"drunk", w:16, dur:3.4,  msg:"한 잔 걸쳤다",          emo:"🍶"},
+ {k:"dash",  w:16, dur:1.9,  msg:"갑자기 폭주!",          emo:"⚡"},
+ {k:"wind",  w:13, dur:1.1,  msg:"바람에 밀렸다",         emo:"💨"},
+ {k:"poop",  w:10, dur:2.2,  msg:"급한 볼일…",            emo:"💩"},
+ {k:"trip",  w:12, dur:0.8,  msg:"발이 꼬였다",           emo:"😵"},
+ {k:"boost", w:18, dur:2.6,  msg:"제2의 바람",            emo:"🔥"}
+];
+const EW=EVENTS.reduce((a,e)=>a+e.w,0);
+function rollEvent(){let r=Math.random()*EW;for(const e of EVENTS){r-=e.w;if(r<=0)return e;}return EVENTS[0];}
+
+function startRace(){
+ document.getElementById("pick").style.display="none";
+ document.getElementById("race").style.display="block";
+ document.getElementById("res").classList.remove("on");
+ fit();
+ const off=Math.floor((6-picked.length)/2);
+ const lanes=picked.map((_,i)=>off+i);
+ runners=picked.map((ci,i)=>({
+   c:CHARS[ci], lane:lanes[i], x:START_X, v:0,
+   base:0.92+Math.random()*0.20,
+   nextEv:1.2+Math.random()*3.2,
+   ev:null, evT:0, anim:Math.random()*10, done:0, place:0, wob:Math.random()*6
+ }));
+ finished=[]; raceOn=true; t0=performance.now(); camX=0;
+ lapEl.textContent="READY";
+ setTimeout(()=>{lapEl.textContent="GO!";},900);
+ requestAnimationFrame(loop);
+ drawBoard();
+}
+
+let lastT=0;
+function loop(now){
+ if(!raceOn)return;
+ const dt=Math.min(0.05,(now-(lastT||now))/1000); lastT=now;
+ const el=(now-t0)/1000;
+ if(el>0.9) step(dt, el);
+ render(el);
+ requestAnimationFrame(loop);
+}
+
+function step(dt, el){
+ for(const r of runners){
+   if(r.done)continue;
+   // 사건 발생
+   r.nextEv-=dt;
+   if(r.nextEv<=0 && !r.ev){
+     const e=rollEvent();
+     r.ev=e; r.evT=e.dur;
+     r.nextEv=2.6+Math.random()*4.5;
+     showToast(r.c.name+" "+e.emo+" "+e.msg);
+   }
+   let mul=1;
+   if(r.ev){
+     r.evT-=dt;
+     switch(r.ev.k){
+       case "fall": case "poop": mul=0; break;
+       case "trip": mul=0.25; break;
+       case "drunk": mul=0.48; break;
+       case "dash": mul=2.35; break;
+       case "boost": mul=1.55; break;
+       case "wind": mul=-0.55; break;
+     }
+     if(r.evT<=0){ if(r.ev.k==="drunk")r.drunkUntil=el+6; r.ev=null; }
+   }
+   const noise=0.86+Math.random()*0.30;
+   r.v=r.base*noise*mul*290;
+   r.x+=r.v*dt;
+   if(r.x<START_X-40)r.x=START_X-40;
+   r.anim+=dt*(mul<=0?0:Math.max(0.5,mul))*7.5;
+   if(r.x>=RACE_LEN){ r.done=1; r.x=RACE_LEN; finished.push(r); r.place=finished.length; }
+ }
+ // 카메라: 선두를 따라간다
+ const lead=Math.max(...runners.map(r=>r.x));
+ const want=Math.max(0,Math.min(RACE_LEN+340-CW/S, lead-CW/S*0.52));
+ camX+=(want-camX)*Math.min(1,dt*3.4);
+ drawBoard();
+ if(finished.length===runners.length){ raceOn=false; setTimeout(showResult,700); }
+}
+
+function showToast(msg){
+ toastEl.textContent=msg; toastEl.classList.add("on");
+ clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove("on"),1700);
+}
+
+/* ===== 그리기 ===== */
+function render(el){
+ ctx.fillStyle="#0c0a08"; ctx.fillRect(0,0,CW,CH);
+ if(track.complete && track.naturalWidth){
+   const t0x=Math.floor(camX/TILE_W)-1;
+   for(let t=t0x;t<t0x+Math.ceil(CW/S/TILE_W)+2;t++){
+     const sx=(t*TILE_W-camX)*S;
+     ctx.drawImage(track,0,VIS_Y0,TILE_W,VIS_H, sx,0, TILE_W*S,CH);
+   }
+ }
+ // 출발선 / 결승선
+ dashLine(START_X,"#ffffff",0.85);
+ dashLine(RACE_LEN,"#ffffff",1);
+ finishBanner();
+
+ // 주자 (아래 레인이 앞에 오도록)
+ const order=[...runners].sort((a,b)=>a.lane-b.lane);
+ for(const r of order) drawRunner(r,el);
+
+ lapEl.textContent = raceOn ? (Math.max(0,Math.round((RACE_LEN-Math.max(...runners.map(r=>r.x)))/RACE_LEN*100))+"% 남음") : "FINISH";
+}
+
+function dashLine(wx,color,a){
+ const x=(wx-camX)*S;
+ if(x<-20||x>CW+20)return;
+ ctx.save(); ctx.globalAlpha=a; ctx.strokeStyle=color; ctx.lineWidth=Math.max(2,5*S);
+ ctx.setLineDash([16*S,13*S]);
+ ctx.beginPath();
+ ctx.moveTo(x,(416-VIS_Y0)*S); ctx.lineTo(x,(1260-VIS_Y0)*S); ctx.stroke();
+ ctx.restore();
+}
+function finishBanner(){
+ const x=(RACE_LEN-camX)*S;
+ if(x<-140||x>CW+140)return;
+ const w=Math.max(64,116*S), h=Math.max(26,44*S), y=(416-VIS_Y0)*S-h-6;
+ ctx.save();
+ ctx.fillStyle="#1e1208"; ctx.strokeStyle="#b8935a"; ctx.lineWidth=2;
+ ctx.beginPath(); if(ctx.roundRect)ctx.roundRect(x-w/2,Math.max(2,y),w,h,5); else ctx.rect(x-w/2,Math.max(2,y),w,h); ctx.fill(); ctx.stroke();
+ ctx.fillStyle="#e9d3a4"; ctx.textAlign="center"; ctx.textBaseline="middle";
+ ctx.font="bold "+Math.round(Math.max(11,h*0.44))+"px -apple-system,sans-serif";
+ ctx.fillText("결승", x, Math.max(2,y)+h*0.5);
+ ctx.restore();
+}
+
+function drawRunner(r,el){
+ const x=(r.x-camX)*S, cy=(LANE_Y[r.lane]-VIS_Y0)*S;
+ if(x<-120||x>CW+140)return;
+ const im=pickFrame(r);
+ if(!im||!im.complete||!im.naturalWidth)return;
+ const h=Math.max(46,(LANE_Y[1]-LANE_Y[0])*S*1.42), w=h*im.naturalWidth/im.naturalHeight;
+ const foot=cy+h*0.12;
+ const bob=(r.ev&&(r.ev.k==="fall"||r.ev.k==="poop"))?0:Math.sin(r.anim*1.6)*h*0.02;
+
+ ctx.save();
+ // 그림자
+ ctx.globalAlpha=.28; ctx.fillStyle="#000";
+ ctx.beginPath(); ctx.ellipse(x,foot-2,w*0.30,h*0.05,0,0,7); ctx.fill();
+ ctx.globalAlpha=1;
+
+ // 폭주 잔상
+ if(r.ev&&(r.ev.k==="dash"||r.ev.k==="boost")){
+   ctx.globalAlpha=.28;
+   ctx.drawImage(im,x-w/2-w*0.30,foot-h+bob,w,h);
+   ctx.globalAlpha=.16;
+   ctx.drawImage(im,x-w/2-w*0.58,foot-h+bob,w,h);
+   ctx.globalAlpha=1;
+   ctx.strokeStyle=r.ev.k==="dash"?"#ffd782":"#ff9b52"; ctx.lineWidth=Math.max(1.5,2.4*S);
+   for(let i=0;i<3;i++){
+     const yy=foot-h*(0.34+i*0.19);
+     ctx.globalAlpha=.55-i*0.12;
+     ctx.beginPath(); ctx.moveTo(x-w*0.55-i*10,yy); ctx.lineTo(x-w*0.98-i*16,yy); ctx.stroke();
+   }
+   ctx.globalAlpha=1;
+ }
+ // 바람
+ if(r.ev&&r.ev.k==="wind"){
+   ctx.strokeStyle="#cfe4ff"; ctx.lineWidth=Math.max(1.5,2.2*S); ctx.globalAlpha=.75;
+   for(let i=0;i<3;i++){
+     const yy=foot-h*(0.30+i*0.22);
+     ctx.beginPath();
+     ctx.moveTo(x+w*0.62+i*8,yy);
+     ctx.quadraticCurveTo(x+w*0.95+i*10,yy-6,x+w*1.25+i*12,yy);
+     ctx.stroke();
+   }
+   ctx.globalAlpha=1;
+ }
+
+ // 넘어짐 = 눕히기
+ if(r.ev&&r.ev.k==="fall"){
+   ctx.translate(x,foot); ctx.rotate(-Math.PI/2.1); ctx.translate(-x,-foot);
+   ctx.drawImage(im,x-w/2,foot-h,w,h);
+ }else{
+   const wob=(r.ev&&r.ev.k==="drunk")?Math.sin(el*9+r.wob)*0.09:0;
+   if(wob){ctx.translate(x,foot);ctx.rotate(wob);ctx.translate(-x,-foot);}
+   ctx.drawImage(im,x-w/2,foot-h+bob,w,h);
+ }
+ ctx.restore();
+
+ // 취함 = 얼굴 빨개짐
+ if(r.ev&&r.ev.k==="drunk"){
+   ctx.save(); ctx.globalCompositeOperation="source-atop"; ctx.restore();
+   ctx.save(); ctx.globalAlpha=.42; ctx.fillStyle="#e0483a";
+   ctx.beginPath(); ctx.ellipse(x,foot-h*0.86,w*0.19,h*0.075,0,0,7); ctx.fill();
+   ctx.restore();
+ }
+ // 똥
+ if(r.ev&&r.ev.k==="poop"){
+   ctx.save(); ctx.font=Math.round(h*0.26)+"px serif"; ctx.textAlign="center";
+   ctx.fillText("💩",x-w*0.42,foot-2); ctx.restore();
+ }
+ // 이름표
+ ctx.save();
+ ctx.font="600 "+Math.round(Math.max(9,h*0.115))+"px -apple-system,sans-serif";
+ ctx.textAlign="center"; ctx.lineWidth=3; ctx.strokeStyle="rgba(0,0,0,.65)";
+ ctx.strokeText(r.c.name,x,foot-h-3); ctx.fillStyle="#fff5e2"; ctx.fillText(r.c.name,x,foot-h-3);
+ ctx.restore();
+}
+
+function pickFrame(r){
+ const F=IMG[r.c.id]||[];
+ if(r.done)return F[0];
+ if(r.ev&&(r.ev.k==="poop"))return F[0];
+ if(r.ev&&r.ev.k==="fall")return F[r.c.run[0]];
+ const a=r.c.run[0], b=r.c.run[1];
+ return (Math.floor(r.anim)%2===0)?F[a]:F[b];
+}
+
+/* ===== 순위판 ===== */
+function drawBoard(){
+ const sorted=[...runners].sort((a,b)=>(b.done?RACE_LEN+1000-b.place:b.x)-(a.done?RACE_LEN+1000-a.place:a.x));
+ boardEl.innerHTML=sorted.map((r,i)=>{
+   const pct=Math.min(100,Math.round((r.x-START_X)/(RACE_LEN-START_X)*100));
+   let st="";
+   if(r.done)st=["🥇","🥈","🥉","4","5","6"][r.place-1]||"";
+   else if(r.ev)st=r.ev.emo;
+   return '<div class="row"><div class="rk">'+(i+1)+'</div><div class="rn">'+r.c.name+'</div>'+
+     '<div class="bar"><i style="width:'+pct+'%"></i></div><div class="st">'+st+'</div></div>';
+ }).join("");
+}
+
+/* ===== 결과 ===== */
+function showResult(){
+ const w=finished[0], last=finished[finished.length-1];
+ document.getElementById("wn").textContent=w.c.name;
+ document.getElementById("wp").src="sprites/"+w.c.id+"_"+(w.c.frames-1)+".png";
+ document.getElementById("rank").innerHTML=finished.map(r=>"<li>"+r.c.name+" <span style='color:#8a7a5c'>"+r.c.kr+"</span></li>").join("");
+ document.getElementById("pen").textContent="꼴찌 "+last.c.name+", 한 잔 받으세요.";
+ document.getElementById("res").classList.add("on");
+}
+document.getElementById("again").onclick=()=>{document.getElementById("res").classList.remove("on");startRace();};
+document.getElementById("again2").onclick=()=>{
+ document.getElementById("res").classList.remove("on");
+ document.getElementById("race").style.display="none";
+ document.getElementById("pick").style.display="block";
+ raceOn=false;
+};
+syncPick();
+</script>
