@@ -336,7 +336,7 @@ body.night{text-shadow:0 1px 2px rgba(0,0,0,.45)}
 <section data-p="how">
   <div class="sec-h"><div class="t kr" data-i18n="sec.how.t">전통주란?</div><div class="d" data-i18n="sec.how.d">쌀 한 톨이 술이 되기까지</div><div class="rule"></div></div>
   <div class="steps" id="howSteps">
-    <div class="step reveal" data-s="1">
+    <div class="step" data-s="1">
       <button class="stepb" data-img="how_rice.webp">
         <span class="sno">01</span>
         <span class="sb"><span class="st" data-i18n="how.1.t">쌀</span><span class="sd" data-i18n="how.1.d">잘 씻은 쌀을 시루에 쪄 고두밥을 짓습니다. 이 밥알 속 녹말이 나중에 당이 되고, 그 당이 술이 됩니다.</span></span>
@@ -347,7 +347,7 @@ body.night{text-shadow:0 1px 2px rgba(0,0,0,.45)}
         <div class="zh" data-i18n="how.zoom">그림을 누르면 크게 볼 수 있습니다</div>
       </div></div>
     </div>
-    <div class="step reveal" data-s="2">
+    <div class="step" data-s="2">
       <button class="stepb" data-img="how_nuruk.webp">
         <span class="sno">02</span>
         <span class="sb"><span class="st" data-i18n="how.2.t">누룩</span><span class="sd" data-i18n="how.2.d">밀이나 쌀을 반죽해 띄우면 곰팡이가 퍼집니다. 이 곰팡이가 만든 효소가 녹말을 당으로 바꾸는 열쇠입니다.</span></span>
@@ -358,7 +358,7 @@ body.night{text-shadow:0 1px 2px rgba(0,0,0,.45)}
         <div class="zh" data-i18n="how.zoom">그림을 누르면 크게 볼 수 있습니다</div>
       </div></div>
     </div>
-    <div class="step reveal" data-s="3">
+    <div class="step" data-s="3">
       <button class="stepb" data-img="how_ferment.webp">
         <span class="sno">03</span>
         <span class="sb"><span class="st" data-i18n="how.3.t">발효</span><span class="sd" data-i18n="how.3.d">고두밥·누룩·물을 항아리에 안칩니다. 효소가 당을 만들고 효모가 그 당을 알코올로 바꾸며, 위는 맑아지고 아래는 뿌옇게 가라앉습니다.</span></span>
@@ -369,7 +369,7 @@ body.night{text-shadow:0 1px 2px rgba(0,0,0,.45)}
         <div class="zh" data-i18n="how.zoom">그림을 누르면 크게 볼 수 있습니다</div>
       </div></div>
     </div>
-    <div class="step reveal" data-s="4">
+    <div class="step" data-s="4">
       <button class="stepb" data-img="how_filter.webp">
         <span class="sno">04</span>
         <span class="sb"><span class="st" data-i18n="how.4.t">거르기</span><span class="sd" data-i18n="how.4.d">같은 술독이 여기서 갈라집니다. 체로 걸러 뿌옇게 담으면 탁주, 용수를 박아 고인 맑은 술만 뜨면 약주·청주가 됩니다.</span></span>
@@ -380,7 +380,7 @@ body.night{text-shadow:0 1px 2px rgba(0,0,0,.45)}
         <div class="zh" data-i18n="how.zoom">그림을 누르면 크게 볼 수 있습니다</div>
       </div></div>
     </div>
-    <div class="step reveal" data-s="5">
+    <div class="step" data-s="5">
       <button class="stepb" data-img="how_distill.webp">
         <span class="sno">05</span>
         <span class="sb"><span class="st" data-i18n="how.5.t">증류</span><span class="sd" data-i18n="how.5.d">맑은 술을 소줏고리에 올려 끓입니다. 알코올이 먼저 증기가 되어 올라가고, 식으면서 방울로 맺혀 떨어진 것이 증류식 소주입니다.</span></span>
@@ -398,16 +398,10 @@ body.night{text-shadow:0 1px 2px rgba(0,0,0,.45)}
 <section data-p="game">
   <div class="sec-h"><div class="t kr" data-i18n="sec.game.t">술자리 게임</div><div class="d" data-i18n="sec.game.d">한 잔 걸고 하는 놀이</div><div class="rule"></div></div>
   <div class="gcards">
-    <a class="gcard reveal" href="race.html">
+    <a class="gcard" href="race.html">
       <span class="gi">🏇</span>
       <span class="gb"><span class="gt" data-i18n="game.race.t">크리켓 경마</span>
         <span class="gd" data-i18n="game.race.d">크리켓 직원 여섯이 달립니다. 넘어지고, 취하고, 바람에 밀리고, 볼일도 봅니다. 꼴찌가 한 잔.</span></span>
-      <span class="ga">→</span>
-    </a>
-    <a class="gcard reveal" href="yut.html">
-      <span class="gi">🎲</span>
-      <span class="gb"><span class="gt" data-i18n="game.yut.t">크리켓 윷놀이</span>
-        <span class="gd" data-i18n="game.yut.d">넷까지, 한 사람당 말 두 개. 잡고 업고 지름길 타서 먼저 들어오면 됩니다.</span></span>
       <span class="ga">→</span>
     </a>
   </div>
@@ -863,8 +857,10 @@ splash.addEventListener("click",enter);
 const REVEAL_SEL=[".cover .philo",".sec-h",".step",".hownote",".unit",".item-c",".b-c",".catblock",".catlabel",".flight",".gcard",".about-block",".mapwrap",".maphint",".mappanel",".primer",".chips"];
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}}),{threshold:0.05,rootMargin:"0px 0px -30px 0px"});
 function applyReveal(){
+ if(!("IntersectionObserver" in window)){document.querySelectorAll(".reveal").forEach(e=>e.classList.add("in"));return;}
  REVEAL_SEL.forEach(sel=>document.querySelectorAll(sel).forEach(e=>{
-   if(e.classList.contains("in")||e.classList.contains("reveal"))return;
+   if(e.classList.contains("in")||e.dataset.rv)return;   // 이미 보였거나 이미 등록됨
+   e.dataset.rv="1";
    e.classList.add("reveal");
    const r=e.getBoundingClientRect();
    if(r.top<window.innerHeight&&r.bottom>0)e.classList.add("in");else io.observe(e);

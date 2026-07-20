@@ -1,13 +1,11 @@
 /* 크리켓 서울 메뉴 UI/메뉴 텍스트 사전 (한국어 원본). 번역 대상. */
 window.I18N_KO = {
 "nav.cocktail":"칵테일","nav.food":"안주","nav.flight":"플라이트","nav.sool":"도감","nav.map":"지도","nav.about":"소개",
-"game.yut.d":"넷까지, 한 사람당 말 두 개. 잡고 업고 지름길 타서 먼저 들어오면 됩니다.",
-"game.yut.t":"크리켓 윷놀이",
-"game.race.d":"크리켓 직원 여섯이 달립니다. 넘어지고, 취하고, 바람에 밀리고, 볼일도 봅니다. 꼴찌가 한 잔.",
-"game.race.t":"크리켓 경마",
-"sec.game.d":"한 잔 걸고 하는 놀이",
-"sec.game.t":"술자리 게임",
-"nav.game":"게임",
+"game.race.d":"크리켓 바텐더들이 달립니다. 막걸리 한 잔 걸치고 달리는데 누가 가장 빠를까요?",
+"game.race.t":"크리켓 경주",
+"sec.game.d":"막걸리 한 잔 걸고 한 판?",
+"sec.game.t":"술자리 놀이",
+"nav.game":"놀이",
 
 "splash.welcome":"크리켓에 오신 것을 환영합니다",
 "splash.sub":"Welcome to Cricket Seoul",

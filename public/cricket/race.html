@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>크리켓 경마 · Cricket Derby</title>
+<title>크리켓 경주 · Cricket Derby</title>
 <style>
 :root{
   --paper:#f0ebe0; --paper2:#fafaf7; --ink:#2b1a0a; --ink2:#4a3319; --mut:#6d5334;
@@ -54,13 +54,17 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
   font-size:13px;padding:8px 15px;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;
   border:1px solid rgba(216,178,90,.45)}
 .toast.on{opacity:1}
-.board{padding:10px 12px 22px}
-.row{display:flex;align-items:center;gap:9px;padding:6px 2px;border-bottom:1px solid var(--line);font-size:13px}
-.row .rk{width:20px;text-align:center;color:var(--gold);font-size:12px}
-.row .rn{width:78px;font-variant-caps:small-caps;letter-spacing:.05em}
-.row .bar{flex:1;height:7px;background:#0000000f;border-radius:99px;overflow:hidden}
-.row .bar i{display:block;height:100%;background:var(--gold);border-radius:99px}
-.row .st{width:26px;text-align:center;font-size:13px}
+.board{padding:12px 12px 22px}
+.mhead{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.16em;
+  font-variant-caps:small-caps;color:var(--mut);margin-bottom:7px}
+.mrow{display:flex;align-items:center;gap:8px;height:23px}
+.mrow .mn{width:74px;font-variant-caps:small-caps;letter-spacing:.04em;font-size:11.5px;color:var(--ink2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mtrack{position:relative;flex:1;height:5px;background:#00000012;border-radius:99px}
+.mtrack .mfin{position:absolute;right:-1px;top:-5px;width:2px;height:15px;background:var(--gold);border-radius:1px}
+.mdotm{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);
+  border:2px solid #fffaf0;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .18s linear}
+.mrow .mpl{width:24px;text-align:center;font-size:13px}
 
 /* 결과 */
 .res{position:fixed;inset:0;background:rgba(16,10,4,.93);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
@@ -81,18 +85,18 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
   <div class="top">
     <img src="logo.png" alt="Cricket Seoul">
     <span class="ti">Derby</span>
-    <a class="back" href="index.html">← 메뉴</a>
+    <a class="back" href="index.html">← MENU</a>
   </div>
 
   <!-- 선택 -->
   <div class="pick" id="pick">
     <div class="h1">Cricket Derby</div>
-    <div class="h2 kr">크리켓 직원들이 달립니다. 꼴찌가 한 잔.</div>
+    <div class="h2 kr">누가 가장 빠를까요?<br>바텐더를 골라주세요.</div>
     <div class="rule"></div>
     <div class="grid" id="grid"></div>
     <div class="cnt kr" id="cnt">2명 이상 골라주세요</div>
-    <button class="go" id="go" disabled>출발</button>
-    <div class="hint kr">달리다 보면 넘어지고, 취하고, 바람이 밀고, 볼일도 봅니다.<br>순위는 아무도 모릅니다.</div>
+    <button class="go" id="go" disabled>START</button>
+    <div class="hint kr">달리다 보면 넘어지고, 취하고, 바람이 밀고, 볼일도 봅니다.<br>막판에 뒤집히기도 합니다.</div>
   </div>
 
   <!-- 경주 -->
@@ -110,13 +114,13 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 </div>
 
 <div class="res" id="res"><div class="resin">
-  <div class="win kr">우승</div>
+  <div class="win">WINNER</div>
   <div class="wn" id="wn">—</div>
   <img class="wp" id="wp" src="" alt="">
   <ol id="rank"></ol>
-  <div class="pen kr" id="pen"></div>
-  <button id="again">다시 달리기</button>
-  <button class="again2" id="again2">선수 다시 고르기</button>
+  <div class="pen" id="pen"></div>
+  <button id="again">RACE AGAIN</button>
+  <button class="again2" id="again2">PICK AGAIN</button>
 </div></div>
 
 <script>
@@ -129,6 +133,7 @@ const CHARS=[
  {id:"minyong", name:"MINYONG", kr:"민용", tag:"바 · 선글라스",     frames:4, run:[2,3]},
  {id:"guentae", name:"GUENTAE", kr:"근태", tag:"바 · 만세",         frames:4, run:[2,3]}
 ];
+const PALETTE=["#b8935a","#5a8a5e","#8a3b2a","#3d5a80","#7a5ea8","#2f7d78"];
 const IMG={}, LOADED={};
 function loadSprites(cb){
  let need=0, done=0;
@@ -147,7 +152,7 @@ const grid=document.getElementById("grid"), cntEl=document.getElementById("cnt")
 CHARS.forEach((c,i)=>{
  const d=document.createElement("div"); d.className="card"; d.dataset.i=i;
  d.innerHTML='<div class="no"></div><div class="pf"><img src="sprites/'+c.id+'_0.png" alt=""></div>'+
-   '<div class="nm">'+c.name+'</div><div class="tag kr">'+c.tag+'</div>';
+   '<div class="nm">'+c.name+'</div>';
  d.onclick=()=>{
    const k=picked.indexOf(i);
    if(k>=0)picked.splice(k,1); else {if(picked.length>=6)return; picked.push(i);}
@@ -170,7 +175,7 @@ goBtn.onclick=()=>{ loadSprites(()=>startRace()); };
 const TILE_W=1800, TILE_H=1536;
 const LANE_Y=[486,627,768,909,1049,1190];   // 6개 레인 중심선
 const VIS_Y0=95, VIS_H=1290;                 // 화면에 보여줄 세로 구간
-const RACE_LEN=5400;                         // 결승선까지 월드 거리
+const RACE_LEN=5750;                         // 결승선까지 월드 거리
 const START_X=170;
 
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
@@ -217,12 +222,15 @@ function startRace(){
    c:CHARS[ci], lane:lanes[i], x:START_X, v:0,
    base:0.92+Math.random()*0.20,
    nextEv:1.2+Math.random()*3.2,
-   ev:null, evT:0, anim:Math.random()*10, done:0, place:0, wob:Math.random()*6
+   ev:null, evT:0, anim:Math.random()*10, done:0, place:0, wob:Math.random()*6,
+   color:PALETTE[i%PALETTE.length],
+   lateAt:0.58+Math.random()*0.34,
+   lateKind:(Math.random()<0.45?"surge":(Math.random()<0.6?"slump":"none")),
+   lateDone:false
  }));
  finished=[]; raceOn=true; t0=performance.now(); camX=0;
  zoom=1;zoomT=1;tScale=1;tScaleT=1;phase="run";phaseT=0;focusLane=runners[0].lane;lastT=0;
  lapEl.textContent="READY";
- setTimeout(()=>{lapEl.textContent="GO!";},900);
  requestAnimationFrame(loop);
  drawBoard();
 }
@@ -234,7 +242,7 @@ function loop(now){
  zoom  += (zoomT-zoom)    * Math.min(1,dtR*3.0);
  tScale+= (tScaleT-tScale)* Math.min(1,dtR*2.6);
  phaseT+=dtR;
- if(el>0.9) step(dtR*tScale, el);
+ if(el>CD_END) step(dtR*tScale, el-CD_END);
  updatePhase();
  render(el);
  requestAnimationFrame(loop);
@@ -251,7 +259,7 @@ function updatePhase(){
  const lead=runners.reduce((a,b)=>b.x>a.x?b:a);
  if(phase==="run" && !finished.length && RACE_LEN-lead.x<340){
    phase="photo";phaseT=0;zoomT=1.95;tScaleT=0.30;focusLane=lead.lane;
-   showToast("포토 피니시!");
+   showToast("PHOTO FINISH");
  }
  if((phase==="run"||phase==="photo") && finished.length>=1){
    phase="winner";phaseT=0;zoomT=2.15;tScaleT=0.22;focusLane=finished[0].lane;
@@ -269,6 +277,7 @@ function updatePhase(){
 }
 
 function step(dt, el){
+ const leadX=Math.max(...runners.map(x=>x.x));
  for(const r of runners){
    if(r.done){ const rest=RACE_LEN+50+r.place*58;
      if(r.x<rest){r.x=Math.min(rest,r.x+230*dt); r.anim+=dt*6;} continue; }
@@ -292,8 +301,18 @@ function step(dt, el){
      }
      if(r.evT<=0) r.ev=null;
    }
-   const noise=0.86+Math.random()*0.30;
-   r.v=r.base*noise*mul*290;
+   // 막판 급반전: 정해둔 지점을 지나면 한 명씩 확 치고 나가거나 확 무너진다
+   const prog=(r.x-START_X)/(RACE_LEN-START_X);
+   if(!r.lateDone && prog>r.lateAt && r.lateKind!=="none"){
+     r.lateDone=true;
+     if(r.lateKind==="surge"){ r.ev={k:"dash",emo:"⚡",msg:""}; r.evT=2.6; showToast(r.c.name+" ⚡ 막판 스퍼트!"); }
+     else { r.ev={k:"trip",emo:"😵",msg:""}; r.evT=1.5; showToast(r.c.name+" 😵 다리가 풀렸다!"); }
+   }
+   // 뒤처질수록 조금씩 따라붙는다 (끝까지 붙어서 결과를 모르게)
+   const band=1+Math.min(0.42,((leadX-r.x)/900)*0.27);
+   const mom=1+0.20*Math.sin(el*0.55+r.wob*2.1);
+   const noise=0.80+Math.random()*0.42;
+   r.v=r.base*noise*mom*band*mul*290;
    r.x+=r.v*dt;
    if(r.x<START_X-40)r.x=START_X-40;
    r.anim+=dt*(mul<=0?0:Math.max(0.5,mul))*7.5;
@@ -319,6 +338,39 @@ function step(dt, el){
 function showToast(msg){
  toastEl.textContent=msg; toastEl.classList.add("on");
  clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove("on"),1700);
+}
+
+/* ===== 3 · 2 · 1 · START 카운트다운 (픽셀) ===== */
+const CD_END=4.2;
+const cdCv=document.createElement("canvas"), cdx=cdCv.getContext("2d");
+function pixelText(txt,cx,cy,targetH,fill,alpha){
+ const small=Math.max(9,Math.round(targetH/8));
+ cdx.font="bold "+small+"px 'Courier New',monospace";
+ const w=Math.ceil(cdx.measureText(txt).width)+4, h=small+6;
+ cdCv.width=w; cdCv.height=h;
+ cdx.font="bold "+small+"px 'Courier New',monospace";
+ cdx.textAlign="left"; cdx.textBaseline="top";
+ cdx.clearRect(0,0,w,h);
+ cdx.fillStyle="#2a1607"; cdx.fillText(txt,3,4);
+ cdx.fillStyle=fill;     cdx.fillText(txt,2,3);
+ const sc=targetH/h;
+ ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
+ ctx.drawImage(cdCv,0,0,w,h, Math.round(cx-w*sc/2), Math.round(cy-h*sc/2), Math.round(w*sc), Math.round(h*sc));
+ ctx.restore();
+}
+function drawCountdown(el){
+ if(el>=CD_END)return;
+ let txt,t0c,life;
+ if(el<1.2){txt="3";t0c=0;life=1.2;}
+ else if(el<2.4){txt="2";t0c=1.2;life=1.2;}
+ else if(el<3.6){txt="1";t0c=2.4;life=1.2;}
+ else {txt="START";t0c=3.6;life=CD_END-3.6;}
+ const t=el-t0c, k=t/life;
+ const pop=1+0.42*Math.exp(-t*10);
+ const alpha=k>0.72?Math.max(0,1-(k-0.72)/0.28):1;
+ ctx.save(); ctx.fillStyle="rgba(12,8,3,"+(0.30*(1-k*0.5)).toFixed(3)+")"; ctx.fillRect(0,0,CW,CH); ctx.restore();
+ const H=(txt==="START")?CH*0.19:CH*0.32;
+ pixelText(txt, CW/2, CH*0.44, H*pop, txt==="START"?"#ffe07a":"#fff3d0", alpha);
 }
 
 /* ===== 그리기 ===== */
@@ -348,11 +400,14 @@ function render(el){
  ctx.restore();
 
  drawWinBanner();
- lapEl.textContent = phase==="photo" ? "PHOTO FINISH"
-   : phase==="winner" ? "1등 확정"
-   : phase==="rest" ? "마지막 주자"
+ drawCountdown((performance.now()-t0)/1000);
+ const cdLeft=(performance.now()-t0)/1000;
+ lapEl.textContent = cdLeft<CD_END ? "READY"
+   : phase==="photo" ? "PHOTO FINISH"
+   : phase==="winner" ? "WINNER!"
+   : phase==="rest" ? "LAST RUNNER"
    : !raceOn ? "FINISH"
-   : (Math.max(0,Math.round((RACE_LEN-Math.max(...runners.map(r=>r.x)))/RACE_LEN*100))+"% 남음");
+   : (Math.max(0,Math.round((RACE_LEN-Math.max(...runners.map(r=>r.x)))/RACE_LEN*100))+"% TO GO");
 }
 
 function dashLine(wx,color,a){
@@ -441,7 +496,7 @@ function drawWinBanner(){
  ctx.fill(); ctx.stroke();
  ctx.textAlign="center"; ctx.textBaseline="middle";
  ctx.fillStyle="#e0b96a"; ctx.font="600 13px -apple-system,sans-serif";
- ctx.fillText("1등", CW/2, y+19);
+ ctx.fillText("1ST", CW/2, y+19);
  ctx.fillStyle="#fff6e2"; ctx.font="600 27px -apple-system,sans-serif";
  ctx.fillText(w.c.name, CW/2, y+44);
  ctx.restore();
@@ -524,16 +579,18 @@ function pickFrame(r){
 }
 
 /* ===== 순위판 ===== */
+/* 순위가 아니라 위치를 보여주는 미니맵. 줄 순서는 레인 고정이라 흔들리지 않는다 */
 function drawBoard(){
- const sorted=[...runners].sort((a,b)=>(b.done?RACE_LEN+1000-b.place:b.x)-(a.done?RACE_LEN+1000-a.place:a.x));
- boardEl.innerHTML=sorted.map((r,i)=>{
-   const pct=Math.min(100,Math.round((r.x-START_X)/(RACE_LEN-START_X)*100));
+ const rows=[...runners].sort((a,b)=>a.lane-b.lane).map(r=>{
+   const pct=Math.max(0,Math.min(100,(r.x-START_X)/(RACE_LEN-START_X)*100));
    let st="";
    if(r.done)st=["🥇","🥈","🥉","4","5","6"][r.place-1]||"";
    else if(r.ev)st=r.ev.emo;
-   return '<div class="row"><div class="rk">'+(i+1)+'</div><div class="rn">'+r.c.name+'</div>'+
-     '<div class="bar"><i style="width:'+pct+'%"></i></div><div class="st">'+st+'</div></div>';
+   return '<div class="mrow"><div class="mn">'+r.c.name+'</div>'+
+     '<div class="mtrack"><i class="mfin"></i><span class="mdotm" style="left:'+pct.toFixed(1)+'%;background:'+r.color+'"></span></div>'+
+     '<div class="mpl">'+st+'</div></div>';
  }).join("");
+ boardEl.innerHTML='<div class="mhead"><span>Start</span><span>Finish</span></div>'+rows;
 }
 
 /* ===== 결과 ===== */
@@ -541,8 +598,8 @@ function showResult(){
  const w=finished[0], last=finished[finished.length-1];
  document.getElementById("wn").textContent=w.c.name;
  document.getElementById("wp").src="sprites/"+w.c.id+"_"+(w.c.frames-1)+".png";
- document.getElementById("rank").innerHTML=finished.map(r=>"<li>"+r.c.name+" <span style='color:#8a7a5c'>"+r.c.kr+"</span></li>").join("");
- document.getElementById("pen").textContent="꼴찌 "+last.c.name+", 한 잔 받으세요.";
+ document.getElementById("rank").innerHTML=finished.map(r=>"<li>"+r.c.name+"</li>").join("");
+ document.getElementById("pen").textContent="Last place: "+last.c.name+". Drinks are on you.";
  document.getElementById("res").classList.add("on");
 }
 document.getElementById("again").onclick=()=>{document.getElementById("res").classList.remove("on");startRace();};

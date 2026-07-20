@@ -1,10 +1,8 @@
 window.I18N_ZH={"ui": {
 "nav.cocktail":"鸡尾酒","nav.food":"下酒菜","nav.flight":"套组","nav.sool":"图鉴","nav.map":"地图","nav.about":"关于",
-"game.yut.d":"最多四人，每人两枚棋。抓子、叠子、走捷径，先回家者胜。",
-"game.yut.t":"Cricket 尤茨",
-"game.race.d":"六位员工赛跑。会摔倒、会喝醉、会被风吹、还会闹肚子。最后一名请喝一杯。",
-"game.race.t":"Cricket 赛马",
-"sec.game.d":"赌一杯的玩法",
+"game.race.d":"Cricket 的调酒师们要跑了。都先干了一杯马格利，谁最快呢？",
+"game.race.t":"Cricket 赛跑",
+"sec.game.d":"赌一杯马格利，来一局？",
 "sec.game.t":"酒桌游戏",
 "nav.game":"游戏",
 "splash.welcome":"欢迎来到蟋蟀","splash.sub":"Welcome to Cricket Seoul","splash.enter":"轻触进入","splash.hint":"🦗 伴着蟋蟀的鸣声入场",

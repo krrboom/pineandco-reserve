@@ -1,12 +1,10 @@
 window.I18N_EN={"ui":{
 "nav.cocktail":"Cocktails","nav.food":"Food","nav.flight":"Flights","nav.sool":"Guide","nav.map":"Map","nav.about":"About",
-"game.yut.d":"Up to four players, two pieces each. Catch, stack, take the shortcut, come home first.",
-"game.yut.t":"Cricket Yut",
-"game.race.d":"Six of our staff race. They trip, they drink, the wind shoves them, nature calls. Last place buys.",
+"game.race.d":"Our bartenders run, a cup of makgeolli already in them. Who is fastest?",
 "game.race.t":"Cricket Derby",
-"sec.game.d":"Play for a round",
+"sec.game.d":"One round of makgeolli on the line",
 "sec.game.t":"Table Games",
-"nav.game":"Games",
+"nav.game":"Play",
 
 "splash.welcome":"Welcome to Cricket",
 "splash.sub":"Welcome to Cricket Seoul",
