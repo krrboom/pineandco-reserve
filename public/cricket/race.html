@@ -46,12 +46,8 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 .card{position:relative;min-width:0;aspect-ratio:799/953;background:url("ui_frame.webp") center/100% 100% no-repeat;
   border:none;border-radius:0;padding:0;text-align:center;cursor:pointer;transition:transform .12s, filter .12s;
   cursor:pointer;position:relative;transition:.18s;overflow:hidden}
-.card{filter:saturate(.6) brightness(.96)}
-.card.on{filter:none}
-/* 프레임 안쪽을 어둡게 깔아 바깥 배경과 구분 */
-.card .op{position:absolute;left:13.6%;right:13.8%;top:33.2%;bottom:8.9%;
-  background:rgba(14,22,14,.55);pointer-events:none}
-.card.on .op{background:rgba(14,22,14,.34)}
+.card{filter:saturate(.5) brightness(.82)}
+.card.on{filter:saturate(1.05) brightness(1.06)}
 /* 고르면 캐릭터 위에 체크 */
 .card .chk{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.6);
   opacity:0;transition:opacity .12s, transform .12s;pointer-events:none;z-index:3;width:38%}
@@ -480,9 +476,9 @@ let picked=[];
 const grid=document.getElementById("grid"), cntEl=document.getElementById("cnt"), goBtn=document.getElementById("go");
 CHARS.forEach((c,i)=>{
  const d=document.createElement("div"); d.className="card"; d.dataset.i=i;
- d.innerHTML='<div class="op"></div><div class="in"><img class="ch" src="sprites/'+c.id+'_0.png" alt=""></div>';
+ d.innerHTML='<div class="in"><img class="ch" src="sprites/'+c.id+'_0.png" alt=""></div>';
  const ck=pixelCheck(); ck.className="chk"; d.appendChild(ck);
- const lab=pixelLabel(c.name,3,"#24331f","rgba(255,255,255,.55)");
+ const lab=pixelLabel(c.name,3,"#f0e4c6","rgba(0,0,0,.7)");
  lab.className="nm";
  d.querySelector(".in").appendChild(lab);
  d.onclick=()=>{
