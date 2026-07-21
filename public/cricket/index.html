@@ -132,6 +132,7 @@ section+section{border-top:1px solid var(--line);margin-top:14px;padding-top:36p
 .prov-label{font-family:var(--kr);font-weight:700;font-size:14px;fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:3px;animation:fadeUp .4s ease both}
 .mdot{fill:var(--gold);stroke:#fff;stroke-width:1.4;cursor:pointer;transform-box:fill-box;transform-origin:center;animation:dotPop .35s ease both}
 .mdot:hover{fill:#8a5a2a}
+.mdot.sel{fill:#8a3b2a;stroke-width:2.2;r:6}
 .mdot-label{font-family:var(--kr);font-size:8px;fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:2.4px;animation:fadeUp .4s ease both;pointer-events:none}
 @keyframes dotPop{from{opacity:0;transform:scale(0)}60%{transform:scale(1.35)}to{opacity:1;transform:scale(1)}}
 .maphint{text-align:center;font-family:var(--kr);font-size:11px;color:var(--mut);margin:8px 0}
@@ -733,6 +734,7 @@ function activateProv(code){
    const cnt=BOTTLES.filter(b=>b.region===k).length; if(!cnt) return;
    const[x,y]=cityXY(REG[k].la,REG[k].lo);
    const dot=el("circle",{class:"mdot",cx:x,cy:y,r:4.6,style:"animation-delay:"+(i*50)+"ms"});
+   dot.dataset.k=k;
    dot.addEventListener("click",e=>{e.stopPropagation();selectCity(k);});
    const tx=el("text",{class:"mdot-label",x:x,y:y-7,"text-anchor":"middle",style:"animation-delay:"+(i*50)+"ms"});
    tx.textContent=cityName(k)+" ·"+cnt;
@@ -758,7 +760,10 @@ function selectCity(k){
  const panel=document.getElementById("mapPanel");
  panel.innerHTML=`<div class="mpt">${esc(regName(k))} · ${list.length}${esc(t('map.count'))} <span style="color:var(--mut);font-size:11px">${esc(t('map.here'))}</span></div><div class="mplist">
    ${list.map(b=>`<a onclick="gotoBottle('${b.id}')">${esc(b.kr)}<span class="mpc">${esc(t('cat.'+b.cat+'.label'))} · ${b.abv}%</span></a>`).join("")}</div>`;
- document.querySelectorAll(".mdot").forEach(d=>d.classList.remove("sel"));
+ document.querySelectorAll(".mdot").forEach(d=>d.classList.toggle("sel", d.dataset.k===k));
+ // 아래 목록으로 부드럽게 이동
+ const y=panel.getBoundingClientRect().top+window.scrollY-navH()-12;
+ window.scrollTo({top:Math.max(0,y),behavior:"smooth"});
 }
 /* 공정 단계 버튼 → 그림 펼치기 (한 번에 하나) */
 document.querySelectorAll(".stepb").forEach(b=>b.addEventListener("click",()=>{
