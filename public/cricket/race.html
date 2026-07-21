@@ -164,7 +164,8 @@ function loadSprites(cb){
    IMG[c.id][i]=im;}});
  if(need===0)cb();
 }
-const track=new Image(); track.src="track.webp";
+const track=new Image(); track.src="track.webp";        // 반복해서 이어붙이는 본체
+const head =new Image(); head.src ="track_head.webp";   // 레인 번호가 있는 출발 구역, 한 번만
 
 /* ===== 선택 화면 ===== */
 let picked=[];
@@ -192,11 +193,12 @@ function syncPick(){
 goBtn.onclick=()=>{ unlockAudio(); loadSprites(()=>startRace()); };
 
 /* ===== 경기장 좌표 (원본 track.webp 기준) ===== */
-const TILE_W=1800, TILE_H=1536;
-const LANE_Y=[486,627,768,909,1049,1190];   // 6개 레인 중심선
-const VIS_Y0=95, VIS_H=1290;                 // 화면에 보여줄 세로 구간
+const TILE_W=1856, HEAD_W=327;               // 본체 타일 / 출발 구역 폭
+const LANE_Y=[433,511,589,666,748,833];      // 6개 레인 중심선
+const VIS_Y0=0, VIS_H=966;                   // 이미지가 이미 세로로 잘려 있음
+const TRACK_T=392, TRACK_B=880;              // 트랙(흙) 위아래 경계
 const RACE_LEN=5750;                         // 결승선까지 월드 거리
-const START_X=170;
+const START_X=322;                           // 이미지의 출발선 위치
 
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 const toastEl=document.getElementById("toast"), lapEl=document.getElementById("lap"),
@@ -418,7 +420,7 @@ function drawCountdown(el){
 
 /* ===== 그리기 ===== */
 function laneY(l){return (LANE_Y[l]-VIS_Y0)*S;}
-function spriteH(){return Math.max(46,(LANE_Y[1]-LANE_Y[0])*S*1.42);}
+function spriteH(){return Math.max(46,(LANE_Y[1]-LANE_Y[0])*S*1.62);}
 
 function render(el){
  ctx.fillStyle="#0c0a08"; ctx.fillRect(0,0,CW,CH);
@@ -429,10 +431,15 @@ function render(el){
  ctx.translate(fx,fy); ctx.scale(zoom,zoom); ctx.translate(-fx,-fy);
 
  if(track.complete && track.naturalWidth){
-   const t0x=Math.floor(camX/TILE_W)-1;
+   const t0x=Math.floor((camX-HEAD_W)/TILE_W)-1;
    for(let t=t0x;t<t0x+Math.ceil(CW/S/TILE_W)+3;t++){
-     const sx=(t*TILE_W-camX)*S;
-     ctx.drawImage(track,0,VIS_Y0,TILE_W,VIS_H, sx,0, TILE_W*S,CH);
+     const sx=(HEAD_W+t*TILE_W-camX)*S;
+     ctx.drawImage(track,0,0,TILE_W,VIS_H, sx,0, TILE_W*S+1,CH);
+   }
+   if(head.complete&&head.naturalWidth){          // 출발 구역은 맨 앞에 한 번만
+     const hx=(0-camX)*S;
+     if(hx>-HEAD_W*S-4 && hx<CW+4)
+       ctx.drawImage(head,0,0,HEAD_W,VIS_H, hx,0, HEAD_W*S+1,CH);
    }
  }
  dashLine(START_X,"#ffffff",0.85);
@@ -458,13 +465,13 @@ function dashLine(wx,color,a){
  if(x<-40||x>CW+40)return;
  ctx.save(); ctx.globalAlpha=a; ctx.strokeStyle=color; ctx.lineWidth=Math.max(2,5*S);
  ctx.setLineDash([16*S,13*S]);
- ctx.beginPath(); ctx.moveTo(x,(416-VIS_Y0)*S); ctx.lineTo(x,(1260-VIS_Y0)*S); ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(x,TRACK_T*S); ctx.lineTo(x,TRACK_B*S); ctx.stroke();
  ctx.restore();
 }
 function finishBanner(){
  const x=(RACE_LEN-camX)*S;
  if(x<-160||x>CW+160)return;
- const w=Math.max(64,116*S), h=Math.max(26,44*S), y=(416-VIS_Y0)*S-h-6;
+ const w=Math.max(64,116*S), h=Math.max(26,44*S), y=TRACK_T*S-h-6;
  ctx.save();
  ctx.fillStyle="#1e1208"; ctx.strokeStyle="#b8935a"; ctx.lineWidth=2;
  ctx.beginPath(); if(ctx.roundRect)ctx.roundRect(x-w/2,Math.max(2,y),w,h,5); else ctx.rect(x-w/2,Math.max(2,y),w,h);
