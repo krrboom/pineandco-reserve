@@ -74,7 +74,8 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 .hud{position:absolute;left:0;right:0;top:0;padding:8px 10px;display:flex;gap:8px;align-items:flex-start;
   pointer-events:none;background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,0))}
 .hud .lap{font-variant-caps:small-caps;letter-spacing:.1em;font-size:12px;color:#ffe9c2;text-shadow:0 1px 3px #000}
-.hud .logo{margin-left:auto;height:20px;filter:brightness(0) invert(1) opacity(.75)}
+.hud .logo{margin-left:auto;height:26px;width:auto;image-rendering:pixelated;filter:none;
+  opacity:.95;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
 .toast{position:absolute;left:50%;transform:translateX(-50%);bottom:8px;background:rgba(20,12,4,.86);color:#ffe9c2;
   font-size:13px;padding:8px 15px;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;
   border:1px solid rgba(216,178,90,.45)}
@@ -259,7 +260,7 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
       <canvas id="cv"></canvas>
       <div class="hud">
         <div class="lap" id="lap">READY</div>
-        <img class="logo" src="logo.png" alt="">
+        <img class="logo" src="mark_cricket.webp" alt="">
       </div>
       <div class="toast" id="toast"></div>
     </div>
@@ -379,6 +380,8 @@ function loadSprites(cb){
 }
 const track=new Image(); track.src="track.webp";        // 반복해서 이어붙이는 본체
 const head =new Image(); head.src ="track_head.webp";   // 레인 번호가 있는 출발 구역, 한 번만
+const bullImg=new Image(); bullImg.src="ev_bull.webp";
+const markImg=new Image(); markImg.src="mark_cricket.webp";
 
 /* ===== 픽셀 글꼴 (카드 이름표와 카운트다운이 함께 쓴다) ===== */
 const GLYPH={
@@ -592,7 +595,9 @@ const EVENTS=[
  {k:"wind",  w:13, dur:1.1,  msg:"바람에 밀렸다",         emo:"💨"},
  {k:"poop",  w:10, dur:2.2,  msg:"급한 볼일…",            emo:"💩"},
  {k:"trip",  w:12, dur:0.8,  msg:"발이 꼬였다",           emo:"😵"},
- {k:"boost", w:18, dur:2.6,  msg:"제2의 바람",            emo:"🔥"}
+ {k:"boost", w:18, dur:2.6,  msg:"제2의 바람",            emo:"🔥"},
+ {k:"bull",  w:9,  dur:2.4,  msg:"황소가 들이받았다!",     emo:"🐂"},
+ {k:"greet", w:9,  dur:2.6,  msg:"크리켓을 만나 인사 중",  emo:"🦗"}
 ];
 const EW=EVENTS.reduce((a,e)=>a+e.w,0);
 function rollEvent(){let r=Math.random()*EW;for(const e of EVENTS){r-=e.w;if(r<=0)return e;}return EVENTS[0];}
@@ -678,7 +683,7 @@ function step(dt, el){
    if(r.ev){
      r.evT-=dt;
      switch(r.ev.k){
-       case "fall": case "poop": mul=0; break;
+       case "fall": case "poop": case "bull": case "greet": mul=0; break;
        case "trip": mul=0.25; break;
        case "drunk": mul=0.48; break;
        case "dash": mul=2.35; break;
@@ -953,7 +958,7 @@ function drawRunner(r,el){
    }
    ctx.globalAlpha=1;
  }
- if(r.ev&&r.ev.k==="fall"){
+ if(r.ev&&(r.ev.k==="fall"||r.ev.k==="bull")){
    ctx.translate(x,foot); ctx.rotate(-Math.PI/2.1); ctx.translate(-x,-foot);
    ctx.drawImage(im,x-w/2,foot-h,w,h);
  }else{
@@ -966,6 +971,27 @@ function drawRunner(r,el){
  if(r.ev&&r.ev.k==="drunk"){
    ctx.save(); ctx.globalAlpha=.42; ctx.fillStyle="#e0483a";
    ctx.beginPath(); ctx.ellipse(x,foot-h*0.86,w*0.19,h*0.075,0,0,7); ctx.fill(); ctx.restore();
+ }
+ if(r.ev&&r.ev.k==="bull"&&bullImg.complete&&bullImg.naturalWidth){
+   // 오른쪽에서 달려와 주자를 지나쳐 왼쪽으로 빠진다
+   const t=1-Math.max(0,r.evT)/2.4;
+   const bh=h*1.05, bw=bh*bullImg.naturalWidth/bullImg.naturalHeight;
+   const bx=x+w*2.6-(w*5.4)*Math.min(1,t*1.15);
+   ctx.save();
+   ctx.globalAlpha=.3; ctx.fillStyle="#000";
+   ctx.beginPath(); ctx.ellipse(bx,foot-2,bw*0.32,h*0.05,0,0,7); ctx.fill();
+   ctx.globalAlpha=1;
+   ctx.drawImage(bullImg,bx-bw/2,foot-bh+Math.sin(t*22)*h*0.03,bw,bh);
+   ctx.restore();
+ }
+ if(r.ev&&r.ev.k==="greet"&&markImg.complete&&markImg.naturalWidth){
+   const t=1-Math.max(0,r.evT)/2.6;
+   const mh=h*0.74, mw=mh*markImg.naturalWidth/markImg.naturalHeight;
+   const bob=Math.sin(t*9)*h*0.05;
+   ctx.save();
+   ctx.globalAlpha=Math.min(1,t*6);
+   ctx.drawImage(markImg,x+w*0.42,foot-h*1.02+bob,mw,mh);
+   ctx.restore();
  }
  if(r.ev&&r.ev.k==="poop"){
    ctx.save(); ctx.font=Math.round(h*0.26)+"px serif"; ctx.textAlign="center";
@@ -980,7 +1006,7 @@ function drawRunner(r,el){
 function pickFrame(r){
  const F=IMG[r.c.id]||[];
  if(r.done)return F[r.c.run[1]];
- if(r.ev&&(r.ev.k==="poop"))return F[0];
+ if(r.ev&&(r.ev.k==="poop"||r.ev.k==="greet"))return F[0];
  if(r.ev&&r.ev.k==="fall")return F[r.c.run[0]];
  const a=r.c.run[0], b=r.c.run[1];
  return (Math.floor(r.anim)%2===0)?F[a]:F[b];
