@@ -97,8 +97,6 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 .res.on{display:flex}
 .resin{background:var(--paper);border-radius:16px;padding:24px 20px;max-width:340px;width:100%;text-align:center}
 .res .win{font-variant-caps:small-caps;letter-spacing:.1em;font-size:12px;color:var(--mut)}
-.res .wn{margin:4px 0 10px}
-.res .wn img{width:min(62%,190px);height:auto;image-rendering:pixelated}
 .res img.wp{height:120px;image-rendering:pixelated;margin-bottom:6px}
 .res ol{text-align:left;margin:14px 0 0;padding-left:22px;font-size:13.5px;color:var(--ink2);line-height:1.9}
 .res .pen{margin-top:14px;font-size:13px;color:#8a3b2a;background:#8a3b2a14;border:1px dashed #8a3b2a55;
@@ -161,7 +159,7 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 .mdotm{border-radius:0!important;border:2px solid #fffaf0;box-shadow:none;transition:left .18s linear}
 .card{border-radius:0!important}
 /* ===== 우승 프레임과 빛 ===== */
-.champ{position:relative;width:min(96%,330px);aspect-ratio:1372/1056;margin:0 auto 4px;
+.champ{position:relative;width:min(96%,330px);aspect-ratio:1372/1056;margin:0 auto 12px;
   background:url("ui_champ.webp") center/100% 100% no-repeat}
 .chin{position:absolute;left:15.1%;right:15.2%;top:35%;bottom:17.2%;
   display:flex;align-items:flex-end;justify-content:center;overflow:hidden;z-index:0}
@@ -278,7 +276,6 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
       <i class="sp d"></i><i class="sp e"></i><i class="sp f"></i>
     </div>
   </div>
-  <div class="wn" id="wn">—</div>
   <ol id="rank"></ol>
   <div class="pen" id="pen"></div>
   <button class="imgb" id="again"><img src="btn_race.webp" alt="Race again"></button>
@@ -1057,7 +1054,6 @@ function drawBoard(){
 /* ===== 결과 ===== */
 function showResult(){
  const w=finished[0], last=finished[finished.length-1];
- document.getElementById("wn").innerHTML='<img src="nm_'+w.c.name.toLowerCase()+'.webp" alt="'+w.c.name+'">';
  document.getElementById("wp").src="sprites/"+w.c.id+"_"+(w.c.frames-1)+".png";
  const rk=document.getElementById("rank"); rk.innerHTML="";
  finished.forEach((r,i)=>{
