@@ -217,11 +217,15 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 .mhead img{height:17px;width:auto;image-rendering:pixelated}
 .mhead{align-items:center}
 /* 결과 순위 명패 */
-.res ol li{display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:3px}
-.res ol li img.rkno{width:auto;height:22px}
-.res ol li img{width:56px;height:auto;image-rendering:pixelated}
-.res ol li.first img.rkno{height:30px;width:auto}
-.res ol li.first img{width:104px}
+/* 1등과 꼴찌는 한 줄 크게, 중간 등수는 두 명씩 가로로 */
+.res ol{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 8px;margin:14px 0 0;padding:0}
+.res ol li{display:flex;align-items:center;gap:7px;justify-content:center;margin:0}
+.res ol li img.rkno{width:auto;height:20px}
+.res ol li img{width:52px;height:auto;image-rendering:pixelated}
+.res ol li.mid{width:calc(50% - 6px)}
+.res ol li.first,.res ol li.last{width:100%}
+.res ol li.first img.rkno,.res ol li.last img.rkno{height:30px;width:auto}
+.res ol li.first img,.res ol li.last img{width:104px}
 .mrow .mpl img.rkno{height:22px;width:auto;image-rendering:pixelated;display:block;margin:0 auto}
 .mrow .mpl{display:flex;align-items:center;justify-content:center}
 .toast{display:flex;align-items:center;justify-content:center;gap:7px}
@@ -1089,7 +1093,9 @@ function showResult(){
  document.getElementById("wp").src="sprites/"+w.c.id+"_"+(w.c.frames-1)+".png";
  const rk=document.getElementById("rank"); rk.innerHTML="";
  finished.forEach((r,i)=>{
-   const li=document.createElement("li"); if(i===0)li.className="first"; rk.appendChild(li);
+   const li=document.createElement("li");
+   li.className = (i===0) ? "first" : (i===finished.length-1 ? "last" : "mid");
+   rk.appendChild(li);
    const no=document.createElement("img");
    no.className="rkno"; no.src="no_"+(i+1)+".webp"; no.alt=String(i+1);
    const im=document.createElement("img"); im.src="nm_"+r.c.name.toLowerCase()+".webp"; im.alt=r.c.name;
