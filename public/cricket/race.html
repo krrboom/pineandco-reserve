@@ -46,16 +46,22 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 .card{position:relative;min-width:0;aspect-ratio:799/953;background:url("ui_frame.webp") center/100% 100% no-repeat;
   border:none;border-radius:0;padding:0;text-align:center;cursor:pointer;transition:transform .12s, filter .12s;
   cursor:pointer;position:relative;transition:.18s;overflow:hidden}
-.card{filter:saturate(.55) brightness(.97)}
-.card.on{filter:none;transform:translateY(-3px)}
-.card.on::after{content:"";position:absolute;inset:2%;border-radius:8px;pointer-events:none;
-  box-shadow:0 0 0 2px rgba(214,168,74,.85), 0 6px 18px rgba(160,110,30,.35)}
+.card{filter:saturate(.6) brightness(.96)}
+.card.on{filter:none}
+/* 프레임 안쪽을 어둡게 깔아 바깥 배경과 구분 */
+.card .op{position:absolute;left:13.6%;right:13.8%;top:33.2%;bottom:8.9%;
+  background:rgba(14,22,14,.55);pointer-events:none}
+.card.on .op{background:rgba(14,22,14,.34)}
+/* 고르면 캐릭터 위에 체크 */
+.card .chk{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.6);
+  opacity:0;transition:opacity .12s, transform .12s;pointer-events:none;z-index:3;width:38%}
+.card.on .chk{opacity:1;transform:translate(-50%,-50%) scale(1)}
 /* 프레임 안쪽 개구부 (이미지에서 잰 값) */
 .card .in{position:absolute;left:15%;right:15%;top:37%;bottom:14%;
   display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px}
 .card .in img.ch{max-height:66%;width:auto;image-rendering:pixelated;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
 .card .in canvas.nm{width:auto;height:auto;max-width:96%;image-rendering:pixelated}
-.card .no{z-index:2}
+.card .no{display:none!important}
 .card .no{position:absolute;top:5%;left:5%;width:20px;height:20px;border-radius:50%;background:var(--gold);color:#fff;
   font-size:11px;line-height:19px;display:none}
 .card.on .no{display:block}
@@ -160,7 +166,7 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 
 <div class="app">
   <div class="top">
-    <img src="logo.png" alt="Cricket Seoul">
+    <img src="logo_px.png" alt="Cricket Seoul">
     <span class="ti">Derby</span>
     <a class="back" href="index.html">← MENU</a>
   </div>
@@ -180,7 +186,6 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
     <div class="grid" id="grid"></div>
     <div class="cnt kr" id="cnt">2명 이상 골라주세요</div>
     <button class="go" id="go" disabled>START</button>
-    <div class="hint kr">달리다 보면 넘어지고, 취하고, 바람이 밀고, 볼일도 봅니다.<br>막판에 뒤집히기도 합니다.</div>
   </div>
 
   <!-- 경주 -->
@@ -259,16 +264,27 @@ let VOL={bgm:0.6, sfx:0.8};
 try{const v=JSON.parse(localStorage.getItem("derbyVol")||"null"); if(v)VOL=v;}catch(e){}
 let curBgm=null;
 function applyVol(){
- SND.menu.volume=VOL.bgm; SND.play.forEach(a=>a.volume=VOL.bgm);
+ if(curBgm&&!curBgm._fi)curBgm.volume=VOL.bgm;   // 페이드 중이면 건드리지 않는다
  SND.click.volume=VOL.sfx; SND.clap.volume=VOL.sfx;
  try{localStorage.setItem("derbyVol",JSON.stringify(VOL));}catch(e){}
 }
 applyVol();
+/* 자연스럽게 줄이고 키우기 */
+function fadeTo(a,target,ms,thenPause){
+ if(a._fi){clearInterval(a._fi);a._fi=null;}
+ const steps=Math.max(1,Math.round(ms/50)), from=a.volume, d=(target-from)/steps;
+ let i=0;
+ a._fi=setInterval(()=>{
+   i++; a.volume=Math.max(0,Math.min(1,from+d*i));
+   if(i>=steps){ clearInterval(a._fi); a._fi=null;
+     if(thenPause){ a.pause(); try{a.currentTime=0;}catch(e){} } }
+ },50);
+}
 function playBgm(a){
- if(curBgm===a){ if(a.paused)a.play().catch(()=>{}); return; }
- if(curBgm){ curBgm.pause(); try{curBgm.currentTime=0;}catch(e){} }
- curBgm=a; a.volume=VOL.bgm;
- a.play().catch(()=>{});
+ if(curBgm===a){ if(a.paused){a.volume=0;a.play().catch(()=>{});fadeTo(a,VOL.bgm,700);} return; }
+ if(curBgm) fadeTo(curBgm,0,800,true);      // 이전 곡은 서서히 사라지고
+ curBgm=a; a.volume=0; a.play().catch(()=>{});
+ fadeTo(a,VOL.bgm,800);                     // 새 곡은 서서히 올라온다
 }
 function sfx(a){ try{ a.currentTime=0; a.volume=VOL.sfx; a.play().catch(()=>{}); }catch(e){} }
 function clickSfx(){ sfx(SND.click); }
@@ -366,15 +382,16 @@ function pixelLabel(txt,px,fill,shadow){
 const ASCIIONLY=/^[\x20-\x7E]+$/;
 function pxKR(txt,base,scale,color){
  const mm=document.createElement("canvas").getContext("2d");
- const font=base+"px 'Malgun Gothic','Apple SD Gothic Neo','Nanum Gothic',sans-serif";
+ const font="bold "+base+"px 'Malgun Gothic','Apple SD Gothic Neo','Nanum Gothic',sans-serif";
  mm.font=font;
  const w=Math.max(1,Math.ceil(mm.measureText(txt).width)+2), h=Math.ceil(base*1.4);
  const lo=document.createElement("canvas"); lo.width=w; lo.height=h;
  const g=lo.getContext("2d");
- g.font=font; g.textBaseline="top"; g.fillStyle=color; g.fillText(txt,1,1);
+ g.font=font; g.textBaseline="top"; g.fillStyle=color;
+ g.fillText(txt,1,1); g.fillText(txt,1.4,1);   // 살짝 겹쳐 찍어 획을 두껍게
  // 반투명 가장자리를 잘라내야 확대했을 때 흐릿하지 않다
  const id=g.getImageData(0,0,w,h), d=id.data;
- for(let i=0;i<d.length;i+=4) d[i+3]= d[i+3]>105 ? 255 : 0;
+ for(let i=0;i<d.length;i+=4) d[i+3]= d[i+3]>72 ? 255 : 0;   // 문턱을 낮춰야 획이 안 끊긴다
  g.putImageData(id,0,0);
  const up=document.createElement("canvas"); up.width=w*scale; up.height=h*scale;
  const ug=up.getContext("2d"); ug.imageSmoothingEnabled=false;
@@ -400,12 +417,29 @@ function pxSet(el,html,o){
  lines.forEach(t=>{const c=pxMake(t,o); if(c)wrap.appendChild(c);});
  el.innerHTML=""; el.appendChild(wrap);
 }
+/* 픽셀 체크 표시 */
+const CHECK=["000000001","000000011","000000110","100001100","110011000","011110000","001100000","000000000"];
+function pixelCheck(px){
+ px=px||6;
+ const W=CHECK[0].length*px, H=CHECK.length*px, pad=px;
+ const c=document.createElement("canvas"); c.width=W+pad*2; c.height=H+pad*2;
+ const g=c.getContext("2d");
+ for(let pass=0;pass<2;pass++){
+   g.fillStyle = pass===0 ? "#12240f" : "#6ee06a";
+   const o = pass===0 ? px : 0;
+   for(let r=0;r<CHECK.length;r++){ const row=CHECK[r]; let i=0;
+     while(i<row.length){ if(row[i]==="1"){ let e=i; while(e<row.length&&row[e]==="1")e++;
+       g.fillRect(pad+i*px+o, pad+r*px+o, (e-i)*px, px); i=e; } else i++; } }
+ }
+ return c;
+}
 /* ===== 선택 화면 ===== */
 let picked=[];
 const grid=document.getElementById("grid"), cntEl=document.getElementById("cnt"), goBtn=document.getElementById("go");
 CHARS.forEach((c,i)=>{
  const d=document.createElement("div"); d.className="card"; d.dataset.i=i;
- d.innerHTML='<div class="no"></div><div class="in"><img class="ch" src="sprites/'+c.id+'_0.png" alt=""></div>';
+ d.innerHTML='<div class="op"></div><div class="in"><img class="ch" src="sprites/'+c.id+'_0.png" alt=""></div>';
+ const ck=pixelCheck(); ck.className="chk"; d.appendChild(ck);
  const lab=pixelLabel(c.name,3,"#24331f","rgba(255,255,255,.55)");
  lab.className="nm";
  d.querySelector(".in").appendChild(lab);
@@ -420,9 +454,8 @@ function syncPick(){
  [...grid.children].forEach((d,i)=>{
    const k=picked.indexOf(i);
    d.classList.toggle("on",k>=0);
-   if(k>=0)d.querySelector(".no").textContent=k+1;
  });
- pxSet(cntEl, picked.length<2 ? "2명 이상 골라주세요" : picked.length+"명 출전", {base:10,scale:2,color:"#6a5636"});
+ pxSet(cntEl, picked.length<2 ? "2명 이상 골라주세요" : picked.length+"명 출전", {base:11,scale:2,color:"#5a4626"});
  goBtn.disabled = picked.length<2;
 }
 goBtn.onclick=()=>{ unlockAudio(); loadSprites(()=>startRace()); };
@@ -544,7 +577,6 @@ function updatePhase(){
  }
  if((phase==="run"||phase==="photo") && finished.length>=1){
    phase="winner";phaseT=0;zoomT=2.15;tScaleT=0.22;focusLane=finished[0].lane;
-   sfx(SND.clap);                                    // 1등 확정, 박수
  }
  if(phase==="winner" && phaseT>2.0){
    phase="rest";phaseT=0;zoomT=0.97;tScaleT=1.4;
@@ -553,7 +585,7 @@ function updatePhase(){
  if(phase!=="winner" && phase!=="done" && finished.length===runners.length){
    phase="done";phaseT=0;zoomT=1;tScaleT=1;
  }
- if(phase==="done" && phaseT>1.5){ raceOn=false; showResult(); playBgm(SND.menu); }
+ if(phase==="done" && phaseT>1.5){ raceOn=false; showResult(); }   // 경주 BGM은 그대로 둔다
  runners.forEach(r=>r.isLast=false);
  if(un.length===1 && finished.length)un[0].isLast=true;
 }
@@ -618,7 +650,7 @@ function step(dt, el){
 }
 
 function showToast(msg){
- pxSet(toastEl,msg,{base:10,scale:2,color:"#f0e6d2"}); toastEl.classList.add("on");
+ pxSet(toastEl,msg,{base:11,scale:2,color:"#f7efe0"}); toastEl.classList.add("on");
  clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove("on"),1700);
 }
 
@@ -713,7 +745,7 @@ function render(el){
    : phase==="rest" ? "LAST RUNNER"
    : !raceOn ? "FINISH"
    : (Math.max(0,Math.round((RACE_LEN-Math.max(...runners.map(r=>r.x)))/RACE_LEN*100))+"% TO GO");
- if(lapTxt!==lapEl.dataset.cur){ lapEl.dataset.cur=lapTxt; pxSet(lapEl,lapTxt,{px:2,color:"#e9d3a4"}); }
+ if(lapTxt!==lapEl.dataset.cur){ lapEl.dataset.cur=lapTxt; pxSet(lapEl,lapTxt,{px:3,color:"#e9d3a4"}); }
 }
 
 function dashLine(wx,color,a){
@@ -883,11 +915,11 @@ function buildBoard(){
  const head=document.createElement("div"); head.className="mhead";
  const a=document.createElement("span"), b=document.createElement("span");
  head.appendChild(a); head.appendChild(b); boardEl.appendChild(head);
- pxSet(a,"Start",{px:2,color:"#7a6647"}); pxSet(b,"Finish",{px:2,color:"#7a6647"});
+ pxSet(a,"Start",{px:3,color:"#7a6647"}); pxSet(b,"Finish",{px:3,color:"#7a6647"});
  boardRows=[...runners].sort((x,y)=>x.lane-y.lane).map(r=>{
    const row=document.createElement("div"); row.className="mrow";
    const nm=document.createElement("div"); nm.className="mn";
-   pxSet(nm,r.c.name,{px:2,color:"#4a3a22",align:"left"});
+   pxSet(nm,r.c.name,{px:3,color:"#4a3a22",align:"left"});
    const tr=document.createElement("div"); tr.className="mtrack";
    const fin=document.createElement("i"); fin.className="mfin";
    const dot=document.createElement("span"); dot.className="mdotm"; dot.style.background=r.color;
@@ -919,8 +951,9 @@ function showResult(){
  const rk=document.getElementById("rank"); rk.innerHTML="";
  finished.forEach((r,i)=>{const li=document.createElement("li"); rk.appendChild(li);
    pxSet(li,(i+1)+". "+r.c.name,{px:3,color:(i===0?"#8a6a1a":"#4a3a22")});});
- pxSet(document.getElementById("pen"),"Last place: "+last.c.name+". Drinks are on you.",{px:2,color:"#8a4a3a"});
+ pxSet(document.getElementById("pen"),"Last place: "+last.c.name+". Drinks are on you.",{px:3,color:"#8a4a3a"});
  document.getElementById("res").classList.add("on");
+ sfx(SND.clap);                                     // 순위가 다 정해지고 창이 뜰 때 박수
 }
 document.getElementById("again").onclick=()=>{unlockAudio();document.getElementById("res").classList.remove("on");startRace();};
 document.getElementById("again2").onclick=()=>{
@@ -928,20 +961,20 @@ document.getElementById("again2").onclick=()=>{
  document.getElementById("race").style.display="none";
  document.getElementById("pick").style.display="block";
  raceOn=false;
+ playBgm(SND.menu);          // 경주 BGM은 서서히 사라지고 선택 화면 곡으로
 };
 /* ===== 화면의 모든 글자를 픽셀로 =====
    영문은 비트맵 글꼴, 한글은 저해상도로 그린 뒤 1비트로 다듬어 확대 */
 function pixelizeUI(){
  pxSet(document.querySelector(".top .ti"),null,{px:3,color:"#d6a84a"});
- pxSet(document.querySelector(".top .back"),null,{px:2,color:"#c8ba9f"});
+ pxSet(document.querySelector(".top .back"),null,{px:3,color:"#c8ba9f"});
  pxSet(document.querySelector(".pick .h1"),null,{px:4,color:"#2a1f12"});
- pxSet(document.querySelector(".pick .h2"),null,{base:11,scale:2,color:"#6a5636"});
- pxSet(document.querySelector(".pick .hint"),null,{base:10,scale:2,color:"#8a7a63"});
+ pxSet(document.querySelector(".pick .h2"),null,{base:12,scale:2,color:"#5a4626"});
  pxSet(goBtn,null,{px:4,color:"#2a1c08"});
  pxSet(document.querySelector(".res .win"),null,{px:3,color:"#8a7a5c"});
  pxSet(document.getElementById("again"),null,{px:3,color:"#2a1c08"});
  pxSet(document.getElementById("again2"),null,{px:3,color:"#efe2c4"});
- document.querySelectorAll(".setp .r span").forEach(e=>pxSet(e,null,{px:2,color:"#c8ba9f"}));
+ document.querySelectorAll(".setp .r span").forEach(e=>pxSet(e,null,{px:3,color:"#c8ba9f"}));
  syncPick();
 }
 pixelizeUI();
