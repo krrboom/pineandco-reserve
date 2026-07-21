@@ -364,6 +364,13 @@ document.addEventListener("click",e=>{
  if(t) clickSfx();
 },true);
 
+/* 황소 변수: 0 -> 1 로 진행. BULL_HIT 시점에 부딪힌다 */
+const BULL_HIT=0.42;
+function bullPhase(r){
+ if(!r.ev||r.ev.k!=="bull")return -1;
+ return 1-Math.max(0,r.evT)/(r.ev.dur||2.4);
+}
+
 const PALETTE=["#b8935a","#5a8a5e","#8a3b2a","#3d5a80","#7a5ea8","#2f7d78"];
 const IMG={}, LOADED={};
 function loadSprites(cb){
@@ -593,7 +600,7 @@ const EVENTS=[
  {k:"poop",  w:10, dur:2.2,  msg:"급한 볼일…",            emo:"💩"},
  {k:"trip",  w:12, dur:0.8,  msg:"발이 꼬였다",           emo:"😵"},
  {k:"boost", w:18, dur:2.6,  msg:"제2의 바람",            emo:"🔥"},
- {k:"bull",  w:9,  dur:2.4,  msg:"황소가 들이받았다!",     emo:"🐂"},
+ {k:"bull",  w:9,  dur:3.0,  msg:"황소가 달려온다!",       emo:"🐂"},
  {k:"greet", w:9,  dur:2.6,  msg:"크리켓을 만나 인사 중",  emo:"🦗"}
 ];
 const EW=EVENTS.reduce((a,e)=>a+e.w,0);
@@ -680,7 +687,8 @@ function step(dt, el){
    if(r.ev){
      r.evT-=dt;
      switch(r.ev.k){
-       case "fall": case "poop": case "bull": case "greet": mul=0; break;
+       case "fall": case "poop": case "greet": mul=0; break;
+       case "bull": mul = bullPhase(r)<BULL_HIT ? 1 : 0; break;   // 받히기 전엔 그대로 달린다
        case "trip": mul=0.25; break;
        case "drunk": mul=0.48; break;
        case "dash": mul=2.35; break;
@@ -955,7 +963,7 @@ function drawRunner(r,el){
    }
    ctx.globalAlpha=1;
  }
- if(r.ev&&(r.ev.k==="fall"||r.ev.k==="bull")){
+ if(r.ev&&(r.ev.k==="fall"||(r.ev.k==="bull"&&bullPhase(r)>=BULL_HIT))){
    ctx.translate(x,foot); ctx.rotate(-Math.PI/2.1); ctx.translate(-x,-foot);
    ctx.drawImage(im,x-w/2,foot-h,w,h);
  }else{
@@ -970,15 +978,38 @@ function drawRunner(r,el){
    ctx.beginPath(); ctx.ellipse(x,foot-h*0.86,w*0.19,h*0.075,0,0,7); ctx.fill(); ctx.restore();
  }
  if(r.ev&&r.ev.k==="bull"&&bullImg.complete&&bullImg.naturalWidth){
-   // 오른쪽에서 달려와 주자를 지나쳐 왼쪽으로 빠진다
-   const t=1-Math.max(0,r.evT)/2.4;
+   const t=Math.max(0,Math.min(1,bullPhase(r)));
    const bh=h*1.05, bw=bh*bullImg.naturalWidth/bullImg.naturalHeight;
-   const bx=x+w*2.6-(w*5.4)*Math.min(1,t*1.15);
+   const outR=CW+bw*0.75;                       // 화면 오른쪽 바깥에서 시작
+   const outL=-bw*1.2;                          // 왼쪽 바깥으로 사라짐
+   const bx = t<BULL_HIT ? outR+(x-outR)*(t/BULL_HIT)
+                         : x+(outL-x)*((t-BULL_HIT)/(1-BULL_HIT));
    ctx.save();
    ctx.globalAlpha=.3; ctx.fillStyle="#000";
    ctx.beginPath(); ctx.ellipse(bx,foot-2,bw*0.32,h*0.05,0,0,7); ctx.fill();
    ctx.globalAlpha=1;
-   ctx.drawImage(bullImg,bx-bw/2,foot-bh+Math.sin(t*22)*h*0.03,bw,bh);
+   // 달려올 때 흙먼지
+   if(t<BULL_HIT+0.25){
+     ctx.fillStyle="rgba(196,150,104,.5)";
+     for(let i=0;i<3;i++){
+       const dx=bw*(0.5+i*0.30), dy=h*(0.05+0.05*Math.sin(t*30+i));
+       ctx.beginPath(); ctx.arc(bx+dx,foot-dy,h*(0.05-i*0.012),0,7); ctx.fill();
+     }
+   }
+   ctx.drawImage(bullImg,bx-bw/2,foot-bh+Math.sin(t*26)*h*0.035,bw,bh);
+   // 부딪히는 순간 충격
+   if(t>=BULL_HIT&&t<BULL_HIT+0.14){
+     const k=(t-BULL_HIT)/0.14;
+     ctx.strokeStyle="rgba(255,236,170,"+(1-k).toFixed(2)+")";
+     ctx.lineWidth=Math.max(2,3*S);
+     for(let i=0;i<7;i++){
+       const a=i*(Math.PI*2/7)+k*1.2, r0=h*(0.16+k*0.30), r1=h*(0.28+k*0.42);
+       ctx.beginPath();
+       ctx.moveTo(x+Math.cos(a)*r0, foot-h*0.5+Math.sin(a)*r0*0.7);
+       ctx.lineTo(x+Math.cos(a)*r1, foot-h*0.5+Math.sin(a)*r1*0.7);
+       ctx.stroke();
+     }
+   }
    ctx.restore();
  }
  if(r.ev&&r.ev.k==="greet"&&markImg.complete&&markImg.naturalWidth){
@@ -1005,6 +1036,7 @@ function pickFrame(r){
  if(r.done)return F[r.c.run[1]];
  if(r.ev&&(r.ev.k==="poop"||r.ev.k==="greet"))return F[0];
  if(r.ev&&r.ev.k==="fall")return F[r.c.run[0]];
+ if(r.ev&&r.ev.k==="bull"&&bullPhase(r)>=BULL_HIT)return F[r.c.run[0]];
  const a=r.c.run[0], b=r.c.run[1];
  return (Math.floor(r.anim)%2===0)?F[a]:F[b];
 }
