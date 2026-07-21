@@ -685,6 +685,28 @@ function photoTwist(lead){
    showToast("⚡ 마지막 폭주!", chase.c.name);
  }
 }
+/* 벌주를 누가 마시느냐. 마지막 두 명이 결승선 앞에 오면 한 번 더 뒤집는다 */
+function lastTwist(un,front){
+ if(Math.random()>0.66)return;
+ const back=un.find(r=>r!==front);
+ if(Math.random()<0.70){
+   // 앞서 달리던 쪽이 걸려서 꼴찌가 뒤바뀐다
+   const k=TWIST[Math.floor(Math.random()*TWIST.length)];
+   const e=EVENTS.find(x=>x.k===k)||EVENTS[0];
+   front.ev={k:k,emo:e.emo,msg:e.msg,dur:e.dur};
+   front.evT=(k==="bull")?3.0:Math.min(e.dur,1.6);
+   front.nextEv=9;
+   showToast(e.emo+" "+e.msg, front.c.name);
+ }else if(back){
+   back.ev={k:"dash",emo:"⚡",msg:"벌주는 못 마셔!",dur:2.2};
+   back.evT=2.2; back.nextEv=9;
+   showToast("⚡ 벌주는 못 마셔!", back.c.name);
+ }
+}
+function lastOne(){
+ const un=runners.filter(r=>!r.done);
+ return un.length? un[un.length-1] : finished[finished.length-1];
+}
 function updatePhase(){
  const un=runners.filter(r=>!r.done);
  const lead=runners.reduce((a,b)=>b.x>a.x?b:a);
@@ -700,7 +722,23 @@ function updatePhase(){
    phase="rest";phaseT=0;zoomT=0.97;tScaleT=1.4;
    if(un.length)focusLane=un.reduce((a,b)=>b.x<a.x?b:a).lane;
  }
- if(phase!=="winner" && phase!=="done" && finished.length===runners.length){
+ // 마지막 두 명이 결승선 앞이면 꼴찌 결정전
+ if(phase==="rest" && un.length===2){
+   const front=un.reduce((a,b)=>b.x>a.x?b:a);
+   const back=un.find(r=>r!==front);
+   // 진짜 접전일 때만. 멀찍이 벌어졌으면 그냥 들어온다
+   if(RACE_LEN-front.x<340 && back && (front.x-back.x)<230){
+     phase="lastphoto";phaseT=0;zoomT=1.90;tScaleT=0.21;focusLane=front.lane;
+     showToast("벌주 피하기!");
+     lastTwist(un,front);
+   }
+ }
+ if(phase==="lastphoto" && un.length<=1){
+   phase="lastcall";phaseT=0;zoomT=2.05;tScaleT=0.18;
+   if(un.length)focusLane=un[0].lane;
+ }
+ if(phase==="lastcall" && phaseT>1.9){ phase="rest";phaseT=0;zoomT=1.0;tScaleT=1.3; }
+ if(phase!=="winner" && phase!=="lastcall" && phase!=="done" && finished.length===runners.length){
    phase="done";phaseT=0;zoomT=1;tScaleT=1;
  }
  if(phase==="done" && phaseT>1.5){ raceOn=false; showResult(); }   // 경주 BGM은 그대로 둔다
@@ -754,7 +792,7 @@ function step(dt, el){
  // 카메라
  const un=runners.filter(r=>!r.done);
  let target;
- if(phase==="photo"||phase==="winner"||phase==="done"){
+ if(phase==="photo"||phase==="winner"||phase==="done"||phase==="lastphoto"||phase==="lastcall"){
    target=RACE_LEN-CW/S*0.50;
  }else if(phase==="rest"&&un.length){
    const trail=un.reduce((a,b)=>b.x<a.x?b:a);
@@ -840,7 +878,7 @@ function render(el){
  ctx.fillStyle="#0c0a08"; ctx.fillRect(0,0,CW,CH);
  ctx.save();
  // 결승 연출 중에는 결승선을 기준으로 확대해야 화면 밖으로 밀리지 않는다
- const zf=(phase==="photo"||phase==="winner"||phase==="done");
+ const zf=(phase==="photo"||phase==="winner"||phase==="done"||phase==="lastphoto"||phase==="lastcall");
  const fx=zf?Math.max(40,Math.min(CW-40,(RACE_LEN-camX)*S)):CW/2, fy=laneY(focusLane);
  ctx.translate(fx,fy); ctx.scale(zoom,zoom); ctx.translate(-fx,-fy);
 
@@ -864,11 +902,14 @@ function render(el){
  ctx.restore();
 
  drawWinBanner();
+ drawLastBanner();
  drawCountdown(el);
  const cdLeft=el;
  const lapTxt = cdLeft<CD_END ? "READY"
    : phase==="photo" ? "PHOTO FINISH"
    : phase==="winner" ? "WINNER!"
+   : phase==="lastphoto" ? "LAST PHOTO FINISH"
+   : phase==="lastcall" ? "LAST PLACE!"
    : phase==="rest" ? "LAST RUNNER"
    : !raceOn ? "FINISH"
    : (Math.max(0,Math.round((RACE_LEN-Math.max(...runners.map(r=>r.x)))/RACE_LEN*100))+"% TO GO");
@@ -962,6 +1003,24 @@ function drawWinBanner(){
  ctx.restore();
 }
 
+/* 꼴찌 확정 (화면 고정) */
+function drawLastBanner(){
+ if(phase!=="lastcall")return;
+ const a=Math.min(1,phaseT/0.25);
+ const r=lastOne(); if(!r)return;
+ const bw=Math.min(CW*0.78,320), bh=64, x=(CW-bw)/2;
+ const wy=laneY(focusLane);
+ const y=(wy<CH*0.5)?Math.min(CH-bh-14,CH*0.66):CH*0.11;
+ ctx.save(); ctx.globalAlpha=a;
+ const sc=0.86+0.14*Math.min(1,phaseT/0.3);
+ ctx.translate(CW/2,y+bh/2); ctx.scale(sc,sc); ctx.translate(-CW/2,-(y+bh/2));
+ ctx.fillStyle="rgba(28,10,6,.9)"; ctx.strokeStyle="#c8663f"; ctx.lineWidth=2;
+ ctx.beginPath(); if(ctx.roundRect)ctx.roundRect(x,y,bw,bh,12); else ctx.rect(x,y,bw,bh);
+ ctx.fill(); ctx.stroke();
+ pixelText("LAST", CW/2, y+19, 14, "#e08a5a", 1);
+ pixelText(r.c.name, CW/2, y+45, 26, "#ffd9c2", 1);
+ ctx.restore();
+}
 function drawRunner(r,el){
  const x=(r.x-camX)*S, cy=laneY(r.lane);
  if(x<-170||x>CW+190)return;
