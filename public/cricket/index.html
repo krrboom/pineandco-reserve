@@ -215,6 +215,11 @@ body.night{text-shadow:0 1px 2px rgba(0,0,0,.45)}
   animation-direction:alternate;animation-timing-function:ease-in-out}
 /* 맨 위에는 눈부신 해, 맨 아래에는 노란 보름달 */
 #sky .sun,#sky .moon{position:absolute;border-radius:50%;display:block;will-change:top,opacity}
+/* 해와 달 안쪽에 크리켓 로고를 아주 옅게 */
+#sky .sun::after,#sky .moon::after{content:"";position:absolute;
+  background:url("logo.png") center/contain no-repeat;filter:brightness(0);pointer-events:none}
+#sky .sun::after{inset:27%;opacity:.16}
+#sky .moon::after{inset:21%;opacity:.24}
 #sky .sun{right:13%;width:104px;height:104px;
   background:radial-gradient(circle,#fffdf0 0%,#fff29a 34%,#ffd94e 56%,rgba(255,208,64,0) 72%);
   box-shadow:0 0 70px 26px rgba(255,224,110,.55), 0 0 160px 60px rgba(255,214,90,.28)}
