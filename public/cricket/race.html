@@ -552,10 +552,19 @@ document.getElementById("startb").onclick=()=>{
  titleEl.style.display="none"; pickEl.style.display="";
 };
 /* 사용자가 화면을 한 번이라도 건드리면 BGM 시작 (브라우저 자동재생 제한) */
-["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,function once(){
- if(!curBgm && titleEl.style.display!=="none") playBgm(SND.menu);
- document.removeEventListener(ev,once);
-},{once:true}));
+/* 시작 화면이 뜨는 순간부터 BGM.
+   브라우저가 조작 없는 자동재생을 막으므로, 바로 한 번 시도하고
+   막히면 첫 터치/클릭/키 입력에서 다시 시도한다 */
+const WAKE=["pointerdown","touchstart","click","keydown"];
+function bgmOn(){
+ const rv=document.getElementById("race");
+ if(rv&&rv.style.display==="block")return;          // 경주와 결과 화면에서는 경주 BGM을 건드리지 않는다
+ unlockAudio();
+ playBgm(SND.menu);
+ if(curBgm && !curBgm.paused) WAKE.forEach(e=>document.removeEventListener(e,bgmOn,true));
+}
+WAKE.forEach(e=>document.addEventListener(e,bgmOn,true));
+bgmOn();
 
 /* ===== 설정 (BGM / 효과음 음량) ===== */
 const setb=document.getElementById("setb"), setp=document.getElementById("setp");
