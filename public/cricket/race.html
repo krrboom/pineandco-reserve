@@ -100,7 +100,7 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 .res.on{display:flex}
 .resin{background:var(--paper);border-radius:16px;padding:24px 20px;max-width:340px;width:100%;text-align:center}
 .res .win{font-variant-caps:small-caps;letter-spacing:.1em;font-size:12px;color:var(--mut)}
-.res .wn{font-variant-caps:small-caps;letter-spacing:.08em;font-size:27px;color:var(--ink);margin:3px 0 8px}
+.res .wn{margin:2px 0 6px}
 .res img.wp{height:120px;image-rendering:pixelated;margin-bottom:6px}
 .res ol{text-align:left;margin:14px 0 0;padding-left:22px;font-size:13.5px;color:var(--ink2);line-height:1.9}
 .res .pen{margin-top:14px;font-size:13px;color:#8a3b2a;background:#8a3b2a14;border:1px dashed #8a3b2a55;
@@ -162,6 +162,41 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 .mtrack{border-radius:0!important;height:6px;background:rgba(0,0,0,.14)}
 .mdotm{border-radius:0!important;border:2px solid #fffaf0;box-shadow:none;transition:left .18s linear}
 .card{border-radius:0!important}
+/* ===== 우승 프레임과 빛 ===== */
+.champ{position:relative;width:min(96%,330px);aspect-ratio:1372/1056;margin:0 auto 4px;
+  background:url("ui_champ.webp") center/100% 100% no-repeat}
+.chin{position:absolute;left:15.1%;right:15.2%;top:35%;bottom:17.2%;
+  display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+.chin .rays{position:absolute;left:50%;top:58%;width:210%;aspect-ratio:1;transform:translate(-50%,-50%);
+  background:repeating-conic-gradient(from 0deg,
+    rgba(255,214,120,.30) 0deg 9deg, rgba(255,214,120,0) 9deg 26deg);
+  animation:spin 11s linear infinite}
+.chin .glow{position:absolute;left:50%;top:58%;width:120%;aspect-ratio:1;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(255,236,170,.62) 0%,rgba(255,214,120,.22) 42%,rgba(255,214,120,0) 66%);
+  animation:pulse 2.2s ease-in-out infinite}
+.chin .wp{position:relative;z-index:2;height:88%;width:auto;image-rendering:pixelated;
+  filter:drop-shadow(0 0 6px rgba(255,226,150,.75)) drop-shadow(0 3px 0 rgba(0,0,0,.3));
+  animation:champbob 1.8s ease-in-out infinite}
+.chin .sp{position:absolute;z-index:3;width:6px;height:6px;background:#fff6d8;
+  box-shadow:0 0 6px rgba(255,236,170,.9);animation:tw2 1.6s steps(1) infinite}
+.chin .sp.a{left:12%;top:24%}      .chin .sp.b{right:14%;top:18%;animation-delay:.35s}
+.chin .sp.c{left:22%;bottom:16%;animation-delay:.7s}
+.chin .sp.d{right:20%;bottom:22%;animation-delay:1.05s}
+.chin .sp.e{left:44%;top:8%;width:5px;height:5px;animation-delay:.5s}
+.chin .sp.f{right:38%;bottom:8%;width:5px;height:5px;animation-delay:.9s}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.55;transform:translate(-50%,-50%) scale(.92)}
+                 50%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}}
+@keyframes champbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes tw2{0%,49%{opacity:1}50%,100%{opacity:.15}}
+
+/* 이미지 버튼 */
+.res .imgb{background:none!important;border:none;padding:0;margin-top:10px;width:100%;
+  box-shadow:none!important;cursor:pointer}
+.res .imgb img{width:100%;height:auto;display:block;image-rendering:pixelated}
+.res .imgb:active{transform:translateY(3px)}
+.res .win{display:none}
+@media (prefers-reduced-motion:reduce){.chin .rays,.chin .glow,.chin .wp,.chin .sp{animation:none}}
 </style>
 
 <div class="app">
@@ -203,13 +238,20 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 </div>
 
 <div class="res" id="res"><div class="resin">
-  <div class="win">WINNER</div>
+  <div class="champ">
+    <div class="chin">
+      <div class="rays"></div>
+      <div class="glow"></div>
+      <img class="wp" id="wp" src="" alt="">
+      <i class="sp a"></i><i class="sp b"></i><i class="sp c"></i>
+      <i class="sp d"></i><i class="sp e"></i><i class="sp f"></i>
+    </div>
+  </div>
   <div class="wn" id="wn">—</div>
-  <img class="wp" id="wp" src="" alt="">
   <ol id="rank"></ol>
   <div class="pen" id="pen"></div>
-  <button id="again">RACE AGAIN</button>
-  <button class="again2" id="again2">PICK AGAIN</button>
+  <button class="imgb" id="again"><img src="btn_race.webp" alt="Race again"></button>
+  <button class="imgb again2" id="again2"><img src="btn_pick.webp" alt="Pick again"></button>
 </div></div>
 
 <button class="setb" id="setb" aria-label="settings">⚙</button>
@@ -971,9 +1013,7 @@ function pixelizeUI(){
  pxSet(document.querySelector(".pick .h1"),null,{px:4,color:"#2a1f12"});
  pxSet(document.querySelector(".pick .h2"),null,{base:12,scale:2,color:"#5a4626"});
  pxSet(goBtn,null,{px:4,color:"#2a1c08"});
- pxSet(document.querySelector(".res .win"),null,{px:3,color:"#8a7a5c"});
- pxSet(document.getElementById("again"),null,{px:3,color:"#2a1c08"});
- pxSet(document.getElementById("again2"),null,{px:3,color:"#efe2c4"});
+  // RACE AGAIN / PICK AGAIN 은 이미지 버튼이라 글자를 만들지 않는다
  document.querySelectorAll(".setp .r span").forEach(e=>pxSet(e,null,{px:3,color:"#c8ba9f"}));
  syncPick();
 }
