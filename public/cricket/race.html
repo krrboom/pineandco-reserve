@@ -133,6 +133,26 @@ const CHARS=[
  {id:"minyong", name:"MINYONG", kr:"민용", tag:"바 · 선글라스",     frames:4, run:[2,3]},
  {id:"guentae", name:"GUENTAE", kr:"근태", tag:"바 · 만세",         frames:4, run:[2,3]}
 ];
+/* ===== 8비트 출발 신호음 (사각파) ===== */
+let actx=null;
+function unlockAudio(){ try{ if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();
+ if(actx.state==="suspended")actx.resume(); }catch(e){} }
+function beep(freq,dur,vol,when){
+ try{ if(!actx)return;
+  const t=actx.currentTime+(when||0);
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type="square"; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.linearRampToValueAtTime(vol,t+0.008);
+  g.gain.setValueAtTime(vol,t+dur*0.55);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(t); o.stop(t+dur+0.03);
+ }catch(e){}
+}
+function cdBeepShort(){ beep(523.25,0.16,0.16); }                    // 3, 2, 1 = C5
+function cdBeepGo(){ beep(1046.5,0.62,0.18); beep(1567.98,0.62,0.07,0.02); } // 출발 = C6 + G6
+
 const PALETTE=["#b8935a","#5a8a5e","#8a3b2a","#3d5a80","#7a5ea8","#2f7d78"];
 const IMG={}, LOADED={};
 function loadSprites(cb){
@@ -169,7 +189,7 @@ function syncPick(){
  cntEl.textContent = picked.length<2 ? "2명 이상 골라주세요" : picked.length+"명 출전";
  goBtn.disabled = picked.length<2;
 }
-goBtn.onclick=()=>{ loadSprites(()=>startRace()); };
+goBtn.onclick=()=>{ unlockAudio(); loadSprites(()=>startRace()); };
 
 /* ===== 경기장 좌표 (원본 track.webp 기준) ===== */
 const TILE_W=1800, TILE_H=1536;
@@ -229,7 +249,7 @@ function startRace(){
    lateDone:false
  }));
  finished=[]; raceOn=true; t0=performance.now(); camX=0;
- zoom=1;zoomT=1;tScale=1;tScaleT=1;phase="run";phaseT=0;focusLane=runners[0].lane;lastT=0;
+ zoom=1;zoomT=1;tScale=1;tScaleT=1;phase="run";phaseT=0;focusLane=runners[0].lane;lastT=0;cdBeeped=-1;
  lapEl.textContent="READY";
  requestAnimationFrame(loop);
  drawBoard();
@@ -342,24 +362,47 @@ function showToast(msg){
 
 /* ===== 3 · 2 · 1 · START 카운트다운 (픽셀) ===== */
 const CD_END=4.2;
-const cdCv=document.createElement("canvas"), cdx=cdCv.getContext("2d");
+/* 5x7 비트맵 글꼴. 사각형으로 직접 찍으므로 아무리 키워도 가장자리가 깨끗하다 */
+const GLYPH={
+ "1":["00100","01100","00100","00100","00100","00100","01110"],
+ "2":["01110","10001","00001","00010","00100","01000","11111"],
+ "3":["11111","00010","00100","00010","00001","10001","01110"],
+ "S":["01111","10000","10000","01110","00001","00001","11110"],
+ "T":["11111","00100","00100","00100","00100","00100","00100"],
+ "A":["01110","10001","10001","11111","10001","10001","10001"],
+ "R":["11110","10001","10001","11110","10100","10010","10001"]
+};
 function pixelText(txt,cx,cy,targetH,fill,alpha){
- const small=Math.max(9,Math.round(targetH/8));
- cdx.font="bold "+small+"px 'Courier New',monospace";
- const w=Math.ceil(cdx.measureText(txt).width)+4, h=small+6;
- cdCv.width=w; cdCv.height=h;
- cdx.font="bold "+small+"px 'Courier New',monospace";
- cdx.textAlign="left"; cdx.textBaseline="top";
- cdx.clearRect(0,0,w,h);
- cdx.fillStyle="#2a1607"; cdx.fillText(txt,3,4);
- cdx.fillStyle=fill;     cdx.fillText(txt,2,3);
- const sc=targetH/h;
- ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
- ctx.drawImage(cdCv,0,0,w,h, Math.round(cx-w*sc/2), Math.round(cy-h*sc/2), Math.round(w*sc), Math.round(h*sc));
+ const cols=txt.length*5+(txt.length-1);
+ // 세로 기준 크기로 잡되, 좁은 화면에서 가로로 넘치지 않게 제한
+ const px=Math.max(2,Math.round(Math.min(targetH/7, CW*0.84/cols)));
+ const W=cols*px, H=7*px;
+ let x0=Math.round(cx-W/2), y0=Math.round(cy-H/2);
+ ctx.save(); ctx.globalAlpha=alpha;
+ for(let pass=0;pass<2;pass++){
+   ctx.fillStyle = pass===0 ? "#2a1607" : fill;   // 먼저 그림자, 그 위에 본색
+   const ox = pass===0 ? Math.round(px*0.9) : 0;
+   const oy = pass===0 ? Math.round(px*0.9) : 0;
+   let cxp=x0;
+   for(const ch of txt){
+     const g=GLYPH[ch];
+     if(g){ for(let r=0;r<7;r++){ const row=g[r];
+       let c=0;
+       while(c<5){                                 // 가로로 이어진 칸은 한 번에 (경계선 없음)
+         if(row[c]==="1"){ let e=c; while(e<5&&row[e]==="1")e++;
+           ctx.fillRect(cxp+c*px+ox, y0+r*px+oy, (e-c)*px, px); c=e; }
+         else c++;
+       } } }
+     cxp+=6*px;
+   }
+ }
  ctx.restore();
 }
+let cdBeeped=-1;
 function drawCountdown(el){
- if(el>=CD_END)return;
+ if(el>=CD_END){ if(cdBeeped<3){cdBeeped=3;} return; }
+ const idx = el<1.2?0 : el<2.4?1 : el<3.6?2 : 3;
+ if(idx>cdBeeped){ cdBeeped=idx; if(idx<3)cdBeepShort(); else cdBeepGo(); }
  let txt,t0c,life;
  if(el<1.2){txt="3";t0c=0;life=1.2;}
  else if(el<2.4){txt="2";t0c=1.2;life=1.2;}
@@ -602,7 +645,7 @@ function showResult(){
  document.getElementById("pen").textContent="Last place: "+last.c.name+". Drinks are on you.";
  document.getElementById("res").classList.add("on");
 }
-document.getElementById("again").onclick=()=>{document.getElementById("res").classList.remove("on");startRace();};
+document.getElementById("again").onclick=()=>{unlockAudio();document.getElementById("res").classList.remove("on");startRace();};
 document.getElementById("again2").onclick=()=>{
  document.getElementById("res").classList.remove("on");
  document.getElementById("race").style.display="none";
