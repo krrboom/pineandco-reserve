@@ -133,7 +133,8 @@ section+section{border-top:1px solid var(--line);margin-top:14px;padding-top:36p
 .mdot{fill:var(--gold);stroke:#fff;stroke-width:1.4;cursor:pointer;transform-box:fill-box;transform-origin:center;animation:dotPop .35s ease both}
 .mdot:hover{fill:#8a5a2a}
 .mdot.sel{fill:#8a3b2a;stroke-width:2.2;r:6}
-.mdot-label{font-family:var(--kr);font-size:8px;fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:2.4px;animation:fadeUp .4s ease both;pointer-events:none}
+.mdot-label{font-family:var(--kr);font-size:8px;fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:2.4px;animation:fadeUp .4s ease both;cursor:pointer}
+.mhit{cursor:pointer;pointer-events:all}
 @keyframes dotPop{from{opacity:0;transform:scale(0)}60%{transform:scale(1.35)}to{opacity:1;transform:scale(1)}}
 .maphint{text-align:center;font-family:var(--kr);font-size:11px;color:var(--mut);margin:8px 0}
 .mappanel{background:var(--paper2);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:12px;min-height:60px}
@@ -690,6 +691,7 @@ function scaleOverlay(){
  const s=VB.w/MAPDATA.vbW;
  document.querySelectorAll("#mapMuni .muni").forEach(p=>{p.setAttribute("stroke-dasharray",(3.2*s).toFixed(2)+" "+(2.4*s).toFixed(2));});
  document.querySelectorAll("#mapDyn .mdot").forEach(d=>d.setAttribute("r",(4.6*s).toFixed(2)));
+ document.querySelectorAll("#mapDyn .mhit").forEach(d=>d.setAttribute("r",(30*s).toFixed(2)));
  document.querySelectorAll("#mapDyn .mdot-label").forEach(t=>t.setAttribute("font-size",(9*s).toFixed(2)));
  document.querySelectorAll("#mapDyn .prov-label").forEach(t=>t.setAttribute("font-size",(16*s).toFixed(2)));
 }
@@ -738,12 +740,16 @@ function activateProv(code){
  cities.forEach((k,i)=>{
    const cnt=BOTTLES.filter(b=>b.region===k).length; if(!cnt) return;
    const[x,y]=cityXY(REG[k].la,REG[k].lo);
+   const pick=e=>{e.stopPropagation();selectCity(k);};
+   // 실제로 눌리는 영역 (투명, 점보다 훨씬 크게)
+   const hit=el("circle",{class:"mhit",cx:x,cy:y-3,r:30,fill:"rgba(0,0,0,0)"});
+   hit.dataset.k=k; hit.addEventListener("click",pick);
    const dot=el("circle",{class:"mdot",cx:x,cy:y,r:4.6,style:"animation-delay:"+(i*50)+"ms"});
-   dot.dataset.k=k;
-   dot.addEventListener("click",e=>{e.stopPropagation();selectCity(k);});
+   dot.dataset.k=k; dot.addEventListener("click",pick);
    const tx=el("text",{class:"mdot-label",x:x,y:y-7,"text-anchor":"middle",style:"animation-delay:"+(i*50)+"ms"});
    tx.textContent=cityName(k)+" ·"+cnt;
-   dyn.appendChild(dot);dyn.appendChild(tx);
+   tx.dataset.k=k; tx.addEventListener("click",pick);
+   dyn.appendChild(hit);dyn.appendChild(dot);dyn.appendChild(tx);
  });
  scaleOverlay();
  const bk=document.getElementById("mapBack");
