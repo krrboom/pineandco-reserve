@@ -16,7 +16,7 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 /* 상단바 */
 .top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--dark);color:#e9e1d1;
   position:sticky;top:0;z-index:50}
-.top img{height:26px;width:auto;filter:brightness(0) invert(1) opacity(.92)}
+.top img{height:30px;width:auto;image-rendering:pixelated;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
 .top .ti{font-variant-caps:small-caps;letter-spacing:.16em;font-size:12px;color:var(--gold)}
 .top .back{margin-left:auto;font-size:12px;color:#c8ba9f;text-decoration:none;border:1px solid rgba(216,178,90,.4);
   border-radius:999px;padding:5px 12px}
@@ -224,7 +224,8 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 .res ol li{display:flex;align-items:center;gap:7px;justify-content:center;margin:0}
 .res ol li img.rkno{width:auto;height:20px}
 .res ol li img{width:52px;height:auto;image-rendering:pixelated}
-.res ol li.mid{width:calc(50% - 6px)}
+.res ol li.mid{display:flex;gap:14px;justify-content:center;width:100%}
+.res ol li .one{display:flex;align-items:center;gap:7px}
 .res ol li.first,.res ol li.last{width:100%}
 .res ol li.first img.rkno,.res ol li.last img.rkno{height:30px;width:auto}
 .res ol li.first img,.res ol li.last img{width:104px}
@@ -236,7 +237,7 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 
 <div class="app">
   <div class="top">
-    <img src="logo_px.png" alt="Cricket Seoul">
+    <img src="mark_cricket.webp" alt="Cricket Seoul">
     <span class="ti">Derby</span>
     <a class="back imgb" href="index.html"><img src="btn_menu.webp" alt="Menu"></a>
   </div>
@@ -264,7 +265,6 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
       <canvas id="cv"></canvas>
       <div class="hud">
         <div class="lap" id="lap">READY</div>
-        <img class="logo" src="mark_cricket.webp" alt="">
       </div>
       <div class="toast" id="toast"></div>
     </div>
@@ -655,15 +655,37 @@ function loop(now){
    winner 1등 통과 -> 1등 표시 + 하이라이트
    rest   다시 축소, 꼴찌를 따라가며 마지막 도착까지
    done   전원 완주 -> 결과 */
+/* 결승선 코앞에서 한 번 더 뒤집는다. 싱겁게 끝나지 않도록 */
+const TWIST=["bull","wind","greet","trip","fall"];
+function photoTwist(lead){
+ if(Math.random()>0.62)return;                     // 열 판 중 여섯 판 정도
+ const un=runners.filter(r=>!r.done);
+ if(un.length<2)return;
+ // 선두를 막거나(주로), 가끔 뒤에 있는 주자에게 폭주를 준다
+ if(Math.random()<0.72){
+   const k=TWIST[Math.floor(Math.random()*TWIST.length)];
+   const e=EVENTS.find(x=>x.k===k)||EVENTS[0];
+   lead.ev={k:k,emo:e.emo,msg:e.msg,dur:e.dur};
+   lead.evT=(k==="bull")?3.0:Math.min(e.dur,1.6);
+   lead.nextEv=9;
+   showToast(e.emo+" "+e.msg, lead.c.name);
+ }else{
+   const chase=un.filter(r=>r!==lead).reduce((a,b)=>b.x>a.x?b:a);
+   chase.ev={k:"dash",emo:"⚡",msg:"마지막 폭주!",dur:2.2};
+   chase.evT=2.2; chase.nextEv=9;
+   showToast("⚡ 마지막 폭주!", chase.c.name);
+ }
+}
 function updatePhase(){
  const un=runners.filter(r=>!r.done);
  const lead=runners.reduce((a,b)=>b.x>a.x?b:a);
  if(phase==="run" && !finished.length && RACE_LEN-lead.x<340){
-   phase="photo";phaseT=0;zoomT=1.95;tScaleT=0.30;focusLane=lead.lane;
+   phase="photo";phaseT=0;zoomT=1.95;tScaleT=0.21;focusLane=lead.lane;   // 30% 더 느린 슬로모션
    showToast("PHOTO FINISH");
+   photoTwist(lead);
  }
  if((phase==="run"||phase==="photo") && finished.length>=1){
-   phase="winner";phaseT=0;zoomT=2.15;tScaleT=0.22;focusLane=finished[0].lane;
+   phase="winner";phaseT=0;zoomT=2.15;tScaleT=0.154;focusLane=finished[0].lane;
  }
  if(phase==="winner" && phaseT>2.0){
    phase="rest";phaseT=0;zoomT=0.97;tScaleT=1.4;
@@ -1094,14 +1116,30 @@ function showResult(){
  const w=finished[0], last=finished[finished.length-1];
  document.getElementById("wp").src="sprites/"+w.c.id+"_"+(w.c.frames-1)+".png";
  const rk=document.getElementById("rank"); rk.innerHTML="";
- finished.forEach((r,i)=>{
-   const li=document.createElement("li");
-   li.className = (i===0) ? "first" : (i===finished.length-1 ? "last" : "mid");
-   rk.appendChild(li);
+ // 1등과 꼴찌는 한 줄 크게, 중간 등수는 두 명씩 한 줄에 나란히 붙인다
+ function mkOne(r,i){
+   const w=document.createElement("span"); w.className="one";
    const no=document.createElement("img");
    no.className="rkno"; no.src="no_"+(i+1)+".webp"; no.alt=String(i+1);
    const im=document.createElement("img"); im.src="nm_"+r.c.name.toLowerCase()+".webp"; im.alt=r.c.name;
-   li.appendChild(no); li.appendChild(im);
+   w.appendChild(no); w.appendChild(im); return w;
+ }
+ const N=finished.length;
+ let midRow=null;
+ finished.forEach((r,i)=>{
+   const solo=(i===0)||(i===N-1);
+   if(solo){
+     midRow=null;
+     const li=document.createElement("li");
+     li.className=(i===0)?"first":"last";
+     li.appendChild(mkOne(r,i));
+     rk.appendChild(li);
+   }else{
+     if(!midRow||midRow.childElementCount>=2){
+       midRow=document.createElement("li"); midRow.className="mid"; rk.appendChild(midRow);
+     }
+     midRow.appendChild(mkOne(r,i));
+   }
  });
  pxSet(document.getElementById("pen"),"Last place: "+last.c.name+". Drinks are on you.",{px:3,color:"#8a4a3a"});
  document.getElementById("res").classList.add("on");

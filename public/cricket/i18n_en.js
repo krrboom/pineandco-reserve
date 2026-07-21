@@ -33,8 +33,8 @@ window.I18N_EN={"ui":{
 "flight.def.spirit":"Korean distilled spirits.",
 
 "primer":"<b>Traditional Korean liquor (傳統酒)</b> refers to drinks brewed from our rice and nuruk, in the ways of our land. From unfiltered <b>takju (makgeolli)</b>, to clear, filtered <b>yakju and cheongju</b>, to the <b>soju</b> distilled from them, to <b>fruit wines</b> made from fruit. Cricket Seoul introduces liquors from breweries all across the country, and shows the very places they were born on a <b>map</b>.",
-"nav.how":"How",
-"sec.how.t":"What is Korean liquor?","sec.how.d":"How a single grain of rice becomes a drink",
+"nav.how":"?",
+"sec.how.t":"What is Korean sool?","sec.how.d":"How a single grain of rice becomes a drink",
 "how.mode.takju":"Takju","how.mode.yakju":"Yakju","how.mode.soju":"Soju",
 "how.1.t":"Rice","how.1.d":"Washed rice is steamed into godubap, firm-steamed rice. The starch inside those grains will become sugar, and that sugar becomes liquor.",
 "how.2.t":"Nuruk","how.2.d":"Wheat or rice is pressed into a cake and left to culture, and mould spreads through it. The enzymes that mould makes are the key that turns starch into sugar.",
