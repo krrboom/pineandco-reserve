@@ -219,6 +219,8 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 /* 결과 순위 명패 */
 .res ol li{display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:3px}
 .res ol li img{width:104px;height:auto;image-rendering:pixelated}
+.toast{display:flex;align-items:center;justify-content:center;gap:7px}
+.toast .tnm{height:23px;width:auto;image-rendering:pixelated;flex:0 0 auto}
 </style>
 
 <div class="app">
@@ -318,7 +320,7 @@ function cdBeepGo(){ beep(1046.5,0.62,0.18); beep(1567.98,0.62,0.07,0.02); } // 
 /* ===== BGM과 효과음 ===== */
 const SND={
  menu:new Audio("bgm_menu.mp3"),
- play:[new Audio("bgm_play1.mp3"),new Audio("bgm_play2.mp3"),new Audio("bgm_play3.mp3")],
+ play:[new Audio("bgm_play1.mp3"),new Audio("bgm_play3.mp3")],
  click:new Audio("sfx_click.mp3"),
  clap:new Audio("sfx_clap.mp3")
 };
@@ -452,10 +454,10 @@ function pxKR(txt,base,scale,color){
  const lo=document.createElement("canvas"); lo.width=w; lo.height=h;
  const g=lo.getContext("2d");
  g.font=font; g.textBaseline="top"; g.fillStyle=color;
- g.fillText(txt,1,1); g.fillText(txt,1.4,1);   // 살짝 겹쳐 찍어 획을 두껍게
+ g.fillText(txt,1,1);
  // 반투명 가장자리를 잘라내야 확대했을 때 흐릿하지 않다
  const id=g.getImageData(0,0,w,h), d=id.data;
- for(let i=0;i<d.length;i+=4) d[i+3]= d[i+3]>72 ? 255 : 0;   // 문턱을 낮춰야 획이 안 끊긴다
+ for(let i=0;i<d.length;i+=4) d[i+3]= d[i+3]>95 ? 255 : 0;   // 너무 두껍지도 끊기지도 않는 지점
  g.putImageData(id,0,0);
  const up=document.createElement("canvas"); up.width=w*scale; up.height=h*scale;
  const ug=up.getContext("2d"); ug.imageSmoothingEnabled=false;
@@ -664,7 +666,7 @@ function step(dt, el){
      const e=rollEvent();
      r.ev=e; r.evT=e.dur;
      r.nextEv=2.6+Math.random()*4.5;
-     showToast(r.c.name+" "+e.emo+" "+e.msg);
+     showToast(e.emo+" "+e.msg, r.c.name);
    }
    let mul=1;
    if(r.ev){
@@ -683,8 +685,8 @@ function step(dt, el){
    const prog=(r.x-START_X)/(RACE_LEN-START_X);
    if(!r.lateDone && prog>r.lateAt && r.lateKind!=="none"){
      r.lateDone=true;
-     if(r.lateKind==="surge"){ r.ev={k:"dash",emo:"⚡",msg:""}; r.evT=2.6; showToast(r.c.name+" ⚡ 막판 스퍼트!"); }
-     else { r.ev={k:"trip",emo:"😵",msg:""}; r.evT=1.5; showToast(r.c.name+" 😵 다리가 풀렸다!"); }
+     if(r.lateKind==="surge"){ r.ev={k:"dash",emo:"⚡",msg:""}; r.evT=2.6; showToast("⚡ 막판 스퍼트!", r.c.name); }
+     else { r.ev={k:"trip",emo:"😵",msg:""}; r.evT=1.5; showToast("😵 다리가 풀렸다!", r.c.name); }
    }
    // 뒤처질수록 조금씩 따라붙는다 (끝까지 붙어서 결과를 모르게)
    const band=1+Math.min(0.42,((leadX-r.x)/900)*0.27);
@@ -713,8 +715,16 @@ function step(dt, el){
  drawBoard();
 }
 
-function showToast(msg){
- pxSet(toastEl,msg,{base:11,scale:2,color:"#f7efe0"}); toastEl.classList.add("on");
+function showToast(msg,name){
+ toastEl.innerHTML="";
+ if(name){
+   const im=document.createElement("img");
+   im.className="tnm"; im.src="nm_"+name.toLowerCase()+".webp"; im.alt=name;
+   toastEl.appendChild(im);
+ }
+ const c=pxMake(msg,{base:11,scale:2,color:"#f7efe0"});
+ if(c)toastEl.appendChild(c);
+ toastEl.classList.add("on");
  clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove("on"),1700);
 }
 
