@@ -267,6 +267,8 @@ body.night{text-shadow:0 1px 2px rgba(0,0,0,.45)}
   border:1px solid rgba(60,40,20,.22);border-radius:1px}
 .iname .shbar{height:1.5em;width:auto;vertical-align:-.42em;margin-left:5px;opacity:.88}
 body.night .iname .shbar{filter:brightness(1.4)}
+.rz-site{display:inline-block;margin-top:9px;font-family:var(--kr);font-size:11.5px;letter-spacing:.02em;
+  color:var(--gold);text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:1px}
 </style>
 </head>
 <body>
@@ -636,14 +638,60 @@ function renderSoolChips(){
  soolChips.innerHTML=`<button class="chip" data-k="all">${esc(t('chips.all'))}</button>`+CATS.map(c=>`<button class="chip" data-k="${c.k}">${esc(t('cat.'+c.k+'.label'))}</button>`).join("");
  soolChips.querySelectorAll(".chip").forEach(ch=>{ch.classList.toggle("on",ch.dataset.k===soolFilter);ch.onclick=()=>{soolFilter=ch.dataset.k;soolChips.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x===ch));renderSool();};});
 }
+function siteLink(id){
+ const u=SITES[id];
+ if(!u) return "";
+ return `<a class="rz-site" href="${u}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${esc(t('site.official'))} ↗</a>`;
+}
+/* 양조장 공식 사이트. 검색으로 찾은 뒤 실제로 열어 회사명·주소·제품을 확인한 것만 넣는다.
+   확인 못 한 곳은 비워둔다 (틀린 링크는 없느니만 못함) */
+const SITES={
+ boksundoga:"https://boksoon.com/",
+ sucre:"https://jubangjangbrewery.com/",
+ fogmag:"https://dalseong.co/",
+ "ellyeop-takju":"http://www.ellyeoppyunjoo.com/",
+ "ellyeop-cheongju":"http://www.ellyeoppyunjoo.com/",
+ ihwaju:"http://sool.ksdb.co.kr/product/product_010100.asp",
+ "inner-nectar":"http://www.bewaterbrew.com/",
+ "inner-flow":"http://www.bewaterbrew.com/",
+ "inner-calm":"http://www.bewaterbrew.com/",
+ pungjeong:"https://hwayang.co/",
+ hwajeonilchwi:"https://hwajeonilchwi.com/",
+ "gyeongseong-gwahaju":"https://soolawon.co.kr/",
+ "daetong-daeip":"http://chusungju.co.kr/",
+ "sahwa-yuja":"https://sahwa.co.kr/",
+ "omirose-premier":"https://omynara.com/",
+ "omirose-yeon":"https://omynara.com/",
+ "omirose-gyeol":"https://omynara.com/",
+ "gowoon-oak":"https://omynara.com/",
+ "gowoon-baekja":"https://omynara.com/",
+ "kiwi-sool":"https://sooldogajeju.com/",
+ moonbaesool:"https://www.moonbaesool.co.kr/",
+ ryu24:"https://ryu-distillery.com/",
+ damsol:"https://www.solsongju.com/",
+ "hwayo-xp":"https://hwayo.com/",
+ soorok:"https://danongbio.co.kr/",
+ "kione-eagle":"https://threesocieties.co.kr/",
+ "kione-tiger":"https://threesocieties.co.kr/",
+ "kione-unicorn":"https://threesocieties.co.kr/",
+ "kione-signature":"https://threesocieties.co.kr/",
+ "kione-batch8":"https://threesocieties.co.kr/",
+ "kione-edward":"https://threesocieties.co.kr/",
+ "ggeek-pale":"https://www.ggeekbeer.com/",
+ "ggeek-porter":"https://www.ggeekbeer.com/",
+ chusa40:"https://xn--vf4b19u.com/",
+ chusa50:"https://xn--vf4b19u.com/",
+ mongro:"https://xn--vf4b19u.com/"
+};
 function bBody(b){
  const r=rzOf(b.id);
- if(!r) return `<div class="b-desc">${esc(b.desc)}</div>`;
+ if(!r) return `<div class="b-desc">${esc(b.desc)}${siteLink(b.id)}</div>`;
  let h=`<div class="b-desc">`;
  if(r.oneLine) h+=`<div class="rz-one">“${esc(r.oneLine)}”</div>`;
  if(r.taste) h+=`<div class="rz-row"><span class="rz-k">${esc(lbl('taste'))}</span><span class="rz-v">${esc(r.taste)}</span></div>`;
  if(r.feature) h+=`<div class="rz-row"><span class="rz-k">${esc(lbl('feature'))}</span><span class="rz-v">${esc(r.feature)}</span></div>`;
  if(r.history) h+=`<div class="rz-row"><span class="rz-k">${esc(lbl('history'))}</span><span class="rz-v">${esc(r.history)}</span></div>`;
+ h+=siteLink(b.id);
  return h+`</div>`;
 }
 function renderSool(){

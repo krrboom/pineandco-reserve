@@ -59,6 +59,7 @@ window.I18N_EN={"ui":{
 "map.panel0.b":"Rest your hand on or tap a province, and that region grows larger, with dots marking where each traditional liquor is made.",
 "map.here":"Made here",
 "map.count":"kinds",
+"site.official":"Official site",
 
 "about.1.t":"One Menu, Every Korea","about.1.b":"Cricket Seoul's menu draws inspiration from every side of Korea. Its food culture, the contrast between city and countryside, the distinct four seasons, and a sensibility all its own. We read these elements through Cricket's eyes and translate them into contemporary cocktails.",
 "about.2.t":"Tap System","about.2.b":"We serve Korean-style cocktails through a tap system, keeping them light and easy to enjoy. Guests can choose between non-alcoholic and alcoholic.",
