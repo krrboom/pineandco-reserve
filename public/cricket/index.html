@@ -246,6 +246,11 @@ body.night{text-shadow:0 1px 2px rgba(0,0,0,.45)}
 .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease, transform .6s ease}
 .reveal.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.splash-logo,.splash-welcome,.splash-en,.splash-enter,.splash-hint{animation:none}}
+/* 셰어링 프로젝트 표시 */
+.iname .shflag{height:.82em;width:auto;vertical-align:-.02em;margin-left:7px;
+  border:1px solid rgba(60,40,20,.22);border-radius:1px}
+.iname .shbar{height:1.5em;width:auto;vertical-align:-.42em;margin-left:5px;opacity:.88}
+body.night .iname .shbar{filter:brightness(1.4)}
 </style>
 </head>
 <body>
@@ -455,7 +460,8 @@ function provName(code,kr){return LANG==="ko"?kr:(PROV_ROM[code]||kr);}
 
 /* ===== 메뉴 데이터 ===== */
 const COCKTAILS=[
- {name:"Flower Peak Tree 60",tw:"",desc:"삼겹살 진, 피노 셰리, 코코넛, 깻잎",link:null},
+ {name:"Flower Peak Tree 60",tw:"",desc:"삼겹살 진, 피노 셰리, 코코넛, 깻잎",link:null,
+  share:{flag:"flag_sg.webp",country:"Singapore",bar:"bar_nighthawk.png",barName:"Nighthawk"}},
  {name:"Makgeolli Fizz",tw:"Piña Colada twist",desc:"막걸리, 수제 코코넛 소다, 오렌지",link:"takju"},
  {name:"Andong Mule",tw:"Moscow Mule twist",desc:"안동소주 베이스, 수제 배·생강 비어",link:null,na:true},
  {name:"Nokcha Gin Tonic",tw:"G&T twist",desc:"한국 진, 수제 녹차 토닉워터",link:null,na:true},
@@ -590,8 +596,13 @@ function renderCocktails(){
     if(byId[d.link]){const bt=byId[d.link];tag=`<span class="tj" onclick="gotoBottle('${d.link}')">📍 ${esc(bt.kr)}</span>`;}
     else{const c=CATS.find(c=>c.k===d.link);if(c)tag=`<span class="tj" onclick="gotoCat('${d.link}')">${esc(t('cat.'+c.k+'.label'))}</span>`;}
   }
+  // 셰어링 프로젝트: 이름 옆에 나라 국기와 만든 바의 로고 (글자 높이에 맞춤)
+  const sh=d.share
+    ? `<img class="shflag" src="${d.share.flag}" alt="${esc(d.share.country)}" title="from ${esc(d.share.country)}">`
+      +`<img class="shbar" src="${d.share.bar}" alt="${esc(d.share.barName)}" title="by ${esc(d.share.barName)}" onerror="this.remove()">`
+    : "";
   return `<div class="item-c">
-    <div class="ih"><span class="iname">${esc(d.name)}${d.tw?` <span class="itw">(${esc(d.tw)})</span>`:""}</span><span class="idot"></span><span class="iprice">25,000</span></div>
+    <div class="ih"><span class="iname">${esc(d.name)}${sh}${d.tw?` <span class="itw">(${esc(d.tw)})</span>`:""}</span><span class="idot"></span><span class="iprice">25,000</span></div>
     <div class="idesc">${esc(t('ck.'+d.name))}</div>
     <div class="itags">${tag}${d.na?`<span class="tj na">${esc(t('tap'))}</span>`:""}</div>
   </div>`;}).join("");
