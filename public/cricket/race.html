@@ -14,7 +14,8 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 .app{max-width:640px;margin:0 auto;min-height:100vh;background:var(--paper);position:relative;overflow:hidden}
 
 /* 상단바 */
-.top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--dark);color:#e9e1d1}
+.top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--dark);color:#e9e1d1;
+  position:sticky;top:0;z-index:50}
 .top img{height:26px;width:auto;filter:brightness(0) invert(1) opacity(.92)}
 .top .ti{font-variant-caps:small-caps;letter-spacing:.16em;font-size:12px;color:var(--gold)}
 .top .back{margin-left:auto;font-size:12px;color:#c8ba9f;text-decoration:none;border:1px solid rgba(216,178,90,.4);
@@ -93,7 +94,8 @@ body{background:var(--dark);color:var(--ink);font-family:"Iowan Old Style","Appl
 .mrow .mpl{width:24px;text-align:center;font-size:13px}
 
 /* 결과 */
-.res{position:fixed;inset:0;background:rgba(16,10,4,.93);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
+.res{position:fixed;inset:0;background:rgba(16,10,4,.93);display:none;align-items:center;justify-content:center;
+  padding:64px 20px 20px;z-index:40;overflow-y:auto}
 .res.on{display:flex}
 .resin{background:var(--paper);border-radius:16px;padding:24px 20px;max-width:340px;width:100%;text-align:center}
 .res .win{font-variant-caps:small-caps;letter-spacing:.1em;font-size:12px;color:var(--mut)}
