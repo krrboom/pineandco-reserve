@@ -1274,6 +1274,24 @@ if (process.env.DATA_DIR) migrateData();
 // ═════════════════════════════════════════════════════════════
 const app = express();
 app.use(express.json());
+
+// cricketseoul.com 으로 들어온 손님에게는 예약이 아니라 크리켓 메뉴를 보여준다.
+// public/cricket 폴더를 이 도메인의 루트처럼 서빙 (주소는 그대로 cricketseoul.com 유지).
+// 예약 도메인(pineandco-reserve.onrender.com 등)은 아래 정적 서빙/라우트로 그대로 동작.
+const CRICKET_ROOT = path.join(__dirname, 'public', 'cricket');
+app.use((req, res, next) => {
+  const host = (req.headers.host || '').toLowerCase().split(':')[0];
+  if ((host === 'cricketseoul.com' || host === 'www.cricketseoul.com')
+      && req.method === 'GET' && !req.path.startsWith('/api')) {
+    const rel  = req.path === '/' ? '/index.html' : req.path;
+    const file = path.join(CRICKET_ROOT, rel);
+    if (file.startsWith(CRICKET_ROOT)) {
+      return res.sendFile(file, err => { if (err) next(); });
+    }
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Default route → reservation booking page (guest-facing primary)
