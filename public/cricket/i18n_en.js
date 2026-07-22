@@ -65,6 +65,8 @@ window.I18N_EN={"ui":{
 "about.2.t":"Tap System","about.2.b":"We serve Korean-style cocktails through a tap system, keeping them light and easy to enjoy. Guests can choose between non-alcoholic and alcoholic.",
 "about.3.t":"Onggi & Bamboo Aging","about.3.b":"Cocktails aged in onggi and bamboo turn softer than those in oak, gaining a gentle acidity. We hold time not in wooden casks, but in Korean vessels.",
 "about.4.t":"Locally Sourced","about.4.b":"We build our food and cocktails mainly around local ingredients. Some things still travel, though, such as coconut syrup and orange bitters.",
+"about.5.t":"Sharing Project","about.5.b":"Cricket Seoul works hand in hand with local breweries, artisans, and artists, translating their spirits and craft into cocktails. As with our collaboration with a local makgeolli brewery, we keep finding new ways to connect regional ingredients, craftsmanship, and modern bar culture. The goal is simple: to share the beauty of Korea with a wider audience.",
+"about.6.t":"Team Kite","about.6.b":"Cricket Seoul is run by Team Kite. Through its venues Pine & Co, Cricket Seoul, and Hopers, Team Kite has collaborated with leading global luxury hotel groups across India, Singapore, Indonesia, Thailand, Korea, Japan, China, Macau, and Hong Kong, working with brands such as Hilton, Hyatt, Accor, IHG, Mandarin Oriental, and Langham, as well as Korean groups including Josun Hotels, Paradise, and INSPIRE.",
 
 "footer.q":"Like a sound of cricket, we share Korea with everyone.",
 "footer.loc":"Cricket Seoul · Seoul, Korea",
