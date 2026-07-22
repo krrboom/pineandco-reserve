@@ -51,7 +51,6 @@ window.I18N_ZH={"ui": {
 "about.3.t":"Onggi & Bamboo Aging","about.3.b":"在瓮器与竹中陈酿的鸡尾酒不同于橡木桶，更加柔顺，并增添淡淡的酸味。我们不用木桶，而以韩国的器皿盛载时间。",
 "about.4.t":"Locally Sourced","about.4.b":"我们的餐食与鸡尾酒以本土食材为主。不过椰子糖浆、橙味苦精等部分材料仍需从国外采购。",
 "about.5.t":"Sharing Project","about.5.b":"Cricket 与本地酒厂、匠人和艺术家携手，将他们的酒与作品化作一杯杯鸡尾酒。就像我们与本地马格利酒厂的合作一样，我们不断寻找将地方食材、匠心与现代酒吧文化相连的新方式。目标只有一个：把韩国之美分享给更多的人。",
-"about.6.t":"Team Kite","about.6.b":"Cricket Seoul 由 Team Kite 运营。旗下拥有 Pine & Co、Cricket Seoul 与 Hopers，并与印度、新加坡、印尼、泰国、韩国、日本、中国、澳门及香港的全球奢华酒店集团合作，携手希尔顿、凯悦、雅高、IHG、文华东方、朗廷等品牌，以及朝鲜酒店、Paradise、INSPIRE 等韩国集团。",
 "footer.q":"Like a sound of cricket, we share Korea with everyone.","footer.loc":"Cricket Seoul · Seoul, Korea",
 "tap":"可选无酒精","glass":"杯","bottle":"瓶",
 "ck.Flower Peak Tree 60":"五花肉琴酒、菲诺雪莉、椰子、紫苏叶",
