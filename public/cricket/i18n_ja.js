@@ -43,7 +43,6 @@ window.I18N_JA={"ui": {
 "cat.whisky.label":"ウイスキー","cat.whisky.desc":"韓国の蒸留所がつくる韓国シングルモルト。",
 "cat.beer.label":"ビール","cat.beer.desc":"国産クラフトビール。",
 "map.hint":"🖐️ 地域を押すと拡大し、その中の点(醸造地)を押すとお酒が下に表示されます",
-"home.scroll":"メニューを見る",
 "map.panel0.t":"地域を選んでください","map.panel0.b":"市・道に触れるか押すと、その地域が大きくなり、伝統酒が生産された場所に点が表示されます。",
 "map.here":"ここで生産されています","map.count":"種",
 "site.official":"公式サイト",

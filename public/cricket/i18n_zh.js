@@ -43,7 +43,6 @@ window.I18N_ZH={"ui": {
 "cat.whisky.label":"威士忌","cat.whisky.desc":"韩国本土蒸馏厂酿制的单一麦芽威士忌。",
 "cat.beer.label":"啤酒","cat.beer.desc":"国产精酿啤酒。",
 "map.hint":"🖐️ 点击地区即可放大，点击其中的点(酿造地)，酒便会显示在下方",
-"home.scroll":"查看菜单",
 "map.panel0.t":"请选择地区","map.panel0.b":"将手放在或点击市·道，该地区便会放大，并在生产传统酒的地方标出点。",
 "map.here":"产于此地","map.count":"款",
 "site.official":"官方网站",
