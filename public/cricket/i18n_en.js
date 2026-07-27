@@ -55,6 +55,7 @@ window.I18N_EN={"ui":{
 "cat.beer.label":"Beer","cat.beer.desc":"Korean craft beer.",
 
 "map.hint":"🖐️ Tap a region to zoom in, then tap a dot (a brewing site) to see its liquors below",
+"home.scroll":"See the menu",
 "map.panel0.t":"Select a region",
 "map.panel0.b":"Rest your hand on or tap a province, and that region grows larger, with dots marking where each traditional liquor is made.",
 "map.here":"Made here",
