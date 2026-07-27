@@ -281,13 +281,13 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .cloudveil{position:fixed;inset:0;z-index:500;pointer-events:none;overflow:hidden;background:#e5dcc8;transition:opacity 3.8s ease 1.2s}
 .mapstage.veil-run .cloudveil{opacity:0}
 .cloudveil .cloud{position:absolute;inset:-25%;width:150%;height:150%;object-fit:cover;will-change:transform,opacity}
-.cloudveil .cloud-b{transform:scaleX(-1)}
+.cloudveil .cloud-b{object-position:right center}
 .mapstage.veil .mapsvg{transform:scale(.5);opacity:.22}
 .mapstage.veil-run .mapsvg{transform:scale(1);opacity:1;transition:transform 3s cubic-bezier(.22,.61,.36,1),opacity 2.2s ease}
 .cloudveil .cloud-a{transform-origin:center center;transition:transform 4.6s cubic-bezier(.4,0,.22,1),opacity 4s ease .8s}
 .cloudveil .cloud-b{transform-origin:58% 46%;transition:transform 4.1s cubic-bezier(.4,0,.22,1),opacity 3.5s ease .5s}
-.mapstage.veil-run .cloud-a{transform:scale(2.5);opacity:0}
-.mapstage.veil-run .cloud-b{transform:scale(3.4);opacity:0}
+.mapstage.veil-run .cloud-a{transform:translateX(-58%) scale(2.2);opacity:0}
+.mapstage.veil-run .cloud-b{transform:translateX(62%) scale(2.4);opacity:0}
 .pen-land{fill:#c3cfb1;stroke:none}
 .pen-sea{fill:#7a8b9c;font-family:var(--kr);font-style:italic;letter-spacing:.12em;font-size:26px}
 .pen-isle{fill:#93a08c;font-family:var(--kr);font-size:15px}
