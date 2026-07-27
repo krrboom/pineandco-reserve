@@ -278,7 +278,7 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .scrollcue .cue-arrow{display:block;font-size:16px;line-height:1;margin-top:2px}
 @keyframes cuebob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
 .mapmeta{padding-top:8px}
-.cloudveil{position:fixed;inset:0;z-index:500;pointer-events:none;overflow:hidden;background:#efe7d4;transition:opacity 2.6s ease .6s}
+.cloudveil{position:fixed;inset:0;z-index:500;pointer-events:none;overflow:hidden;background:#e5dcc8;transition:opacity 2.6s ease .6s}
 .mapstage.veil-run .cloudveil{opacity:0}
 .cloudveil .cloud{position:absolute;inset:-14%;width:128%;height:128%;will-change:transform,opacity}
 .mapstage.veil .mapsvg{transform:scale(.5);opacity:.22}
@@ -334,8 +334,8 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
     <svg class="mapsvg" id="mapsvg" xmlns="http://www.w3.org/2000/svg"></svg>
     <button id="mapBack" class="map-back">← 전체 지도</button>
     <div class="cloudveil" id="cloudveil" aria-hidden="true">
-      <svg class="cloud cloud-a" viewBox="0 0 400 520" preserveAspectRatio="xMidYMid slice"><filter id="clA" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.010" numOctaves="5" seed="7"/><feColorMatrix type="matrix" values="0 0 0 0 0.95  0 0 0 0 0.91  0 0 0 0 0.81  0 0 0 -1.4 1.28"/></filter><rect width="400" height="520" filter="url(#clA)"/></svg>
-      <svg class="cloud cloud-b" viewBox="0 0 400 520" preserveAspectRatio="xMidYMid slice"><filter id="clB" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="4" seed="31"/><feColorMatrix type="matrix" values="0 0 0 0 0.99  0 0 0 0 0.96  0 0 0 0 0.88  0 0 0 -1.2 1.18"/></filter><rect width="400" height="520" filter="url(#clB)"/></svg>
+      <svg class="cloud cloud-a" viewBox="0 0 400 520" preserveAspectRatio="xMidYMid slice"><filter id="clA" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.010" numOctaves="5" seed="7"/><feColorMatrix type="matrix" values="0 0 0 0.5 0.46  0 0 0 0.48 0.44  0 0 0 0.4 0.38  0 0 0 0 1"/></filter><rect width="400" height="520" filter="url(#clA)"/></svg>
+      <svg class="cloud cloud-b" viewBox="0 0 400 520" preserveAspectRatio="xMidYMid slice"><filter id="clB" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="4" seed="31"/><feColorMatrix type="matrix" values="0 0 0 0.46 0.5  0 0 0 0.44 0.48  0 0 0 0.36 0.41  0 0 0 0 1"/></filter><rect width="400" height="520" filter="url(#clB)"/></svg>
     </div>
   </div></div>
   <div class="scrollcue" aria-hidden="true"><span data-i18n="home.scroll">메뉴 보기</span><span class="cue-arrow">⌄</span></div>
@@ -990,16 +990,17 @@ function playMapIntro(){
  if(window.KOREA){setVB(PEN_VB.x,PEN_VB.y,PEN_VB.w,PEN_VB.h);scaleOverlay();svg.classList.add("pen-only");}
  document.body.classList.add("intro-run");
  st.classList.add("veil");
- requestAnimationFrame(()=>requestAnimationFrame(()=>st.classList.add("veil-run")));
- // 2) 구름 완전히 걷히고 한반도 전체가 잠깐 보인 뒤: 남한으로 줌인 + 채색 서서히 드러남
+ // 자욱한 구름이 잠깐 머문 뒤 그 속으로 뚫고 들어가기 시작
+ setTimeout(()=>st.classList.add("veil-run"),1000);
+ // 2) 구름 뚫고 한반도 전체가 드러난 뒤: 남한으로 줌인 + 채색 서서히 드러남
  setTimeout(()=>{
    svg.classList.remove("pen-only");
    animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,2800,()=>{
      svg.classList.add("pen-hide");                 // 전체 지형 fade out
      document.body.classList.remove("intro-run");   // 3) 로고·버튼 fade in
    });
- },3000);
- setTimeout(()=>{if(veil)veil.classList.add("hide");st.classList.remove("veil","veil-run");},3200);
+ },4200);
+ setTimeout(()=>{if(veil)veil.classList.add("hide");st.classList.remove("veil","veil-run");},4600);
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
 document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
