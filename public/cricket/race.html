@@ -787,7 +787,13 @@ function step(dt, el){
    r.x+=r.v*dt;
    if(r.x<START_X-40)r.x=START_X-40;
    r.anim+=dt*(mul<=0?0:Math.max(0.5,mul))*7.5;
-   if(r.x>=RACE_LEN){ r.done=1; r.x=RACE_LEN; finished.push(r); r.place=finished.length; }
+   if(!r.done && r.x>=RACE_LEN){ r.done=1; r._fin=r.x; }   // 통과 표시 (초과분 유지, 순위는 아래에서)
+ }
+ // 같은 프레임에 결승선을 지난 주자들: 배열 순서가 아니라 실제로 더 멀리 간(빠른) 순서로 순위 결정 (Pat 편향 제거)
+ const _jf=runners.filter(r=>r._fin!==undefined);
+ if(_jf.length){
+   _jf.sort((a,b)=>b._fin-a._fin);
+   for(const r of _jf){ finished.push(r); r.place=finished.length; r.x=RACE_LEN; r._fin=undefined; }
  }
  // 카메라
  const un=runners.filter(r=>!r.done);
