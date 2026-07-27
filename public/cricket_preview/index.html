@@ -278,15 +278,15 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .scrollcue .cue-arrow{display:block;font-size:16px;line-height:1;margin-top:2px}
 @keyframes cuebob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
 .mapmeta{padding-top:8px}
-.cloudveil{position:fixed;inset:0;z-index:500;pointer-events:none;overflow:hidden;background:#e5dcc8;transition:opacity 2.6s ease .6s}
+.cloudveil{position:fixed;inset:0;z-index:500;pointer-events:none;overflow:hidden;background:#e5dcc8;transition:opacity 3.8s ease 1.2s}
 .mapstage.veil-run .cloudveil{opacity:0}
 .cloudveil .cloud{position:absolute;inset:-14%;width:128%;height:128%;will-change:transform,opacity}
 .mapstage.veil .mapsvg{transform:scale(.5);opacity:.22}
 .mapstage.veil-run .mapsvg{transform:scale(1);opacity:1;transition:transform 3s cubic-bezier(.22,.61,.36,1),opacity 2.2s ease}
-.cloudveil .cloud-a{transform-origin:center center;transition:transform 3.2s cubic-bezier(.32,0,.3,1),opacity 2.4s ease .5s}
-.cloudveil .cloud-b{transform-origin:58% 46%;transition:transform 2.6s cubic-bezier(.32,0,.3,1),opacity 2.1s ease .2s}
-.mapstage.veil-run .cloud-a{transform:scale(3);opacity:0}
-.mapstage.veil-run .cloud-b{transform:scale(4.6);opacity:0}
+.cloudveil .cloud-a{transform-origin:center center;transition:transform 4.6s cubic-bezier(.4,0,.22,1),opacity 4s ease .8s}
+.cloudveil .cloud-b{transform-origin:58% 46%;transition:transform 4.1s cubic-bezier(.4,0,.22,1),opacity 3.5s ease .5s}
+.mapstage.veil-run .cloud-a{transform:scale(2.5);opacity:0}
+.mapstage.veil-run .cloud-b{transform:scale(3.4);opacity:0}
 .pen-land{fill:#c3cfb1;stroke:none}
 .pen-sea{fill:#7a8b9c;font-family:var(--kr);font-style:italic;letter-spacing:.12em;font-size:26px}
 .pen-isle{fill:#93a08c;font-family:var(--kr);font-size:15px}
@@ -999,8 +999,8 @@ function playMapIntro(){
      svg.classList.add("pen-hide");                 // 전체 지형 fade out
      document.body.classList.remove("intro-run");   // 3) 로고·버튼 fade in
    });
- },4200);
- setTimeout(()=>{if(veil)veil.classList.add("hide");st.classList.remove("veil","veil-run");},4600);
+ },6000);
+ setTimeout(()=>{if(veil)veil.classList.add("hide");st.classList.remove("veil","veil-run");},6400);
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
 document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
