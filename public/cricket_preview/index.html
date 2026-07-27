@@ -280,14 +280,21 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .mapmeta{padding-top:8px}
 .cloudveil{position:fixed;inset:0;z-index:500;pointer-events:none;overflow:hidden;background:#e5dcc8;transition:opacity 3.8s ease 1.2s}
 .mapstage.veil-run .cloudveil{opacity:0}
-.cloudveil .cloud{position:absolute;inset:-25%;width:150%;height:150%;object-fit:cover;will-change:transform,opacity}
-.cloudveil .cloud-b{object-position:right center}
+.cloudveil .cloud{position:absolute;inset:-30%;width:160%;height:160%;object-fit:cover;filter:brightness(1.06);transform-origin:center center;will-change:transform,opacity}
+.cloudveil .cloud-a{object-position:left top}
+.cloudveil .cloud-b{object-position:right top}
+.cloudveil .cloud-c{object-position:left bottom}
+.cloudveil .cloud-d{object-position:right bottom}
 .mapstage.veil .mapsvg{transform:scale(.5);opacity:.22}
 .mapstage.veil-run .mapsvg{transform:scale(1);opacity:1;transition:transform 3s cubic-bezier(.22,.61,.36,1),opacity 2.2s ease}
-.cloudveil .cloud-a{transform-origin:center center;transition:transform 4.6s cubic-bezier(.4,0,.22,1),opacity 4s ease .8s}
-.cloudveil .cloud-b{transform-origin:58% 46%;transition:transform 4.1s cubic-bezier(.4,0,.22,1),opacity 3.5s ease .5s}
-.mapstage.veil-run .cloud-a{transform:translateX(-58%) scale(2.2);opacity:0}
-.mapstage.veil-run .cloud-b{transform:translateX(62%) scale(2.4);opacity:0}
+.cloudveil .cloud-a{transition:transform 4.4s cubic-bezier(.36,0,.3,1),opacity 3.6s ease .9s}
+.cloudveil .cloud-b{transition:transform 4.6s cubic-bezier(.36,0,.3,1),opacity 3.8s ease .7s}
+.cloudveil .cloud-c{transition:transform 4.2s cubic-bezier(.36,0,.3,1),opacity 3.4s ease .8s}
+.cloudveil .cloud-d{transition:transform 4.8s cubic-bezier(.36,0,.3,1),opacity 4s ease .6s}
+.mapstage.veil-run .cloud-a{transform:translate(-52%,-34%) scale(2.7);opacity:0}
+.mapstage.veil-run .cloud-b{transform:translate(55%,-28%) scale(2.9);opacity:0}
+.mapstage.veil-run .cloud-c{transform:translate(-42%,40%) scale(2.6);opacity:0}
+.mapstage.veil-run .cloud-d{transform:translate(46%,36%) scale(3.1);opacity:0}
 .pen-land{fill:#c3cfb1;stroke:none}
 .pen-sea{fill:#7a8b9c;font-family:var(--kr);font-style:italic;letter-spacing:.12em;font-size:26px}
 .pen-isle{fill:#93a08c;font-family:var(--kr);font-size:15px}
@@ -337,6 +344,8 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
     <div class="cloudveil" id="cloudveil" aria-hidden="true">
       <img class="cloud cloud-a" src="cloud_bg.png" alt="">
       <img class="cloud cloud-b" src="cloud_bg.png" alt="">
+      <img class="cloud cloud-c" src="cloud_bg.png" alt="">
+      <img class="cloud cloud-d" src="cloud_bg.png" alt="">
     </div>
   </div></div>
   <div class="scrollcue" aria-hidden="true"><span data-i18n="home.scroll">메뉴 보기</span><span class="cue-arrow">⌄</span></div>
@@ -992,16 +1001,16 @@ function playMapIntro(){
  document.body.classList.add("intro-run");
  st.classList.add("veil");
  // 자욱한 구름이 잠깐 머문 뒤 그 속으로 뚫고 들어가기 시작
- setTimeout(()=>st.classList.add("veil-run"),1000);
- // 2) 구름 뚫고 한반도 전체가 드러난 뒤: 남한으로 줌인 + 채색 서서히 드러남
+ // 2) 구름은 옆으로 흘러 커지며 걷히고(fly-through) + 지도는 동시에 확대 → 앞으로 다가가는 느낌
  setTimeout(()=>{
-   svg.classList.remove("pen-only");
-   animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,2800,()=>{
-     svg.classList.add("pen-hide");                 // 전체 지형 fade out
+   st.classList.add("veil-run");            // 구름 방사형으로 흘러 커지며 걷힘
+   svg.classList.remove("pen-only");         // 남한 채색 서서히 드러남
+   animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,4400,()=>{   // 지도 남한으로 확대(구름과 동시)
+     svg.classList.add("pen-hide");
      document.body.classList.remove("intro-run");   // 3) 로고·버튼 fade in
    });
- },6000);
- setTimeout(()=>{if(veil)veil.classList.add("hide");st.classList.remove("veil","veil-run");},6400);
+ },1000);
+ setTimeout(()=>{if(veil)veil.classList.add("hide");st.classList.remove("veil","veil-run");},5600);
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
 document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
