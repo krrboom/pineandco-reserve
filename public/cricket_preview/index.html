@@ -1023,13 +1023,13 @@ function playMapIntro(){
  // 영상 속 지형(스코틀랜드)이 선명해지기 전에 우리 한반도로 전환: 채색 드러남 + 남한 줌인
  setTimeout(()=>{
    svg.classList.remove("pen-only");
-   animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,3000,()=>{
+   animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,2600,()=>{
      svg.classList.add("pen-hide");
      document.body.classList.remove("intro-run");   // 로고·버튼 fade in
    });
- },1900);
- setTimeout(()=>{ if(veil)veil.classList.add("fade"); },2100);   // 영상(구름) 페이드아웃 → 우리 지도만
- setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run"); },4200);
+ },1000);
+ setTimeout(()=>{ if(veil)veil.classList.add("fade"); },1200);   // 블러 구름 페이드아웃 → 우리 지도만
+ setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run"); },2900);
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
 document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
