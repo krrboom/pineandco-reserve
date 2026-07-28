@@ -116,13 +116,13 @@ section+section{border-top:1px solid var(--line);margin-top:14px;padding-top:36p
 .mapwrap{background:transparent;padding:4px;position:relative}
 .mapstage{position:relative;width:100%;max-width:400px;margin:0 auto;aspect-ratio:571/764}
 .mapsvg{width:100%;height:100%;display:block}
-.prov{fill:#dde2cd;stroke:#a89f86;stroke-width:.9;cursor:pointer;vector-effect:non-scaling-stroke;
+.prov{fill:#dde2cd;stroke:#a89f86;stroke-width:.9;cursor:pointer;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;
   transition:fill .35s,opacity .35s}
 .prov.has{fill:#c4d0a6}
 .prov:hover{fill:#a9ba84}
 .prov.active{fill:#a7ba7f;stroke:var(--gold);stroke-width:2}
 .prov.dim{opacity:.45}
-.muni{fill:none;stroke:rgba(70,60,35,.45);stroke-width:1;vector-effect:non-scaling-stroke;pointer-events:none;
+.muni{fill:none;stroke:rgba(70,60,35,.45);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;pointer-events:none;
   animation:fadeIn .5s ease both}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .map-back{position:absolute;left:8px;top:8px;z-index:5;display:none;background:var(--dark);color:#e9e1d1;
@@ -792,6 +792,33 @@ function scaleOverlay(){
  document.querySelectorAll("#mapDyn .mdot-label").forEach(t=>t.setAttribute("font-size",(9*s).toFixed(2)));
  document.querySelectorAll("#mapDyn .prov-label").forEach(t=>t.setAttribute("font-size",(16*s).toFixed(2)));
 }
+/* 지도 외곽선을 살짝 둥글게 (크리켓 브랜드 톤) — Chaikin 코너 커팅 */
+function _chaikin(pts,closed){
+ const n=pts.length, r=[];
+ if(!closed) r.push(pts[0]);
+ const lim=closed?n:n-1;
+ for(let i=0;i<lim;i++){ const a=pts[i], b=pts[(i+1)%n];
+   r.push([a[0]*0.75+b[0]*0.25, a[1]*0.75+b[1]*0.25]);
+   r.push([a[0]*0.25+b[0]*0.75, a[1]*0.25+b[1]*0.75]); }
+ if(!closed) r.push(pts[n-1]);
+ return r;
+}
+function _smoothD(d,iter){
+ return String(d).split('M').filter(s=>s.trim()).map(sub=>{
+   const closed=/z/i.test(sub);
+   const nums=(sub.match(/-?\d*\.?\d+/g)||[]).map(Number);
+   let pts=[]; for(let i=0;i+1<nums.length;i+=2)pts.push([nums[i],nums[i+1]]);
+   if(pts.length<4) return 'M'+sub.replace(/z/i,'')+(closed?'Z':'');
+   for(let k=0;k<iter;k++)pts=_chaikin(pts,closed);
+   let o='M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
+   for(let i=1;i<pts.length;i++)o+='L'+pts[i][0].toFixed(1)+' '+pts[i][1].toFixed(1);
+   return o+(closed?'Z':'');
+ }).join('');
+}
+(function(){ try{
+  if(window.MAPDATA&&!MAPDATA._sm){ MAPDATA.provinces.forEach(p=>{p.d=_smoothD(p.d,2);}); MAPDATA._sm=1; }
+  if(window.KOREA&&!KOREA._sm){ KOREA.peninsula=_smoothD(KOREA.peninsula,2); KOREA._sm=1; }
+ }catch(e){ console.warn('smooth',e); } })();
 function buildMap(){
  const svg=document.getElementById("mapsvg");
  svg.setAttribute("preserveAspectRatio","xMidYMid meet");
@@ -826,7 +853,7 @@ function activateProv(code){
  svg.insertBefore(activeEl,muni);
  // 시군구 경계(점선)
  muni.innerHTML="";
- ((window.MAPMUNI||{})[code]||[]).forEach(m=>muni.appendChild(el("path",{class:"muni",d:m.d})));
+ ((window.MAPMUNI||{})[code]||[]).forEach(m=>muni.appendChild(el("path",{class:"muni",d:(m._sd||(m._sd=_smoothD(m.d,1)))})));
  // 실제 화면 확대: viewBox를 그 도의 영역으로
  const bb=activeEl.getBBox();
  const aspect=MAPDATA.vbW/MAPDATA.vbH;
