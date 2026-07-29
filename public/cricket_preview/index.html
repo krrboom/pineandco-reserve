@@ -283,7 +283,8 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .bgpattern{position:absolute;inset:-6%;width:112%;height:112%;background:url("cloud1_pattern.jpg") center/cover;transform-origin:center;will-change:transform,opacity;transition:transform 3s cubic-bezier(.3,0,.4,1),opacity 2.2s ease .5s}
 .mapstage.veil-run .bgpattern{transform:scale(2);opacity:0}
 .pcloud{position:absolute;height:auto;opacity:0;will-change:transform,opacity;transition:transform 3.2s cubic-bezier(.34,0,.24,1),opacity .9s ease}
-.mapstage.veil-clouds .pcloud{opacity:1}
+@keyframes sweepL{0%{opacity:0;transform:translateX(-6%) scale(.92)}16%{opacity:1}100%{opacity:0;transform:translateX(-138%) scale(1.4)}}
+@keyframes sweepR{0%{opacity:0;transform:translateX(6%) scale(.92)}16%{opacity:1}100%{opacity:0;transform:translateX(140%) scale(1.4)}}
 .c1{top:-5%;left:6%;width:54%}
 .c2{top:5%;right:1%;width:40%}
 .c3{top:31%;left:20%;width:62%}
@@ -291,13 +292,13 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .c5{bottom:19%;left:4%;width:60%}
 .c6{top:39%;right:-6%;width:35%}
 .c7{bottom:1%;left:10%;width:66%}
-.mapstage.veil-part .c1{transform:translateX(-135%) scale(1.35);opacity:0}
-.mapstage.veil-part .c2{transform:translateX(142%) scale(1.35);opacity:0}
-.mapstage.veil-part .c3{transform:translateX(128%) scale(1.5);opacity:0}
-.mapstage.veil-part .c4{transform:translateX(-148%) scale(1.35);opacity:0}
-.mapstage.veil-part .c5{transform:translateX(-138%) scale(1.4);opacity:0}
-.mapstage.veil-part .c6{transform:translateX(142%) scale(1.35);opacity:0}
-.mapstage.veil-part .c7{transform:translateX(-132%) scale(1.4);opacity:0}
+.mapstage.veil-part .c1{animation:sweepL 3.6s ease forwards}
+.mapstage.veil-part .c2{animation:sweepR 3.6s ease forwards}
+.mapstage.veil-part .c3{animation:sweepR 3.9s ease forwards}
+.mapstage.veil-part .c4{animation:sweepL 3.65s ease forwards}
+.mapstage.veil-part .c5{animation:sweepL 3.75s ease forwards}
+.mapstage.veil-part .c6{animation:sweepR 3.55s ease forwards}
+.mapstage.veil-part .c7{animation:sweepL 3.7s ease forwards}
 .c2{transition-delay:.1s}.c4{transition-delay:.16s}.c6{transition-delay:.07s}.c7{transition-delay:.2s}.c5{transition-delay:.12s}
 .mapstage.veil .mapsvg{transform:scale(.66);opacity:.35}
 .mapstage.veil-run .mapsvg{transform:scale(1);opacity:1;transition:transform 3.4s cubic-bezier(.22,.61,.36,1),opacity 2.4s ease}
@@ -1047,8 +1048,7 @@ function playMapIntro(){
      document.body.classList.remove("intro-run");   // 로고·버튼 fade in
    });
  },300);
- setTimeout(()=>st.classList.add("veil-clouds"),1100);   // 그 뒤에 7개 구름이 등장
- setTimeout(()=>st.classList.add("veil-part"),1650);     // 등장하자마자 이어서 좌우로 걷힘 (멈춤 없이)
+ setTimeout(()=>st.classList.add("veil-part"),1100);     // 7구름이 등장하는 그 순간부터 곧바로 좌우로 걷힌다
  setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run","veil-clouds","veil-part"); },6300);
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
