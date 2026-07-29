@@ -283,7 +283,7 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .bgpattern{position:absolute;inset:-6%;width:112%;height:112%;background:url("cloud1_pattern.jpg") center/cover;transform-origin:center;will-change:transform,opacity;transition:transform 3s cubic-bezier(.3,0,.4,1),opacity 2.2s ease .5s}
 .mapstage.veil-run .bgpattern{transform:scale(2);opacity:0}
 .pcloud{position:absolute;height:auto;opacity:0;will-change:transform,opacity;transition:transform 3.2s cubic-bezier(.34,0,.24,1),opacity .9s ease}
-.mapstage.veil-run .pcloud{opacity:1}
+.mapstage.veil-clouds .pcloud{opacity:1}
 .c1{top:-5%;left:6%;width:54%}
 .c2{top:5%;right:1%;width:40%}
 .c3{top:31%;left:20%;width:62%}
@@ -1038,17 +1038,18 @@ function playMapIntro(){
  document.body.classList.add("intro-run");
  st.classList.add("veil");   // 구름1 당초무늬가 화면을 덮음
  // 구름1이 확대되며 희끄무레해지고 + 7개 구름이 등장
- requestAnimationFrame(()=>requestAnimationFrame(()=>st.classList.add("veil-run")));
+ requestAnimationFrame(()=>requestAnimationFrame(()=>st.classList.add("veil-run")));  // 구름1 확대·희끄무레
+ setTimeout(()=>st.classList.add("veil-clouds"),1100);   // 그 뒤에 7개 구름이 등장
  // 등장한 구름이 좌우로 걷히고 + 지도가 커지며 드러남
- setTimeout(()=>st.classList.add("veil-part"),1500);
+ setTimeout(()=>st.classList.add("veil-part"),2500);
  setTimeout(()=>{
    svg.classList.remove("pen-only");
    animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,3200,()=>{
      svg.classList.add("pen-hide");
      document.body.classList.remove("intro-run");   // 로고·버튼 fade in
    });
- },1700);
- setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run","veil-part"); },5200);
+ },2700);
+ setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run","veil-clouds","veil-part"); },6300);
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
 document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
