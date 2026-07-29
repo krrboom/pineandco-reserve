@@ -1039,16 +1039,16 @@ function playMapIntro(){
  st.classList.add("veil");   // 구름1 당초무늬가 화면을 덮음
  // 구름1이 확대되며 희끄무레해지고 + 7개 구름이 등장
  requestAnimationFrame(()=>requestAnimationFrame(()=>st.classList.add("veil-run")));  // 구름1 확대·희끄무레
- setTimeout(()=>st.classList.add("veil-clouds"),1100);   // 그 뒤에 7개 구름이 등장
- // 등장한 구름이 좌우로 걷히고 + 지도가 커지며 드러남
- setTimeout(()=>st.classList.add("veil-part"),2500);
+ // 카메라(지도)는 처음부터 끝까지 멈춤 없이 계속 다가간다
  setTimeout(()=>{
    svg.classList.remove("pen-only");
-   animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,3200,()=>{
+   animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,5200,()=>{
      svg.classList.add("pen-hide");
      document.body.classList.remove("intro-run");   // 로고·버튼 fade in
    });
- },2700);
+ },300);
+ setTimeout(()=>st.classList.add("veil-clouds"),1100);   // 그 뒤에 7개 구름이 등장
+ setTimeout(()=>st.classList.add("veil-part"),1650);     // 등장하자마자 이어서 좌우로 걷힘 (멈춤 없이)
  setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run","veil-clouds","veil-part"); },6300);
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
