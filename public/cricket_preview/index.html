@@ -280,7 +280,10 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .mapmeta{padding-top:8px}
 .cloudveil{position:fixed;inset:0;z-index:500;pointer-events:none;overflow:hidden;transition:opacity 1.3s ease}
 .cloudveil.fade{opacity:0}
-.pcloud{position:absolute;height:auto;will-change:transform,opacity;transition:transform 3.4s cubic-bezier(.34,0,.24,1),opacity 2.6s ease}
+.bgpattern{position:absolute;inset:-6%;width:112%;height:112%;background:url("cloud1_pattern.jpg") center/cover;transform-origin:center;will-change:transform,opacity;transition:transform 3s cubic-bezier(.3,0,.4,1),opacity 2.2s ease .5s}
+.mapstage.veil-run .bgpattern{transform:scale(2);opacity:0}
+.pcloud{position:absolute;height:auto;opacity:0;will-change:transform,opacity;transition:transform 3.2s cubic-bezier(.34,0,.24,1),opacity .9s ease}
+.mapstage.veil-run .pcloud{opacity:1}
 .c1{top:-5%;left:6%;width:54%}
 .c2{top:5%;right:1%;width:40%}
 .c3{top:31%;left:20%;width:62%}
@@ -288,13 +291,13 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .c5{bottom:19%;left:4%;width:60%}
 .c6{top:39%;right:-6%;width:35%}
 .c7{bottom:1%;left:10%;width:66%}
-.mapstage.veil-run .c1{transform:translateX(-135%) scale(1.35);opacity:0}
-.mapstage.veil-run .c2{transform:translateX(142%) scale(1.35);opacity:0}
-.mapstage.veil-run .c3{transform:translateX(128%) scale(1.5);opacity:0}
-.mapstage.veil-run .c4{transform:translateX(-148%) scale(1.35);opacity:0}
-.mapstage.veil-run .c5{transform:translateX(-138%) scale(1.4);opacity:0}
-.mapstage.veil-run .c6{transform:translateX(142%) scale(1.35);opacity:0}
-.mapstage.veil-run .c7{transform:translateX(-132%) scale(1.4);opacity:0}
+.mapstage.veil-part .c1{transform:translateX(-135%) scale(1.35);opacity:0}
+.mapstage.veil-part .c2{transform:translateX(142%) scale(1.35);opacity:0}
+.mapstage.veil-part .c3{transform:translateX(128%) scale(1.5);opacity:0}
+.mapstage.veil-part .c4{transform:translateX(-148%) scale(1.35);opacity:0}
+.mapstage.veil-part .c5{transform:translateX(-138%) scale(1.4);opacity:0}
+.mapstage.veil-part .c6{transform:translateX(142%) scale(1.35);opacity:0}
+.mapstage.veil-part .c7{transform:translateX(-132%) scale(1.4);opacity:0}
 .c2{transition-delay:.1s}.c4{transition-delay:.16s}.c6{transition-delay:.07s}.c7{transition-delay:.2s}.c5{transition-delay:.12s}
 .mapstage.veil .mapsvg{transform:scale(.66);opacity:.35}
 .mapstage.veil-run .mapsvg{transform:scale(1);opacity:1;transition:transform 3.4s cubic-bezier(.22,.61,.36,1),opacity 2.4s ease}
@@ -345,6 +348,7 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
     <svg class="mapsvg" id="mapsvg" xmlns="http://www.w3.org/2000/svg"></svg>
     <button id="mapBack" class="map-back">← 전체 지도</button>
     <div class="cloudveil" id="cloudveil" aria-hidden="true">
+      <div class="bgpattern"></div>
       <img class="pcloud c1" src="cloud_1.png" alt="">
       <img class="pcloud c2" src="cloud_2.png" alt="">
       <img class="pcloud c3" src="cloud_3.png" alt="">
@@ -1032,19 +1036,19 @@ function playMapIntro(){
  // 1) 한반도 전체 지형(남한 채색·로고 숨김) + 구름 덮음
  if(window.KOREA){setVB(PEN_VB.x,PEN_VB.y,PEN_VB.w,PEN_VB.h);scaleOverlay();svg.classList.add("pen-only");}
  document.body.classList.add("intro-run");
- st.classList.add("veil");
- // 전통 구름 7겹이 각자 바깥으로 흘러 커지며 걷히고 + 지도는 커지며 다가온다
+ st.classList.add("veil");   // 구름1 당초무늬가 화면을 덮음
+ // 구름1이 확대되며 희끄무레해지고 + 7개 구름이 등장
  requestAnimationFrame(()=>requestAnimationFrame(()=>st.classList.add("veil-run")));
- // 구름 걷히는 동안 우리 지도 채색 드러남 + 남한으로 확대
+ // 등장한 구름이 좌우로 걷히고 + 지도가 커지며 드러남
+ setTimeout(()=>st.classList.add("veil-part"),1500);
  setTimeout(()=>{
    svg.classList.remove("pen-only");
    animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,3200,()=>{
      svg.classList.add("pen-hide");
      document.body.classList.remove("intro-run");   // 로고·버튼 fade in
    });
- },900);
- setTimeout(()=>{ if(veil)veil.classList.add("fade"); },1400);   // 배경 페이드 → 지도만
- setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run"); },4200);
+ },1700);
+ setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run","veil-part"); },5200);
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
 document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
