@@ -116,7 +116,7 @@ section+section{border-top:1px solid var(--line);margin-top:14px;padding-top:36p
 .mapwrap{background:transparent;padding:4px;position:relative}
 .mapstage{position:relative;width:100%;max-width:400px;margin:0 auto;aspect-ratio:571/764}
 .mapsvg{width:100%;height:100%;display:block}
-.prov{fill:#dde2cd;stroke:#a89f86;stroke-width:.9;cursor:pointer;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;
+.prov{fill:#c4d0a6;stroke:#a89f86;stroke-width:.9;cursor:pointer;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;
   transition:fill .35s,opacity .35s}
 .prov.has{fill:#c4d0a6}
 .prov:hover{fill:#a9ba84}
@@ -317,6 +317,14 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .barmodal .bm-row{display:flex;gap:10px;font-size:14px;line-height:1.5;padding:7px 0;border-top:1px solid rgba(120,110,80,.15)}
 .barmodal .bm-k{flex:0 0 40px;color:var(--gold,#c89a3c);font-weight:600}
 .barmodal .bm-row a{color:var(--pine,#2c3e2d);font-weight:600;text-decoration:none}
+.barmodal .bm-row span:last-child{flex:1}
+.barmodal .bm-nm2{font-family:var(--kr);font-weight:800;font-size:19px;color:var(--pine,#2c3e2d);text-align:center}
+.barmodal .bm-en2{font-family:serif;font-size:12px;color:#999;text-align:center;margin-bottom:12px}
+.barmodal .bm-go{margin-top:16px;width:100%;padding:11px;border:0;border-radius:10px;background:var(--pine,#2c3e2d);color:#fff;font-family:var(--kr);font-weight:600;font-size:14px;cursor:pointer}
+/* 전체지도 도/시 지명 리더선 */
+.leader{stroke:#b0a079;stroke-width:.8;vector-effect:non-scaling-stroke;opacity:.5;pointer-events:none;stroke-dasharray:2.5 2.5}
+.reglabel{font-family:var(--kr);font-weight:600;font-size:15px;fill:#4a4326;cursor:pointer;paint-order:stroke;stroke:var(--paper,#f0ebe0);stroke-width:3px}
+.reglabel:hover,.reglabel.on{fill:var(--gold,#c89a3c)}
 #mapPen{transition:opacity 1.3s ease}
 #mapsvg.pen-hide #mapPen{opacity:0}
 #mapsvg .prov{transition:opacity 1.3s ease}
@@ -522,6 +530,7 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
 <script src="research_data.js"></script>
 <div class="lb" id="lb"><button class="x" id="lbX" aria-label="close">✕</button><img id="lbImg" alt=""></div>
 <div class="barmodal" id="barModal" onclick="if(event.target===this)this.classList.remove('on')"><div class="bm-card"><button class="bm-x" onclick="document.getElementById('barModal').classList.remove('on')">✕</button><div class="bm-body"></div></div></div>
+<div class="barmodal" id="bottleModal" onclick="if(event.target===this)this.classList.remove('on')"><div class="bm-card"><button class="bm-x" onclick="document.getElementById('bottleModal').classList.remove('on')">✕</button><div class="bm-body"></div></div></div>
 
 <script>
 /* ===== 다국어(i18n) 프레임워크 ===== */
@@ -842,6 +851,17 @@ function showBarInfo(){
    <div class="bm-row"><span class="bm-k">전화</span><a href="tel:${esc(BARINFO.tel)}">${esc(BARINFO.tel)}</a></div>`;
  m.classList.add("on");
 }
+function showBottleInfo(id){
+ const b=byId[id]; if(!b)return;
+ const m=document.getElementById("bottleModal"); if(!m)return;
+ m.querySelector(".bm-body").innerHTML=`<div class="bm-nm2">${esc(b.kr)}</div>
+   <div class="bm-en2">${esc(b.name)}</div>
+   <div class="bm-row"><span class="bm-k">종류</span><span>${esc(t('cat.'+b.cat+'.label'))} · ${b.abv}%</span></div>
+   <div class="bm-row"><span class="bm-k">지역</span><span>${b.region?esc(regName(b.region)):esc(fl('unknown'))}</span></div>
+   <div class="bm-row"><span class="bm-k">특징</span><span>${esc(b.desc||'')}</span></div>
+   <button class="bm-go" onclick="document.getElementById('bottleModal').classList.remove('on');gotoBottle('${id}')">메뉴에서 보기 →</button>`;
+ m.classList.add("on");
+}
 /* 지도 외곽선을 살짝 둥글게 (크리켓 브랜드 톤) — Chaikin 코너 커팅 */
 function _chaikin(pts,closed){
  const n=pts.length, r=[];
@@ -870,6 +890,36 @@ function _smoothD(d,iter){
   if(window.KOREA&&!KOREA._sm){ KOREA.peninsula=_smoothD(KOREA.peninsula,2); KOREA._sm=1; }
  }catch(e){ console.warn('smooth',e); } })();
 const MAPVIEW={x:-30,y:0,w:700,h:764};  // 전체 지도 뷰(바다 지명 여백 포함)
+// 전체지도: 도/시 → 바다 리더선 + 지명 (호버/클릭 시 그 지역 전통주 메뉴)
+function drawRegionLabels(){
+ const g=el("g",{id:"mapLabels"});
+ const cnt={}; BOTTLES.forEach(b=>{const c=PROV_OF[b.region]; if(c)cnt[c]=(cnt[c]||0)+1;});
+ const codes=Object.keys(cnt);
+ const cen={}; codes.forEach(c=>{const e2=document.getElementById('prov-'+c); if(e2){const bb=e2.getBBox(); cen[c]=[bb.x+bb.width/2, bb.y+bb.height/2];} else cen[c]=[300,400];});
+ const left=[],right=[],bottom=[];
+ codes.forEach(c=>{const [x,y]=cen[c]; if(y>705)bottom.push(c); else if(x<305)left.push(c); else right.push(c);});
+ left.sort((a,b)=>cen[a][1]-cen[b][1]); right.sort((a,b)=>cen[a][1]-cen[b][1]); bottom.sort((a,b)=>cen[a][0]-cen[b][0]);
+ const add=(code,lx,ly,anchor)=>{
+   g.appendChild(el("line",{class:"leader",x1:cen[code][0],y1:cen[code][1],x2:lx,y2:ly}));
+   const t=el("text",{class:"reglabel","text-anchor":anchor,x:lx+(anchor==='end'?-5:anchor==='start'?5:0),y:ly,"data-code":code});
+   t.textContent=provName(code,(MAPDATA.provinces.find(p=>p.code===code)||{}).kr||code);
+   const act=e=>{e.stopPropagation();showProvMenu(code);};
+   t.addEventListener("mouseenter",act); t.addEventListener("click",act);
+   g.appendChild(t);
+ };
+ const spread=(list,x,anchor)=>{const n=list.length,y0=100,y1=780,step=n>1?Math.min(36,(y1-y0)/(n-1)):0; list.forEach((c,i)=>add(c,x, n>1?y0+i*step:(y0+y1)/2, anchor));};
+ spread(left,-20,'end'); spread(right,630,'start');
+ { const n=bottom.length,x0=175,x1=470,step=n>1?(x1-x0)/(n-1):0; bottom.forEach((c,i)=>add(c, n>1?x0+i*step:310, 748,'middle')); }
+ return g;
+}
+function showProvMenu(code){
+ const list=BOTTLES.filter(b=>PROV_OF[b.region]===code);
+ const prov=MAPDATA.provinces.find(p=>p.code===code)||{};
+ const panel=document.getElementById("mapPanel");
+ panel.innerHTML=`<div class="mpt">${esc(provName(code,prov.kr||code))} <span style="color:var(--mut);font-size:12px">· ${list.length}${esc(t('map.count'))}</span></div>
+   <div class="mplist">${list.map(b=>`<a onclick="gotoBottle('${b.id}')">${esc(b.kr)}<span class="mpc">${esc(t('cat.'+b.cat+'.label'))} · ${b.abv}%</span></a>`).join("")}</div>`;
+ document.querySelectorAll('.reglabel').forEach(x=>x.classList.toggle('on',x.getAttribute('data-code')===code));
+}
 function buildMap(){
  const svg=document.getElementById("mapsvg");
  svg.setAttribute("preserveAspectRatio","xMidYMid meet");
@@ -881,7 +931,6 @@ function buildMap(){
    const pen=el("g",{id:"mapPen"});
    pen.appendChild(el("path",{class:"pen-land",d:KOREA.peninsula}));
    (KOREA.seas||[]).forEach(s=>{const tx=el("text",{class:"pen-sea",x:s.x,y:s.y,"text-anchor":"middle"});tx.textContent=s.t;pen.appendChild(tx);});
-   (KOREA.isles||[]).forEach(s=>{const tx=el("text",{class:"pen-isle",x:s.x,y:s.y,"text-anchor":"middle"});tx.textContent=s.t;pen.appendChild(tx);});
    svg.appendChild(pen);
  }
  // 작은 광역시는 도에 가려지지 않게 나중에 그린다
@@ -892,6 +941,7 @@ function buildMap(){
    path.addEventListener("click",e=>{e.stopPropagation();activateProv(p.code);});
    svg.appendChild(path);
  });
+ svg.appendChild(drawRegionLabels());     // 도/시 → 바다 리더선 + 지명
  svg.appendChild(el("g",{id:"mapMuni"}));  // 시군구 점선
  svg.appendChild(el("g",{id:"mapDyn"}));   // 라벨+양조지 점
  // 크리켓 바 랜드마크 (최상단, 클릭 가능) — 전체지도=서울, 서울확대=강남구, 다른도=숨김
@@ -906,6 +956,7 @@ function activateProv(code){
  const svg=document.getElementById("mapsvg");
  [...svg.querySelectorAll(".prov")].forEach(pp=>{pp.classList.toggle("active",pp.id==="prov-"+code);pp.classList.toggle("dim",pp.id!=="prov-"+code);});
  const activeEl=document.getElementById("prov-"+code);
+ const ml=document.getElementById('mapLabels'); if(ml)ml.style.display='none';   // 확대 시 전체지도 지명 숨김
  const muni=document.getElementById("mapMuni"),dyn=document.getElementById("mapDyn");
  svg.insertBefore(activeEl,muni);
  // 시군구 경계(점선)
@@ -926,7 +977,8 @@ function activateProv(code){
  dyn.innerHTML="";
  // 서울 확대 지도 이미지 (서울 영역에 딱 맞춤, 확대되며 페이드인) — 한강 포함
  if(code==='11'){
-   const smap=el("image",{x:bb.x,y:bb.y,width:bb.width,height:bb.height,class:"seoulmap",id:"seoulMap",preserveAspectRatio:"none","pointer-events":"none"});
+   const px=bb.width*0.02, py=bb.height*0.02;   // 서울지도 이미지 약 4% 확대(경계 살짝 덮어 아웃라인 가림)
+   const smap=el("image",{x:bb.x-px,y:bb.y-py,width:bb.width+px*2,height:bb.height+py*2,class:"seoulmap",id:"seoulMap",preserveAspectRatio:"none","pointer-events":"none"});
    smap.setAttribute("href","seoul_map.png");
    smap.setAttributeNS("http://www.w3.org/1999/xlink","href","seoul_map.png");
    dyn.appendChild(smap);
@@ -942,7 +994,7 @@ function activateProv(code){
    bts.forEach((b,i)=>{
      const g=el("image",{class:"lmk",preserveAspectRatio:"xMidYMax meet","data-mx":cxp,"data-my":cyp,"data-i":i,"data-n":bts.length,style:"animation-delay:"+(i*60)+"ms"});
      g.setAttribute("href","b_"+b.id+".png"); g.setAttributeNS("http://www.w3.org/1999/xlink","href","b_"+b.id+".png");
-     g.addEventListener("click",e=>{e.stopPropagation();gotoBottle(b.id);});
+     g.addEventListener("click",e=>{e.stopPropagation();showBottleInfo(b.id);});
      dyn.appendChild(g);
    });
  });
@@ -958,6 +1010,8 @@ function zoomOutMap(){
  document.getElementById("mapMuni").innerHTML="";
  document.getElementById("mapDyn").innerHTML="";
  document.getElementById("mapBack").classList.remove("show");
+ const ml=document.getElementById('mapLabels'); if(ml)ml.style.display='';   // 전체지도 지명 복원
+ document.querySelectorAll('.reglabel').forEach(x=>x.classList.remove('on'));
  barMode='full'; seoulBB=null; updateBar();
  animVB(MAPVIEW.x,MAPVIEW.y,MAPVIEW.w,MAPVIEW.h,700);
  const panel=document.getElementById("mapPanel");
