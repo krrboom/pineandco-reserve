@@ -976,7 +976,8 @@ function activateProv(code){
  const bb=activeEl.getBBox();
  // 화면(컨테이너) 실제 비율로 확대 → 데스크탑/태블릿 넓은 화면에서 양옆 잘림 방지
  const _svg=document.getElementById("mapsvg");
- const aspect=(_svg&&_svg.clientWidth&&_svg.clientHeight)?(_svg.clientWidth/_svg.clientHeight):(MAPDATA.vbW/MAPDATA.vbH);
+ let aspect=(_svg&&_svg.clientWidth&&_svg.clientHeight)?(_svg.clientWidth/_svg.clientHeight):(MAPDATA.vbW/MAPDATA.vbH);
+ aspect=Math.max(0.62,Math.min(2.1,aspect));   // 극단 뷰포트 방지(폰~데스크탑 범위)
  let w=bb.width,h=bb.height;
  if(w/h<aspect)w=h*aspect;else h=w/aspect;
  // 서울은 지도 이미지가 크게 보이도록 더 타이트하게 확대(과확대 방지 minW 미적용)
