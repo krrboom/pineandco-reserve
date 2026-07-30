@@ -874,7 +874,9 @@ function activateProv(code){
  dyn.innerHTML="";
  // 서울 확대 지도 이미지 (서울 클릭 시, 확대되며 자연스럽게 페이드인) — 한강 포함
  if(code==='11'){
-   const smap=el("image",{x:bb.x,y:bb.y,width:bb.width,height:bb.height,class:"seoulmap",id:"seoulMap",preserveAspectRatio:"none","pointer-events":"none"});
+   const iw=bb.width*1.75, ih=iw/1.206;   // 서울지도 원본 비율(956/793) 유지
+   const ix=bb.x+bb.width/2-iw/2, iy=bb.y+bb.height/2-ih/2;
+   const smap=el("image",{x:ix,y:iy,width:iw,height:ih,class:"seoulmap",id:"seoulMap",preserveAspectRatio:"none","pointer-events":"none"});
    smap.setAttribute("href","seoul_map.png");
    smap.setAttributeNS("http://www.w3.org/1999/xlink","href","seoul_map.png");
    dyn.appendChild(smap);
