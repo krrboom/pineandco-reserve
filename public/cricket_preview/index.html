@@ -954,7 +954,7 @@ function drawRegionLabels(){
  codes.forEach(c=>{const [x,y]=cen[c]; if(y>705)bottom.push(c); else if(x<305)left.push(c); else right.push(c);});
  left.sort((a,b)=>cen[a][1]-cen[b][1]); right.sort((a,b)=>cen[a][1]-cen[b][1]); bottom.sort((a,b)=>cen[a][0]-cen[b][0]);
  const SHORT={"33":"충북","34":"충남","35":"전북","36":"전남","37":"경북","38":"경남"};
- const nm=code=>SHORT[code]||provName(code,(MAPDATA.provinces.find(p=>p.code===code)||{}).kr||code);
+ const nm=code=>{const kr=(MAPDATA.provinces.find(p=>p.code===code)||{}).kr||code; return LANG==='ko'?(SHORT[code]||kr):provName(code,kr);};
  const add=(code,lx,ly,anchor)=>{
    g.appendChild(el("line",{class:"leader",x1:cen[code][0],y1:cen[code][1],x2:lx,y2:ly}));
    const t=el("text",{class:"reglabel","text-anchor":anchor,x:lx+(anchor==='end'?-4:anchor==='start'?4:0),y:ly,"data-code":code});
@@ -1427,6 +1427,8 @@ function applyLang(){
  navb.forEach(b=>{b.textContent=t("nav."+b.dataset.t);});
  setTimeout(navFade,0);
  renderCocktails();renderFoods();renderSoolChips();renderSool();
+ // 전체지도 도/시 리더선 지명도 언어에 맞춰 다시 그림
+ try{const old=document.getElementById("mapLabels"); if(old){const nl=drawRegionLabels(); if(zoomed)nl.style.display="none"; old.replaceWith(nl);}}catch(_){}
  if(activeProv){const a=activeProv;activeProv=null;activateProv(a);}
  else{const panel=document.getElementById("mapPanel");
    panel.innerHTML=`<div class="mpt">${esc(t('map.panel0.t'))}</div><div class="mplist" style="font-family:var(--kr);font-size:12px;color:var(--mut)">${esc(t('map.panel0.b'))}</div>`;}
