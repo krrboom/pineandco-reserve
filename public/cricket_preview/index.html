@@ -741,7 +741,7 @@ renderSool();
 const SVGNS="http://www.w3.org/2000/svg";
 // 도시(region) → 시도 코드
 const PROV_OF={seoul:'11',incheon:'23',yangpyeong:'31',hwaseong:'31',yongin:'31',yeoju:'31',gimpo:'31',guri:'31',namyangju:'31',hoengseong:'32',chuncheon:'32',cheongju:'33',chungju:'33',yeongdong:'33',gongju:'34',yesan:'34',daejeon:'25',daegu:'22',andong:'37',sangju:'37',mungyeong:'37',gimhae:'38',hamyang:'38',changwon:'38',sacheon:'38',ulsan:'26',jeonju:'35',sunchang:'35',gochang:'35',damyang:'36',naju:'36',jeju:'39',goyang:'31'};
-function cityXY(la,lo){const p=MAPDATA.proj;return [(lo*p.cosLat-p.minX)*p.S+p.pad,(-la-p.minY)*p.S+p.pad];}
+function cityXY(la,lo){const p=MAPDATA.proj;const ox=(lo*p.cosLat-p.minX)*p.S+p.pad, oy=(-la-p.minY)*p.S+p.pad;const f=window.CFIT;return f?[f.sx*ox+f.tx, f.sy*oy+f.ty]:[ox,oy];}
 let activeProv=null, zoomed=false, vbAnim=null;
 let VB={x:0,y:0,w:0,h:0};
 const BACKTXT={ko:"← 전체 지도",en:"← Whole map",zh:"← 全国地图",ja:"← 全体マップ"};
@@ -760,7 +760,7 @@ function animVB(tx,ty,tw,th,dur,done){
 }
 // 줌 배율에 맞춰 글자·점·선 크기를 화면상 일정하게 유지
 function scaleOverlay(){
- const s=VB.w/MAPDATA.vbW;
+ const s=VB.w/CMAP_SK.w;
  document.querySelectorAll("#mapMuni .muni").forEach(p=>{p.setAttribute("stroke-dasharray",(3.2*s).toFixed(2)+" "+(2.4*s).toFixed(2));});
  document.querySelectorAll("#mapDyn .mdot").forEach(d=>d.setAttribute("r",(4.6*s).toFixed(2)));
  document.querySelectorAll("#mapDyn .mhit").forEach(d=>d.setAttribute("r",(30*s).toFixed(2)));
@@ -795,58 +795,60 @@ function _smoothD(d,iter){
   if(window.KOREA&&!KOREA._sm){ KOREA.peninsula=_smoothD(KOREA.peninsula,2); KOREA._sm=1; }
  }catch(e){ console.warn('smooth',e); } })();
 const CMAP={x:0,y:0,w:900,h:1273};        // 크리켓지도 이미지 원본 픽셀 좌표계
-const CMAP_SK={x:220,y:360,w:460,h:720};  // 남한 뷰(이미지 픽셀) — 렌더로 조정
+const CMAP_SK=window.CMAP_SK||{x:250,y:432,w:430,h:600};  // 남한 뷰(이미지 픽셀)
+// 위경도->이미지픽셀 (CFIT). 손그림 특이지점은 CITY_OVERRIDE로 보정.
+function cityImg(k){const o=(window.CITY_OVERRIDE||{})[k]; if(o)return o.slice(); return cityXY(REG[k].la,REG[k].lo);}
+// 클릭 지점(이미지좌표)에서 가장 가까운 도 seed
+function nearestProv(x,y){let best=null,bd=1e18;const S=window.PROV_SEED||{};for(const c in S){const dx=S[c][0]-x,dy=S[c][1]-y,d=dx*dx+dy*dy;if(d<bd){bd=d;best=c;}}return best;}
+function svgPt(evt){const svg=document.getElementById("mapsvg");const pt=svg.createSVGPoint();pt.x=evt.clientX;pt.y=evt.clientY;const m=svg.getScreenCTM();if(!m)return[0,0];const p=pt.matrixTransform(m.inverse());return[p.x,p.y];}
 function buildMap(){
  const svg=document.getElementById("mapsvg");
  svg.setAttribute("preserveAspectRatio","xMidYMid meet");
  setVB(CMAP_SK.x,CMAP_SK.y,CMAP_SK.w,CMAP_SK.h);
  const provCount={};BOTTLES.forEach(b=>{if(b.region&&PROV_OF[b.region])provCount[PROV_OF[b.region]]=(provCount[PROV_OF[b.region]]||0)+1;});
  svg.innerHTML="";
- // 크리켓지도 이미지(배경). provinces는 그 위 투명 클릭 레이어.
+ // 크리켓지도 이미지(배경). 도 선택은 이미지 위 클릭 지점 최근접 seed로 판정(보로노이).
  const mimg=el("image",{x:CMAP.x,y:CMAP.y,width:CMAP.w,height:CMAP.h,preserveAspectRatio:"none",id:"cmapImg"});
  mimg.setAttribute("href","cricket_map.png");
  mimg.setAttributeNS("http://www.w3.org/1999/xlink","href","cricket_map.png");
  svg.appendChild(mimg);
- // 이미지 위 도·광역시 클릭 영역 (PROV_POLY, 이미지 픽셀 다각형). 작은 광역시는 나중에 그린다.
- const METRO=["11","21","22","23","24","25","26","29"];
- const codes=Object.keys(window.PROV_POLY||{}).sort((a,b)=>(METRO.indexOf(a)>=0?1:0)-(METRO.indexOf(b)>=0?1:0));
- codes.forEach(code=>{
-   const pts=PROV_POLY[code].map(p=>p.join(",")).join(" ");
-   const poly=el("polygon",{class:"prov"+(provCount[code]?" has":"")+(METRO.indexOf(code)>=0?" metro":""),id:"prov-"+code,points:pts});
-   poly.addEventListener("click",e=>{e.stopPropagation();activateProv(code);});
-   svg.appendChild(poly);
- });
- svg.appendChild(el("g",{id:"mapMuni"}));  // 시군구 점선
+ svg.appendChild(el("g",{id:"mapMuni"}));  // (미사용)
  svg.appendChild(el("g",{id:"mapDyn"}));   // 라벨+양조지 점
+ if(!svg._clickBound){
+   svg.addEventListener("click",e=>{
+     const[x,y]=svgPt(e);
+     if(zoomed){ zoomOutMap(); return; }
+     const code=nearestProv(x,y); if(code) activateProv(code);
+   });
+   svg._clickBound=1;
+ }
 }
 function activateProv(code){
  activeProv=code;zoomed=true;
  const svg=document.getElementById("mapsvg");
- [...svg.querySelectorAll(".prov")].forEach(pp=>{pp.classList.toggle("active",pp.id==="prov-"+code);pp.classList.toggle("dim",pp.id!=="prov-"+code);});
- const activeEl=document.getElementById("prov-"+code);
  const muni=document.getElementById("mapMuni"),dyn=document.getElementById("mapDyn");
- svg.insertBefore(activeEl,muni);
- // 시군구 경계(점선)
  muni.innerHTML="";
- ((window.MAPMUNI||{})[code]||[]).forEach(m=>muni.appendChild(el("path",{class:"muni",d:(m._sd||(m._sd=_smoothD(m.d,1)))})));
- // 실제 화면 확대: viewBox를 그 도의 영역으로
- const bb=activeEl.getBBox();
- const aspect=MAPDATA.vbW/MAPDATA.vbH;
- let w=bb.width,h=bb.height;
- if(w/h<aspect)w=h*aspect;else h=w/aspect;
- w*=1.3;h*=1.3;
- const minW=MAPDATA.vbW*0.16; if(w<minW){w=minW;h=w/aspect;} // 너무 작은 광역시 과확대 방지
- const cx=bb.x+bb.width/2,cy=bb.y+bb.height/2;
+ // 이 도에 속한 도시(광역시 접힘 포함) 중 술 있는 곳
+ const CT=window.METRO_CONTAIN||{};
+ const cities=Object.keys(PROV_OF).filter(k=>{const pc=PROV_OF[k];return (pc===code||CT[pc]===code) && BOTTLES.some(b=>b.region===k);});
+ // 줌 박스: 도시들 + seed 를 감싸는 영역
+ const seed=(window.PROV_SEED||{})[code]||[CMAP_SK.x+CMAP_SK.w/2,CMAP_SK.y+CMAP_SK.h/2];
+ const pos=cities.map(k=>cityImg(k)); const all=pos.concat([seed]);
+ let minx=1e18,miny=1e18,maxx=-1e18,maxy=-1e18;
+ all.forEach(p=>{if(p[0]<minx)minx=p[0];if(p[0]>maxx)maxx=p[0];if(p[1]<miny)miny=p[1];if(p[1]>maxy)maxy=p[1];});
+ const aspect=CMAP_SK.w/CMAP_SK.h;
+ let w=Math.max((maxx-minx)*1.9, 210), h=w/aspect;
+ if((maxy-miny)*1.9>h){h=(maxy-miny)*1.9; w=h*aspect;}
+ const cx=(minx+maxx)/2, cy=(miny+maxy)/2;
  animVB(cx-w/2,cy-h/2,w,h,760);
  // 라벨 + 양조지 점
  const prov=MAPDATA.provinces.find(p=>p.code===code);
  dyn.innerHTML="";
- const label=el("text",{class:"prov-label",x:cx,y:bb.y-bb.height*0.04,"text-anchor":"middle"});
+ const label=el("text",{class:"prov-label",x:cx,y:miny-h*0.06,"text-anchor":"middle"});
  label.textContent=provName(prov.code,prov.kr);dyn.appendChild(label);
- const cities=Object.keys(PROV_OF).filter(k=>PROV_OF[k]===code);
  cities.forEach((k,i)=>{
    const cnt=BOTTLES.filter(b=>b.region===k).length; if(!cnt) return;
-   const[x,y]=cityXY(REG[k].la,REG[k].lo);
+   const[x,y]=cityImg(k);
    const pick=e=>{e.stopPropagation();selectCity(k);};
    // 실제로 눌리는 영역 (투명, 점보다 훨씬 크게)
    const hit=el("circle",{class:"mhit",cx:x,cy:y-3,r:30,fill:"rgba(0,0,0,0)"});
@@ -864,8 +866,6 @@ function activateProv(code){
 }
 function zoomOutMap(){
  zoomed=false;activeProv=null;
- const svg=document.getElementById("mapsvg");
- [...svg.querySelectorAll(".prov")].forEach(pp=>pp.classList.remove("active","dim"));
  document.getElementById("mapMuni").innerHTML="";
  document.getElementById("mapDyn").innerHTML="";
  document.getElementById("mapBack").classList.remove("show");
@@ -907,7 +907,7 @@ if(lb&&lbImg){
 buildMap();
 document.getElementById("mapBack").addEventListener("click",e=>{e.stopPropagation();zoomOutMap();});
 function selectRegion(k){ // 도감/칵테일에서 지도로 올 때: 해당 도 활성 + 도시 선택
- const code=PROV_OF[k]; if(code) activateProv(code);
+ let code=PROV_OF[k]; code=(window.METRO_CONTAIN||{})[code]||code; if(code) activateProv(code);
  selectCity(k);
  document.getElementById("mapPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
