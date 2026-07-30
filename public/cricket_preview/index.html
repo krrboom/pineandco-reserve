@@ -278,6 +278,32 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .scrollcue .cue-arrow{display:block;font-size:16px;line-height:1;margin-top:2px}
 @keyframes cuebob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
 .mapmeta{padding-top:8px}
+.cloudveil{position:fixed;inset:0;z-index:500;pointer-events:none;overflow:hidden;transition:opacity 1.3s ease}
+.cloudveil.fade{opacity:0}
+.bgpattern{position:absolute;inset:-6%;width:112%;height:112%;background:url("cloud1_pattern.jpg") center/cover;transform-origin:center;will-change:transform,opacity;transition:transform 3s cubic-bezier(.3,0,.4,1),opacity 2.2s ease .5s}
+.mapstage.veil-run .bgpattern{transform:scale(2);opacity:0}
+.pcloud{position:absolute;height:auto;opacity:0;will-change:transform,opacity;transition:transform 3.2s cubic-bezier(.34,0,.24,1),opacity .9s ease}
+@keyframes sweepL{0%{opacity:0;transform:translateX(-6%) scale(.92)}16%{opacity:1}100%{opacity:0;transform:translateX(-138%) scale(1.4)}}
+@keyframes sweepR{0%{opacity:0;transform:translateX(6%) scale(.92)}16%{opacity:1}100%{opacity:0;transform:translateX(140%) scale(1.4)}}
+.c1{top:-5%;left:6%;width:54%}
+.c2{top:5%;right:1%;width:40%}
+.c3{top:31%;left:20%;width:62%}
+.c4{top:22%;left:-9%;width:46%}
+.c5{bottom:19%;left:4%;width:60%}
+.c6{top:39%;right:-6%;width:35%}
+.c7{bottom:1%;left:10%;width:66%}
+.mapstage.veil-part .c1{animation:sweepL 3.6s ease forwards}
+.mapstage.veil-part .c2{animation:sweepR 3.6s ease forwards}
+.mapstage.veil-part .c3{animation:sweepR 3.9s ease forwards}
+.mapstage.veil-part .c4{animation:sweepL 3.65s ease forwards}
+.mapstage.veil-part .c5{animation:sweepL 3.75s ease forwards}
+.mapstage.veil-part .c6{animation:sweepR 3.55s ease forwards}
+.mapstage.veil-part .c7{animation:sweepL 3.7s ease forwards}
+.c2{transition-delay:.1s}.c4{transition-delay:.16s}.c6{transition-delay:.07s}.c7{transition-delay:.2s}.c5{transition-delay:.12s}
+.mapstage.veil .mapsvg{transform:scale(.66);opacity:.35}
+.mapstage.veil-run .mapsvg{transform:scale(1);opacity:1;transition:transform 3.4s cubic-bezier(.22,.61,.36,1),opacity 2.4s ease}
+.cloudveil.hide{display:none}
+@media (prefers-reduced-motion:reduce){.cloudveil{display:none}.mapstage.veil .mapsvg{transform:none;opacity:1}}
 .pen-land{fill:#c3cfb1;stroke:none}
 .pen-sea{fill:#7a8b9c;font-family:var(--kr);font-style:italic;letter-spacing:.12em;font-size:26px}
 .pen-isle{fill:#93a08c;font-family:var(--kr);font-size:15px}
@@ -322,6 +348,16 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
   <div class="mapwrap"><div class="mapstage" id="mapStage">
     <svg class="mapsvg" id="mapsvg" xmlns="http://www.w3.org/2000/svg"></svg>
     <button id="mapBack" class="map-back">← 전체 지도</button>
+    <div class="cloudveil" id="cloudveil" aria-hidden="true">
+      <div class="bgpattern"></div>
+      <img class="pcloud c1" src="cloud_1.png" alt="">
+      <img class="pcloud c2" src="cloud_2.png" alt="">
+      <img class="pcloud c3" src="cloud_3.png" alt="">
+      <img class="pcloud c4" src="cloud_4.png" alt="">
+      <img class="pcloud c5" src="cloud_5.png" alt="">
+      <img class="pcloud c6" src="cloud_6.png" alt="">
+      <img class="pcloud c7" src="cloud_7.png" alt="">
+    </div>
   </div></div>
   <div class="scrollcue" aria-hidden="true"><span data-i18n="home.scroll">메뉴 보기</span><span class="cue-arrow">⌄</span></div>
 </section>
@@ -794,10 +830,11 @@ function _smoothD(d,iter){
   if(window.MAPDATA&&!MAPDATA._sm){ MAPDATA.provinces.forEach(p=>{p.d=_smoothD(p.d,2);}); MAPDATA._sm=1; }
   if(window.KOREA&&!KOREA._sm){ KOREA.peninsula=_smoothD(KOREA.peninsula,2); KOREA._sm=1; }
  }catch(e){ console.warn('smooth',e); } })();
+const MAPVIEW={x:-30,y:0,w:700,h:764};  // 전체 지도 뷰(바다 지명 여백 포함)
 function buildMap(){
  const svg=document.getElementById("mapsvg");
  svg.setAttribute("preserveAspectRatio","xMidYMid meet");
- setVB(0,0,MAPDATA.vbW,MAPDATA.vbH);
+ setVB(MAPVIEW.x,MAPVIEW.y,MAPVIEW.w,MAPVIEW.h);
  const provCount={};BOTTLES.forEach(b=>{if(b.region&&PROV_OF[b.region])provCount[PROV_OF[b.region]]=(provCount[PROV_OF[b.region]]||0)+1;});
  svg.innerHTML="";
  // 한반도 전체 실루엣(배경) + 바다·부속도서 이름
@@ -869,7 +906,7 @@ function zoomOutMap(){
  document.getElementById("mapMuni").innerHTML="";
  document.getElementById("mapDyn").innerHTML="";
  document.getElementById("mapBack").classList.remove("show");
- animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,700);
+ animVB(MAPVIEW.x,MAPVIEW.y,MAPVIEW.w,MAPVIEW.h,700);
  const panel=document.getElementById("mapPanel");
  panel.innerHTML=`<div class="mpt">${esc(t('map.panel0.t'))}</div><div class="mplist" style="font-family:var(--kr);font-size:12px;color:var(--mut)">${esc(t('map.panel0.b'))}</div>`;
 }
@@ -994,10 +1031,26 @@ soundToggle.onclick=()=>{muted=!muted;soundToggle.textContent=muted?"🔇":"🔊
 /* ===== 웰컴 스플래시 입장 ===== */
 const splash=document.getElementById("splash");
 const PEN_VB={x:-57,y:-627,w:803,h:1418};
+const PEN_VB={x:-57,y:-627,w:803,h:1418};  // 하늘에서 내려오는 시작 뷰(넓고 높게)
 function playMapIntro(){
- const st=document.getElementById("mapStage");
- if(!st||st.dataset.intro)return; st.dataset.intro="1";
- // 연출 없음 — SVG 지도 바로 표시
+ const svg=document.getElementById("mapsvg"), st=document.getElementById("mapStage"), veil=document.getElementById("cloudveil");
+ if(!svg||!st||st.dataset.intro)return; st.dataset.intro="1";
+ if(matchMedia("(prefers-reduced-motion:reduce)").matches){if(veil)veil.classList.add("hide");return;}
+ // 1) 한반도 전체 지형(도 채색 숨김·로고 숨김) + 구름1 당초무늬가 덮음
+ if(window.KOREA){setVB(PEN_VB.x,PEN_VB.y,PEN_VB.w,PEN_VB.h);scaleOverlay();svg.classList.add("pen-only");}
+ document.body.classList.add("intro-run");
+ st.classList.add("veil");
+ // 2) 구름1 확대·희끄무레 + 7구름 등장
+ requestAnimationFrame(()=>requestAnimationFrame(()=>st.classList.add("veil-run")));
+ // 3) 카메라(지도)는 처음부터 끝까지 멈춤 없이 계속 다가간다 → 남한 뷰로
+ setTimeout(()=>{
+   svg.classList.remove("pen-only");
+   animVB(MAPVIEW.x,MAPVIEW.y,MAPVIEW.w,MAPVIEW.h,5200,()=>{
+     document.body.classList.remove("intro-run");   // 로고·버튼 fade in (한반도 실루엣·바다이름은 유지)
+   });
+ },300);
+ setTimeout(()=>st.classList.add("veil-part"),1100);     // 7구름 등장과 동시에 좌우로 걷힘
+ setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run","veil-part"); },6300);
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
 document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
