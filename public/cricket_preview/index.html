@@ -295,9 +295,27 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .mapstage.veil-part .c7{animation:sweepR 3.6s ease forwards}
 .mapstage.veil-part .c2{animation:sweepR 3.85s ease forwards}
 .c3{transition-delay:.12s}.c2{transition-delay:.16s}.c5{transition-delay:.08s}
-.mapstage.veil .mapsvg{transform:scale(.66);opacity:.35}
-.mapstage.veil-run .mapsvg{transform:scale(1);opacity:1;transition:transform 3.4s cubic-bezier(.22,.61,.36,1),opacity 2.4s ease}
+.mapstage.veil .mapsvg{opacity:.35}
+.mapstage.veil-run .mapsvg{opacity:1;transition:opacity 2.4s ease}
 .cloudveil.hide{display:none}
+/* 크리켓 캐릭터 인트로 리그 (모든 이미지 최상단) */
+.ctrav{position:fixed;left:0;top:0;z-index:702;pointer-events:none;opacity:0;will-change:transform}
+.crig{position:relative;width:100%;height:100%}
+.crig img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.cant{transform-origin:17.5% 46.8%}.cclegf{transform-origin:39.9% 81.7%}.cclegb{transform-origin:76.3% 61.1%}
+.ctrav.cmove .cclegf{animation:crf .34s ease-in-out infinite}
+.ctrav.cmove .cclegb{animation:crb .34s ease-in-out infinite}
+.ctrav.cmove .cant{animation:crss .34s ease-in-out infinite}
+@keyframes crf{0%,100%{transform:rotate(16deg)}50%{transform:rotate(-14deg)}}
+@keyframes crb{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}}
+@keyframes crss{0%,100%{transform:rotate(6deg)}50%{transform:rotate(-6deg)}}
+.ctrav.cgreet .cant{animation:cgw .7s ease-in-out infinite}
+.ctrav.cgreet .cclegf{transform:rotate(6deg)}.ctrav.cgreet .cclegb{transform:rotate(-4deg)}
+@keyframes cgw{0%,100%{transform:rotate(15deg)}50%{transform:rotate(-16deg)}}
+.cshadow{position:fixed;left:0;top:0;z-index:701;width:60px;height:11px;border-radius:50%;background:rgba(40,50,40,.2);filter:blur(3px);pointer-events:none;opacity:0;will-change:transform}
+.cbubble{position:fixed;left:0;top:0;z-index:703;background:#fff;color:#2c3e2d;font-weight:800;font-size:13px;font-family:'Cinzel',var(--kr),serif;letter-spacing:.02em;padding:6px 13px;border-radius:14px;box-shadow:0 5px 14px rgba(0,0,0,.2);opacity:0;transform:translateY(6px) scale(.8);transition:opacity .3s ease,transform .3s cubic-bezier(.2,1.4,.4,1);pointer-events:none;white-space:nowrap}
+.cbubble::after{content:"";position:absolute;left:20px;bottom:-6px;border:6px solid transparent;border-top-color:#fff;border-bottom:0}
+.cbubble.show{opacity:1;transform:translateY(0) scale(1)}
 @media (prefers-reduced-motion:reduce){.cloudveil{display:none}.mapstage.veil .mapsvg{transform:none;opacity:1}}
 .pen-land{fill:#c3cfb1;stroke:none}
 .pen-sea{fill:#7a8b9c;font-family:var(--kr);font-style:italic;letter-spacing:.12em;font-size:26px}
@@ -379,6 +397,12 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
       <img class="pcloud c5" src="cloud_5.png" alt="">
       <img class="pcloud c7" src="cloud_7.png" alt="">
     </div>
+    <div class="cshadow" id="cshadow" aria-hidden="true"></div>
+    <div class="ctrav" id="ctrav" aria-hidden="true"><div class="crig">
+      <img class="cclegb" src="clegb.png" alt=""><img class="cclegf" src="clegf.png" alt="">
+      <img class="cbody" src="cbody.png" alt=""><img class="cant" src="cant.png" alt="">
+    </div></div>
+    <div class="cbubble" id="cbubble">Welcome To Cricket!</div>
   </div></div>
   <div class="scrollcue" aria-hidden="true"><span data-i18n="home.scroll">메뉴 보기</span><span class="cue-arrow">⌄</span></div>
 </section>
@@ -843,7 +867,7 @@ function updateBar(){
  const bar=document.getElementById("barSeoul"); if(!bar)return;
  if(barMode==='hidden'){ bar.style.display="none"; return; }
  bar.style.display="";
- const w=VB.w*0.09, h=w/0.832;   // 고정 화면비율(줌과 무관하게 유지)
+ const w=VB.w*0.099, h=w/0.832;   // 고정 화면비율(줌과 무관하게 유지) — 바 10% 확대
  let cx,cy,bottom=true;
  if(barMode==='seoul' && seoulBB){ cx=seoulBB.x+seoulBB.width*0.66; cy=seoulBB.y+seoulBB.height*0.70; bottom=false; } // 강남구
  else { cx=271; cy=155; }  // 전체지도 서울
@@ -990,7 +1014,7 @@ function activateProv(code){
  dyn.innerHTML="";
  // 서울 확대 지도 이미지 (서울 영역에 딱 맞춤, 확대되며 페이드인) — 한강 포함
  if(code==='11'){
-   const px=bb.width*0.02, py=bb.height*0.02;   // 서울지도 이미지 약 4% 확대(경계 살짝 덮어 아웃라인 가림)
+   const px=bb.width*0.045, py=bb.height*0.045;   // 서울지도 이미지 약 9% 확대(기존보다 5% 더 큼)
    const smap=el("image",{x:bb.x-px,y:bb.y-py,width:bb.width+px*2,height:bb.height+py*2,class:"seoulmap",id:"seoulMap",preserveAspectRatio:"none","pointer-events":"none"});
    smap.setAttribute("href","seoul_map.png");
    smap.setAttributeNS("http://www.w3.org/1999/xlink","href","seoul_map.png");
@@ -1151,6 +1175,60 @@ soundToggle.onclick=()=>{muted=!muted;soundToggle.textContent=muted?"🔇":"🔊
 /* ===== 웰컴 스플래시 입장 ===== */
 const splash=document.getElementById("splash");
 const PEN_VB={x:-57,y:-627,w:803,h:1418};  // 하늘에서 내려오는 시작 뷰(넓고 높게)
+/* ===== 크리켓 캐릭터 인트로 (구름 폴짝 → 바 착지 → 인사) ===== */
+function svgToScreen(sx,sy,vb,rect){
+ const scale=Math.min(rect.width/vb.w, rect.height/vb.h);
+ const rw=vb.w*scale, rh=vb.h*scale;
+ const ox=rect.left+(rect.width-rw)/2, oy=rect.top+(rect.height-rh)/2;
+ return {x:ox+(sx-vb.x)*scale, y:oy+(sy-vb.y)*scale};
+}
+let _crigW=0,_crigH=0,_canc={x:0,y:0};
+function csize(){const vw=innerWidth; _crigW=Math.min(Math.max(vw*0.135,66),150); _crigH=_crigW*769/928;
+ const t=document.getElementById('ctrav'); if(t){t.style.width=_crigW+'px';t.style.height=_crigH+'px';} _canc={x:0.45*_crigW,y:0.90*_crigH};}
+function csetT(x,y){const t=document.getElementById('ctrav');t.style.transform='translate('+(x-_canc.x)+'px,'+(y-_canc.y)+'px)';}
+function csetSh(x,y,sc,op){const s=document.getElementById('cshadow');s.style.transform='translate('+(x-30)+'px,'+(y-6)+'px) scaleX('+sc+')';s.style.opacity=op;}
+const _csleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function cjump(ax,ay,bx,by,dur,peak){
+ const t=document.getElementById('ctrav'), sh=document.getElementById('cshadow');
+ const a={x:ax-_canc.x,y:ay-_canc.y}, b={x:bx-_canc.x,y:by-_canc.y};
+ const midX=(a.x+b.x)/2, topY=Math.min(a.y,b.y)-peak;
+ sh.animate([{opacity:.05,transform:'translate('+(ax-30)+'px,'+(ay-6)+'px) scaleX(.5)'},{opacity:.2,transform:'translate('+(bx-30)+'px,'+(by-6)+'px) scaleX(1)'}],{duration:dur,fill:'forwards',easing:'ease-in'});
+ const an=t.animate([
+  {transform:'translate('+a.x+'px,'+a.y+'px) scale(1.06,.94)'},
+  {transform:'translate('+(a.x*.7+midX*.3)+'px,'+(a.y-peak*.5)+'px) scale(.94,1.08)',offset:.18},
+  {transform:'translate('+midX+'px,'+topY+'px) scale(1.02,1)',offset:.5},
+  {transform:'translate('+b.x+'px,'+b.y+'px) scale(1.12,.9)'}
+ ],{duration:dur,easing:'cubic-bezier(.4,0,.5,1)',fill:'forwards'});
+ try{await an.finished;}catch(e){} t.style.transform='translate('+b.x+'px,'+b.y+'px)';
+}
+async function playCricketIntro(){
+ const t=document.getElementById('ctrav'); if(!t)return;
+ csize();
+ const vw=innerWidth,vh=innerHeight, cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const R=id=>{const e=document.querySelector('.pcloud.'+id);return e?e.getBoundingClientRect():null;};
+ const c2=R('c2'),c7=R('c7'),c3=R('c3');
+ const p2=c2?{x:cl(c2.left+c2.width*0.30,44,vw-44),y:cl(c2.top+c2.height*0.30,40,vh-40)}:{x:vw*0.56,y:vh*0.70};
+ const p7=c7?{x:cl(c7.right-c7.width*0.32,44,vw-44),y:cl(c7.top+c7.height*0.32,40,vh-40)}:{x:vw*0.82,y:vh*0.22};
+ const p3=c3?{x:cl(c3.right-c3.width*0.20,44,vw-44),y:cl(c3.top+c3.height*0.40,40,vh-40)}:{x:vw*0.42,y:vh*0.42};
+ const svg=document.getElementById('mapsvg'), rect=svg.getBoundingClientRect();
+ const bp=svgToScreen(271,158,MAPVIEW,rect);
+ t.style.opacity='1'; t.classList.add('cmove');
+ csetT(p2.x,p2.y); csetSh(p2.x,p2.y,.7,.14);
+ await _csleep(520);
+ await cjump(p2.x,p2.y,p7.x,p7.y,720,72); await _csleep(200);
+ await cjump(p7.x,p7.y,p3.x,p3.y,720,64); await _csleep(220);
+ document.getElementById('mapStage').classList.add('veil-part');   // 구름 걷힘 시작
+ await cjump(p3.x,p3.y,bp.x,bp.y,1250,Math.min(240,Math.abs(p3.y-bp.y)*0.5+120));
+ await _csleep(110);
+ t.classList.remove('cmove'); t.classList.add('cgreet');
+ const bub=document.getElementById('cbubble');
+ bub.style.left=(bp.x+_crigW*0.28)+'px'; bub.style.top=(bp.y-_crigH*1.15)+'px';
+ await _csleep(150); bub.classList.add('show');
+ await _csleep(2400);
+ bub.classList.remove('show');
+ t.style.transition='opacity .6s ease'; t.style.opacity='0'; document.getElementById('cshadow').style.opacity='0';
+ setTimeout(()=>{t.style.display='none';},700);
+}
 function playMapIntro(){
  const svg=document.getElementById("mapsvg"), st=document.getElementById("mapStage"), veil=document.getElementById("cloudveil");
  if(!svg||!st||st.dataset.intro)return; st.dataset.intro="1";
@@ -1164,12 +1242,12 @@ function playMapIntro(){
  // 3) 카메라(지도)는 처음부터 끝까지 멈춤 없이 계속 다가간다 → 남한 뷰로
  setTimeout(()=>{
    svg.classList.remove("pen-only");
-   animVB(MAPVIEW.x,MAPVIEW.y,MAPVIEW.w,MAPVIEW.h,5200,()=>{
+   animVB(MAPVIEW.x,MAPVIEW.y,MAPVIEW.w,MAPVIEW.h,3300,()=>{
      document.body.classList.remove("intro-run");   // 로고·버튼 fade in (한반도 실루엣·바다이름은 유지)
    });
  },300);
- setTimeout(()=>st.classList.add("veil-part"),1100);     // 7구름 등장과 동시에 좌우로 걷힘
- setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run","veil-part"); },6300);
+ playCricketIntro();   // 크리켓 캐릭터: 구름 폴짝 → 바 착지 → 인사 (구름 걷힘 veil-part 트리거 포함)
+ setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run","veil-part"); },6400);
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
 document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
