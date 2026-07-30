@@ -1247,6 +1247,7 @@ function playMapIntro(){
    });
  },300);
  playCricketIntro();   // 크리켓 캐릭터: 구름 폴짝 → 바 착지 → 인사 (구름 걷힘 veil-part 트리거 포함)
+ setTimeout(()=>st.classList.add("veil-part"),2600);   // 안전장치: 캐릭터 실패해도 구름은 반드시 걷힘
  setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run","veil-part"); },6400);
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
