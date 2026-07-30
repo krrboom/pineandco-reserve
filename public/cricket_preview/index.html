@@ -899,17 +899,19 @@ function drawRegionLabels(){
  const left=[],right=[],bottom=[];
  codes.forEach(c=>{const [x,y]=cen[c]; if(y>705)bottom.push(c); else if(x<305)left.push(c); else right.push(c);});
  left.sort((a,b)=>cen[a][1]-cen[b][1]); right.sort((a,b)=>cen[a][1]-cen[b][1]); bottom.sort((a,b)=>cen[a][0]-cen[b][0]);
+ const SHORT={"33":"충북","34":"충남","35":"전북","36":"전남","37":"경북","38":"경남"};
+ const nm=code=>SHORT[code]||provName(code,(MAPDATA.provinces.find(p=>p.code===code)||{}).kr||code);
  const add=(code,lx,ly,anchor)=>{
    g.appendChild(el("line",{class:"leader",x1:cen[code][0],y1:cen[code][1],x2:lx,y2:ly}));
-   const t=el("text",{class:"reglabel","text-anchor":anchor,x:lx+(anchor==='end'?-5:anchor==='start'?5:0),y:ly,"data-code":code});
-   t.textContent=provName(code,(MAPDATA.provinces.find(p=>p.code===code)||{}).kr||code);
+   const t=el("text",{class:"reglabel","text-anchor":anchor,x:lx+(anchor==='end'?-4:anchor==='start'?4:0),y:ly,"data-code":code});
+   t.textContent=nm(code);
    const act=e=>{e.stopPropagation();showProvMenu(code);};
    t.addEventListener("mouseenter",act); t.addEventListener("click",act);
    g.appendChild(t);
  };
- const spread=(list,x,anchor)=>{const n=list.length,y0=100,y1=780,step=n>1?Math.min(36,(y1-y0)/(n-1)):0; list.forEach((c,i)=>add(c,x, n>1?y0+i*step:(y0+y1)/2, anchor));};
- spread(left,-20,'end'); spread(right,630,'start');
- { const n=bottom.length,x0=175,x1=470,step=n>1?(x1-x0)/(n-1):0; bottom.forEach((c,i)=>add(c, n>1?x0+i*step:310, 748,'middle')); }
+ const spread=(list,x,anchor)=>{const n=list.length,y0=118,y1=765,step=n>1?Math.min(42,(y1-y0)/(n-1)):0; list.forEach((c,i)=>add(c,x, n>1?y0+i*step:400, anchor));};
+ spread(left,4,'end'); spread(right,636,'start');
+ { const n=bottom.length,x0=190,x1=460,step=n>1?(x1-x0)/(n-1):0; bottom.forEach((c,i)=>add(c, n>1?x0+i*step:315, 748,'middle')); }
  return g;
 }
 function showProvMenu(code){
