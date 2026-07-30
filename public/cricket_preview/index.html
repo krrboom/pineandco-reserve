@@ -19,6 +19,7 @@
   --kr:'NMyeongjo','Nanum Myeongjo','Apple SD Gothic Neo','Malgun Gothic',serif;   /* 설명·본문: 옛한글 명조 */
   --f-pen:'NPenB','NMyeongjo','Apple SD Gothic Neo',serif;   /* 제목·큰글씨: 바른펜 볼드(손글씨) */
   --f-penr:'NPenR','NMyeongjo','Apple SD Gothic Neo',serif;  /* 강조: 바른펜 레귤러 */
+  --f-eul:'BMEuljiro','NMyeongjo','Apple SD Gothic Neo',sans-serif;  /* 을지로체: 버튼·지역라벨 */
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -26,7 +27,7 @@ html{scroll-behavior:smooth}
 .sec-h .t.kr,.prov-label,.bm-nm,.bm-nm2,.mpt,.b-kr,.rm-kr,.catlabel,.aq-title{font-family:var(--f-pen)}
 b,strong,.b-reg,.maphint,.flag{font-family:var(--f-penr)}
 /* 을지로체: 지역 도/시 라벨 + 호버 버튼(내비/칩) */
-.reglabel,.nav-b,.chip,.nav-b .kr{font-family:'BMEuljiro','NMyeongjo','Apple SD Gothic Neo',sans-serif}
+.reglabel,.nav-b,.nav-b .kr,.splash-enter,.lang-pop .langbtn,.langsel .langbtn{font-family:var(--f-eul) !important}
 body{background:var(--paper);color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.12);font-family:var(--serif);line-height:1.6;padding-bottom:60px;overflow-x:hidden}
 body.night .cover .logo{filter:brightness(0) invert(.9) sepia(.18) saturate(1.3)}
 .cover .logo{transition:filter .7s ease}
