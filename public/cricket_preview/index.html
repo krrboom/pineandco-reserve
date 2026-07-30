@@ -302,8 +302,8 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .pen-land{fill:#c3cfb1;stroke:none}
 .pen-sea{fill:#7a8b9c;font-family:var(--kr);font-style:italic;letter-spacing:.12em;font-size:26px}
 .pen-isle{fill:#93a08c;font-family:var(--kr);font-size:15px}
-.hanriver{fill:none;stroke:#5a8fc9;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;opacity:.9;pointer-events:none}
-.landmark{pointer-events:none}
+.seoulmap{opacity:0;transition:opacity .75s ease;pointer-events:none}
+.seoulmap.show{opacity:1}
 #mapPen{transition:opacity 1.3s ease}
 #mapsvg.pen-hide #mapPen{opacity:0}
 #mapsvg .prov{transition:opacity 1.3s ease}
@@ -847,11 +847,6 @@ function buildMap(){
    path.addEventListener("click",e=>{e.stopPropagation();activateProv(p.code);});
    svg.appendChild(path);
  });
- // 크리켓 바 랜드마크 (서울) — 크게, 항상 표시
- const bar=el("image",{x:241,y:86,width:60,height:72,class:"landmark",id:"barSeoul","pointer-events":"none"});
- bar.setAttribute("href","cricket_bar.png");
- bar.setAttributeNS("http://www.w3.org/1999/xlink","href","cricket_bar.png");
- svg.appendChild(bar);
  svg.appendChild(el("g",{id:"mapMuni"}));  // 시군구 점선
  svg.appendChild(el("g",{id:"mapDyn"}));   // 라벨+양조지 점
 }
@@ -877,11 +872,13 @@ function activateProv(code){
  // 라벨 + 양조지 점
  const prov=MAPDATA.provinces.find(p=>p.code===code);
  dyn.innerHTML="";
- // 서울 한강 (서울 클릭 시에만, 행정구역 안 동→서로 흐름)
+ // 서울 확대 지도 이미지 (서울 클릭 시, 확대되며 자연스럽게 페이드인) — 한강 포함
  if(code==='11'){
-   const rx=f=>bb.x+bb.width*f, ry=f=>bb.y+bb.height*f;
-   const hd=`M${rx(0.98)} ${ry(0.44)} C ${rx(0.80)} ${ry(0.47)} ${rx(0.66)} ${ry(0.58)} ${rx(0.50)} ${ry(0.60)} C ${rx(0.35)} ${ry(0.62)} ${rx(0.22)} ${ry(0.55)} ${rx(0.04)} ${ry(0.52)}`;
-   dyn.appendChild(el("path",{class:"hanriver",d:hd}));
+   const smap=el("image",{x:bb.x,y:bb.y,width:bb.width,height:bb.height,class:"seoulmap",id:"seoulMap",preserveAspectRatio:"none","pointer-events":"none"});
+   smap.setAttribute("href","seoul_map.png");
+   smap.setAttributeNS("http://www.w3.org/1999/xlink","href","seoul_map.png");
+   dyn.appendChild(smap);
+   requestAnimationFrame(()=>requestAnimationFrame(()=>smap.classList.add("show")));
  }
  const label=el("text",{class:"prov-label",x:cx,y:bb.y-bb.height*0.04,"text-anchor":"middle"});
  label.textContent=provName(prov.code,prov.kr);dyn.appendChild(label);
