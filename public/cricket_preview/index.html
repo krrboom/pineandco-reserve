@@ -284,15 +284,17 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .mapstage.veil .pcloud{opacity:1}
 @keyframes sweepL{0%{opacity:1;transform:translateX(0) scale(1)}12%{transform:translateX(-3%)}100%{opacity:0;transform:translateX(-138%) scale(1.4)}}
 @keyframes sweepR{0%{opacity:1;transform:translateX(0) scale(1)}12%{transform:translateX(3%)}100%{opacity:0;transform:translateX(140%) scale(1.4)}}
-.c1{top:2%;left:24%;width:52%}
-.c3{top:28%;left:20%;width:60%}
-.c5{bottom:24%;left:23%;width:54%}
-.c7{bottom:4%;left:22%;width:56%}
+.c1{top:1%;left:-9%;width:54%}
+.c3{top:33%;left:-7%;width:56%}
+.c5{bottom:5%;left:-9%;width:54%}
+.c7{top:6%;right:-7%;width:54%}
+.c2{bottom:7%;right:-9%;width:58%}
 .mapstage.veil-part .c1{animation:sweepL 3.6s ease forwards}
-.mapstage.veil-part .c3{animation:sweepR 3.9s ease forwards}
-.mapstage.veil-part .c5{animation:sweepL 3.75s ease forwards}
-.mapstage.veil-part .c7{animation:sweepR 3.7s ease forwards}
-.c7{transition-delay:.2s}.c5{transition-delay:.12s}
+.mapstage.veil-part .c3{animation:sweepL 3.9s ease forwards}
+.mapstage.veil-part .c5{animation:sweepL 3.7s ease forwards}
+.mapstage.veil-part .c7{animation:sweepR 3.6s ease forwards}
+.mapstage.veil-part .c2{animation:sweepR 3.85s ease forwards}
+.c3{transition-delay:.12s}.c2{transition-delay:.16s}.c5{transition-delay:.08s}
 .mapstage.veil .mapsvg{transform:scale(.66);opacity:.35}
 .mapstage.veil-run .mapsvg{transform:scale(1);opacity:1;transition:transform 3.4s cubic-bezier(.22,.61,.36,1),opacity 2.4s ease}
 .cloudveil.hide{display:none}
@@ -345,6 +347,7 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
     <button id="mapBack" class="map-back">← 전체 지도</button>
     <div class="cloudveil" id="cloudveil" aria-hidden="true">
       <img class="pcloud c1" src="cloud_1.png" alt="">
+      <img class="pcloud c2" src="cloud_2.png" alt="">
       <img class="pcloud c3" src="cloud_3.png" alt="">
       <img class="pcloud c5" src="cloud_5.png" alt="">
       <img class="pcloud c7" src="cloud_7.png" alt="">
@@ -844,10 +847,8 @@ function buildMap(){
    path.addEventListener("click",e=>{e.stopPropagation();activateProv(p.code);});
    svg.appendChild(path);
  });
- // 한강 (서울 관통 파란 강줄기)
- svg.appendChild(el("path",{class:"hanriver",d:"M300 149 C289 150 282 157 271 156 C259 155 251 161 242 163 C233 165 227 162 221 166"}));
- // 크리켓 바 랜드마크 (서울)
- const bar=el("image",{x:257,y:118,width:30,height:36,class:"landmark",id:"barSeoul","pointer-events":"none"});
+ // 크리켓 바 랜드마크 (서울) — 크게, 항상 표시
+ const bar=el("image",{x:241,y:86,width:60,height:72,class:"landmark",id:"barSeoul","pointer-events":"none"});
  bar.setAttribute("href","cricket_bar.png");
  bar.setAttributeNS("http://www.w3.org/1999/xlink","href","cricket_bar.png");
  svg.appendChild(bar);
@@ -876,6 +877,12 @@ function activateProv(code){
  // 라벨 + 양조지 점
  const prov=MAPDATA.provinces.find(p=>p.code===code);
  dyn.innerHTML="";
+ // 서울 한강 (서울 클릭 시에만, 행정구역 안 동→서로 흐름)
+ if(code==='11'){
+   const rx=f=>bb.x+bb.width*f, ry=f=>bb.y+bb.height*f;
+   const hd=`M${rx(0.98)} ${ry(0.44)} C ${rx(0.80)} ${ry(0.47)} ${rx(0.66)} ${ry(0.58)} ${rx(0.50)} ${ry(0.60)} C ${rx(0.35)} ${ry(0.62)} ${rx(0.22)} ${ry(0.55)} ${rx(0.04)} ${ry(0.52)}`;
+   dyn.appendChild(el("path",{class:"hanriver",d:hd}));
+ }
  const label=el("text",{class:"prov-label",x:cx,y:bb.y-bb.height*0.04,"text-anchor":"middle"});
  label.textContent=provName(prov.code,prov.kr);dyn.appendChild(label);
  const cities=Object.keys(PROV_OF).filter(k=>PROV_OF[k]===code);
