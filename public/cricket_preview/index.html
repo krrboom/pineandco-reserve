@@ -196,15 +196,15 @@ footer .fs{font-family:var(--kr);font-size:10px;color:#7a6c53;margin-top:12px}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(216,178,90,.35)}50%{box-shadow:0 0 0 10px rgba(216,178,90,0)}}
 
 /* ===== 사운드/언어 토글 ===== */
-.sound-toggle{position:fixed;right:14px;bottom:14px;z-index:900;width:42px;height:42px;border-radius:50%;
+.sound-toggle{position:fixed;right:14px;bottom:56px;z-index:900;width:42px;height:42px;border-radius:50%;
   background:var(--dark);color:#e9e1d1;border:1px solid var(--gold);font-size:17px;cursor:pointer;
   box-shadow:0 3px 10px rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;padding:0}
 .sound-toggle.show{display:flex}
-.lang-toggle{position:fixed;left:14px;bottom:14px;z-index:900;width:42px;height:42px;border-radius:50%;
+.lang-toggle{position:fixed;left:14px;bottom:56px;z-index:900;width:42px;height:42px;border-radius:50%;
   background:var(--dark);color:#e9e1d1;border:1px solid var(--gold);font-size:17px;cursor:pointer;
   box-shadow:0 3px 10px rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;padding:0}
 .lang-toggle.show{display:flex}
-.lang-pop{position:fixed;left:14px;bottom:64px;z-index:901;background:var(--paper2);border:1px solid var(--line);
+.lang-pop{position:fixed;left:14px;bottom:106px;z-index:901;background:var(--paper2);border:1px solid var(--line);
   border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none;flex-direction:column;gap:2px}
 .lang-pop.show{display:flex}
 .lang-pop .langbtn{font-family:var(--kr);font-size:13px;padding:8px 16px;border:none;background:none;color:var(--ink);cursor:pointer;text-align:left;border-radius:8px}
@@ -375,12 +375,13 @@ body.mapzoom #sky{opacity:0}   /* 지도 확대 시 배경 태양/달 숨겨 화
 .rm-cat{display:block;font-family:var(--kr);font-size:11px;color:var(--mut,#8a8168);margin-top:1px}
 .rm-go{flex:0 0 auto;border:0;border-radius:8px;background:var(--pine,#2c3e2d);color:#fff;font-family:var(--kr);font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;white-space:nowrap}
 /* 크리켓 AI 질문창 (디미방체는 이 대화창에서만) */
-.aimodal{position:fixed;inset:0;z-index:800;display:none;align-items:flex-end;justify-content:center;background:rgba(30,20,10,.45)}
+.aimodal{position:fixed;inset:0;z-index:950;display:none;align-items:flex-end;justify-content:center;background:rgba(30,20,10,.45)}
 .aimodal.on{display:flex}
-.ai-card{background:var(--paper,#faf7ef);width:100%;max-width:440px;height:min(72vh,580px);border-radius:20px 20px 0 0;display:flex;flex-direction:column;box-shadow:0 -8px 34px rgba(0,0,0,.32);overflow:hidden}
+.ai-card{background:var(--paper,#faf7ef);width:100%;max-width:400px;height:min(58dvh,440px);max-height:100%;border-radius:20px 20px 0 0;display:flex;flex-direction:column;box-shadow:0 -8px 34px rgba(0,0,0,.32);overflow:hidden}
+.aimodal.kbd .ai-langs{display:none}
 .ai-head{display:flex;align-items:center;gap:8px;padding:15px 17px;border-bottom:1px solid var(--line)}
 .ai-title{flex:1;font-family:var(--f-pen);font-weight:800;font-size:17px;color:#2c3e2d}
-.ai-x{border:0;background:none;font-size:21px;color:#aaa;cursor:pointer;line-height:1}
+.ai-x{border:0;background:rgba(0,0,0,.05);font-size:24px;color:#8a7a63;cursor:pointer;line-height:1;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto;margin:-4px -6px}
 .ai-langs{display:flex;gap:6px;padding:9px 15px 4px;flex-wrap:wrap;font-family:'Apple SD Gothic Neo','Malgun Gothic','Hiragino Sans','Yu Gothic','Microsoft YaHei','Noto Sans CJK KR',system-ui,sans-serif}
 .ai-langs button{border:1px solid var(--line);background:#fff;color:var(--mut);border-radius:14px;padding:5px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:background .15s,color .15s,border-color .15s}
 .ai-langs button.on{background:var(--gold);color:#fff;border-color:var(--gold)}
@@ -390,7 +391,7 @@ body.mapzoom #sky{opacity:0}   /* 지도 확대 시 배경 태양/달 숨겨 화
 .ai-msg.a{align-self:flex-start;background:#fff;color:var(--ink,#38291a);border:1px solid var(--line);border-bottom-left-radius:5px}
 .ai-msg.typing{color:var(--mut);letter-spacing:.25em}
 .ai-inp{display:flex;gap:9px;padding:12px 14px;border-top:1px solid var(--line);background:var(--paper2,#f0e9db)}
-.ai-inp input{flex:1;border:1px solid var(--line);border-radius:22px;padding:11px 16px;font-size:15px;font-family:'Dimibang','NMyeongjo','Hiragino Sans','Yu Gothic','Microsoft YaHei','Malgun Gothic',serif;background:#fff;color:var(--ink)}
+.ai-inp input{flex:1;border:1px solid var(--line);border-radius:22px;padding:10px 16px;font-size:16px;font-family:'Dimibang','NMyeongjo','Hiragino Sans','Yu Gothic','Microsoft YaHei','Malgun Gothic',serif;background:#fff;color:var(--ink)}
 .ai-inp button{flex:0 0 auto;border:0;border-radius:50%;width:42px;height:42px;background:#2c3e2d;color:#fff;font-size:16px;cursor:pointer}
 /* 전체지도 도/시 지명 리더선 */
 .leader{stroke:#b0a079;stroke-width:.8;vector-effect:non-scaling-stroke;opacity:.5;pointer-events:none;stroke-dasharray:2.5 2.5}
@@ -892,6 +893,8 @@ function scaleOverlay(){
  const s=VB.w/MAPDATA.vbW;
  document.querySelectorAll("#mapMuni .muni").forEach(p=>{p.setAttribute("stroke-dasharray",(3.2*s).toFixed(2)+" "+(2.4*s).toFixed(2));});
  document.querySelectorAll("#mapDyn .prov-label").forEach(t=>t.setAttribute("font-size",(16*s).toFixed(2)));
+ // 도 리더선 지명: 뷰폭 비율로 역보정해 화면상 크게(터치 쉽게) 고정
+ document.querySelectorAll("#mapLabels .reglabel").forEach(t=>t.setAttribute("font-size",(23*s).toFixed(2)));
  // 술병 랜드마크: 화면상 일정 크기(뷰폭 비율), 양조지 위 중심하단 정렬, 여러 개는 가로 배치
  const bw=VB.w*0.075, bh=bw*1.7, gap=-bw*0.28;   // 같은 지역 병끼리 겹치듯 밀착
  document.querySelectorAll("#mapDyn .lmk").forEach(g=>{
@@ -960,13 +963,18 @@ function _smoothD(d,iter){
   if(window.MAPDATA&&!MAPDATA._sm){ MAPDATA.provinces.forEach(p=>{p.d=_smoothD(p.d,2);}); MAPDATA._sm=1; }
   if(window.KOREA&&!KOREA._sm){ KOREA.peninsula=_smoothD(KOREA.peninsula,2); KOREA._sm=1; }
  }catch(e){ console.warn('smooth',e); } })();
-const MAPVIEW={x:-30,y:0,w:700,h:764};  // 반도 프레임(기준)
+const MAPVIEW={x:-30,y:0,w:700,h:764};  // 반도 프레임(기준·데스크탑)
+// 모바일 전용 타이트 프레임: 남한(도 bbox x12~558 / y12~752, 중심 285·382)에 딱 붙여 반도를 크게
+const MAPVIEW_M={cx:285,cy:388,w:560,h:760};
 // 전체지도: 실제 화면 비율에 맞춰 반도를 중앙에 꽉 채움(데스크탑/태블릿 좌우 잘림·레터박스 방지)
 function computeFullVB(){
  let ca=(innerWidth&&innerHeight)?innerWidth/innerHeight:(MAPVIEW.w/MAPVIEW.h);
- ca=Math.max(0.5,Math.min(2.4,ca));
- const cx=MAPVIEW.x+MAPVIEW.w/2, cy=MAPVIEW.y+MAPVIEW.h/2; let w,h;
- if(ca>=MAPVIEW.w/MAPVIEW.h){h=MAPVIEW.h;w=h*ca;}else{w=MAPVIEW.w;h=w/ca;}
+ ca=Math.max(0.42,Math.min(2.4,ca));
+ const mob=innerWidth&&innerWidth<560;
+ const cx=mob?MAPVIEW_M.cx:(MAPVIEW.x+MAPVIEW.w/2);
+ const cy=mob?MAPVIEW_M.cy:(MAPVIEW.y+MAPVIEW.h/2);
+ const bw=mob?MAPVIEW_M.w:MAPVIEW.w, bh=mob?MAPVIEW_M.h:MAPVIEW.h; let w,h;
+ if(ca>=bw/bh){h=bh;w=h*ca;}else{w=bw;h=w/ca;}
  return {x:cx-w/2,y:cy-h/2,w:w,h:h};
 }
 // 전체지도: 도/시 → 바다 리더선 + 지명 (호버/클릭 시 그 지역 전통주 메뉴)
@@ -976,7 +984,7 @@ function drawRegionLabels(){
  const codes=Object.keys(cnt);
  const cen={}; codes.forEach(c=>{const e2=document.getElementById('prov-'+c); if(e2){const bb=e2.getBBox(); cen[c]=[bb.x+bb.width/2, bb.y+bb.height/2];} else cen[c]=[300,400];});
  const left=[],right=[],bottom=[];
- codes.forEach(c=>{const [x,y]=cen[c]; if(y>705)bottom.push(c); else if(x<305)left.push(c); else right.push(c);});
+ codes.forEach(c=>{const [x,y]=cen[c]; if(y>705)bottom.push(c); else if(c==='25'||x<305)left.push(c); else right.push(c);});  // 대전(25)은 왼쪽으로
  left.sort((a,b)=>cen[a][1]-cen[b][1]); right.sort((a,b)=>cen[a][1]-cen[b][1]); bottom.sort((a,b)=>cen[a][0]-cen[b][0]);
  const SHORT={"33":"충북","34":"충남","35":"전북","36":"전남","37":"경북","38":"경남"};
  const nm=code=>{const kr=(MAPDATA.provinces.find(p=>p.code===code)||{}).kr||code; return LANG==='ko'?(SHORT[code]||kr):provName(code,kr);};
@@ -987,9 +995,14 @@ function drawRegionLabels(){
    t.addEventListener("click",e=>{e.stopPropagation();showProvMenu(code);});
    g.appendChild(t);
  };
- const spread=(list,x,anchor)=>{const n=list.length,y0=118,y1=765,step=n>1?Math.min(42,(y1-y0)/(n-1)):0; list.forEach((c,i)=>add(c,x, n>1?y0+i*step:400, anchor));};
- spread(left,4,'end'); spread(right,636,'start');
- { const n=bottom.length,x0=190,x1=460,step=n>1?(x1-x0)/(n-1):0; bottom.forEach((c,i)=>add(c, n>1?x0+i*step:315, 748,'middle')); }
+ // 라벨을 현재 보이는 프레임(computeFullVB) 가장자리에 '안쪽 방향'으로 붙여 항상 보이게(타이트 프레임에서도 안 잘림)
+ const vb=(typeof computeFullVB==='function')?computeFullVB():{x:MAPVIEW.x,y:MAPVIEW.y,w:MAPVIEW.w,h:MAPVIEW.h};
+ const edge=vb.w*0.015;
+ const leftX=vb.x+edge, rightX=vb.x+vb.w-edge;
+ const y0=Math.max(90,vb.y+vb.h*0.16), y1=Math.min(760,vb.y+vb.h*0.86);
+ const spread=(list,x,anchor)=>{const n=list.length,step=n>1?Math.min(52,(y1-y0)/(n-1)):0; list.forEach((c,i)=>add(c,x, n>1?y0+i*step:388, anchor));};
+ spread(left,leftX,'start'); spread(right,rightX,'end');   // 좌=안쪽(오른쪽)으로, 우=안쪽(왼쪽)으로 뻗어 프레임 안에 유지
+ { const n=bottom.length,x0=200,x1=440,step=n>1?(x1-x0)/(n-1):0; bottom.forEach((c,i)=>add(c, n>1?x0+i*step:315, 744,'middle')); }
  return g;
 }
 function showProvMenu(code){
@@ -1345,7 +1358,17 @@ function openCricketAI(){
  document.getElementById('aiInput').placeholder=L.ph;
  aiSyncLangBtns();
  if(!document.getElementById('aiChat').children.length)aiAdd('a',aiGreeting());
- m.classList.add('on'); setTimeout(()=>{try{document.getElementById('aiInput').focus();}catch(e){}},120);
+ m.classList.add('on');
+ if(window.visualViewport){window.visualViewport.addEventListener('resize',aiFitViewport);window.visualViewport.addEventListener('scroll',aiFitViewport);}
+ aiFitViewport();
+ setTimeout(()=>{try{document.getElementById('aiInput').focus();}catch(e){}aiFitViewport();},120);
+}
+// 폰 키보드가 뜨면 대화창을 '보이는 영역(visualViewport)'에 맞춰 고정 → 확대·짤림 방지
+function aiFitViewport(){
+ const m=document.getElementById('aiModal'); if(!m||!m.classList.contains('on'))return;
+ const vv=window.visualViewport;
+ if(vv){ m.style.height=vv.height+'px'; m.style.top=vv.offsetTop+'px'; m.style.bottom='auto';
+   m.classList.toggle('kbd', vv.height < window.innerHeight*0.8); }
 }
 function aiSetLang(l){
  LANG=l; if(typeof applyLang==='function')applyLang();
@@ -1356,7 +1379,8 @@ function aiSetLang(l){
  const c=document.getElementById('aiChat'); if(c){c.innerHTML='';_aiHist=[];aiAdd('a',aiGreeting());}
  try{document.getElementById('aiInput').focus();}catch(e){}
 }
-function closeCricketAI(){const m=document.getElementById('aiModal');if(m)m.classList.remove('on');}
+function closeCricketAI(){const m=document.getElementById('aiModal');if(m){m.classList.remove('on','kbd');m.style.height='';m.style.top='';m.style.bottom='';}
+ if(window.visualViewport){window.visualViewport.removeEventListener('resize',aiFitViewport);window.visualViewport.removeEventListener('scroll',aiFitViewport);}}
 function aiAdd(role,text){const c=document.getElementById('aiChat');const d=document.createElement('div');d.className='ai-msg '+(role==='u'?'u':'a');d.textContent=text;c.appendChild(d);c.scrollTop=c.scrollHeight;return d;}
 async function cricketAsk(){
  const inp=document.getElementById('aiInput'); const q=(inp.value||'').trim(); if(!q)return;
