@@ -27,7 +27,8 @@ html{scroll-behavior:smooth}
 .sec-h .t.kr,.prov-label,.bm-nm,.bm-nm2,.mpt,.b-kr,.rm-kr,.catlabel,.aq-title{font-family:var(--f-pen)}
 b,strong,.b-reg,.maphint,.flag{font-family:var(--f-penr)}
 /* 을지로체: 지역 도/시 라벨 + 호버 버튼(내비/칩) */
-.reglabel,.nav-b,.nav-b .kr,.splash-enter,.lang-pop .langbtn,.langsel .langbtn{font-family:var(--f-eul) !important}
+.reglabel,.nav-b,.nav-b .kr,.splash-enter,.langsel .langbtn{font-family:var(--f-eul) !important}
+.lang-pop .langbtn{font-family:'Apple SD Gothic Neo','Malgun Gothic','Hiragino Sans','Noto Sans CJK KR',system-ui,sans-serif !important}  /* 일/중 표현되는 시스템 폰트 */
 body{background:var(--paper);color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.12);font-family:var(--serif);line-height:1.6;padding-bottom:60px;overflow-x:hidden}
 body.night .cover .logo{filter:brightness(0) invert(.9) sepia(.18) saturate(1.3)}
 .cover .logo{transition:filter .7s ease}
@@ -311,14 +312,25 @@ body.night .iname .shbar{filter:brightness(1.4)}
 .mapstage.veil .mapsvg{opacity:.35}
 .mapstage.veil-run .mapsvg{opacity:1;transition:opacity 2.4s ease}
 .cloudveil.hide{display:none}
-/* 크리켓 캐릭터 (5종 랜덤 마스코트, 모든 이미지 최상단, 클릭→AI) */
+/* 크리켓 캐릭터 (5종 랜덤 리깅, 최상단, 클릭→AI) */
 .ctrav{position:fixed;left:0;top:0;z-index:702;pointer-events:none;opacity:0;will-change:transform;cursor:pointer}
 .ctrav.clickable{pointer-events:auto}
-.ctrav img{width:100%;height:100%;object-fit:contain;object-position:bottom center;display:block;filter:drop-shadow(0 2px 3px rgba(40,50,40,.22))}
-.ctrav.cgreet img{animation:cgreetbob .5s ease-in-out infinite}
-@keyframes cgreetbob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-8%) rotate(3deg)}}
-.ctrav.cidle img{animation:cidlebob 1.6s ease-in-out infinite}
-@keyframes cidlebob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5%)}}
+.cflip{position:relative;width:100%;height:100%;transform-origin:center bottom}
+.crl{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:bottom center}
+.crl-body{filter:drop-shadow(0 2px 3px rgba(40,50,40,.2))}
+.ctrav.cmove .crl-leg,.ctrav.cmove .crl-legF{animation:crleg .32s ease-in-out infinite}
+.ctrav.cmove .crl-legB{animation:crlegB .32s ease-in-out infinite}
+.ctrav.cmove .crl-ant{animation:crant .32s ease-in-out infinite}
+.ctrav.cmove .crl-arm{animation:crarm .32s ease-in-out infinite}
+@keyframes crleg{0%,100%{transform:rotate(9deg)}50%{transform:rotate(-9deg)}}
+@keyframes crlegB{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}
+@keyframes crant{0%,100%{transform:rotate(3deg)}50%{transform:rotate(-3deg)}}
+@keyframes crarm{0%,100%{transform:rotate(11deg)}50%{transform:rotate(-11deg)}}
+.ctrav.cgreet .crl-ant{animation:crantW .6s ease-in-out infinite}
+.ctrav.cgreet .crl-arm{animation:crarmW .55s ease-in-out infinite}
+@keyframes crantW{0%,100%{transform:rotate(7deg)}50%{transform:rotate(-13deg)}}
+@keyframes crarmW{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(16deg)}}
+.ctrav.cidle .crl-ant{animation:crant 1.9s ease-in-out infinite}
 .cshadow{position:fixed;left:0;top:0;z-index:701;width:60px;height:11px;border-radius:50%;background:rgba(40,50,40,.2);filter:blur(3px);pointer-events:none;opacity:0;will-change:transform}
 .cbubble{position:fixed;left:0;top:0;z-index:703;background:#fff;color:#2c3e2d;font-weight:800;font-size:13px;font-family:'Cinzel',var(--kr),serif;letter-spacing:.02em;padding:6px 13px;border-radius:14px;box-shadow:0 5px 14px rgba(0,0,0,.2);opacity:0;transform:translateY(6px) scale(.8);transition:opacity .3s ease,transform .3s cubic-bezier(.2,1.4,.4,1);pointer-events:none;white-space:nowrap}
 .cbubble::after{content:"";position:absolute;left:20px;bottom:-6px;border:6px solid transparent;border-top-color:#fff;border-bottom:0}
@@ -389,8 +401,6 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
   <div class="langsel" id="langsel">
     <button class="langbtn on" data-l="ko">한국어</button>
     <button class="langbtn" data-l="en">English</button>
-    <button class="langbtn" data-l="zh">中文</button>
-    <button class="langbtn" data-l="ja">日本語</button>
   </div>
   <button class="splash-enter" id="enterBtn" data-i18n="splash.enter">터치하여 입장</button>
   <div class="splash-hint" data-i18n="splash.hint">🦗 귀뚜라미 소리와 함께 들어가세요</div>
@@ -420,7 +430,7 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
       <img class="pcloud c7" src="cloud_7.png" alt="">
     </div>
     <div class="cshadow" id="cshadow" aria-hidden="true"></div>
-    <div class="ctrav" id="ctrav" title="크리켓에게 물어보기"><img id="cimg" src="" alt="크리켓"></div>
+    <div class="ctrav" id="ctrav" title="크리켓에게 물어보기"><div class="cflip" id="cflip"></div></div>
     <div class="cbubble" id="cbubble">Welcome To Cricket!</div>
   </div></div>
   <div class="scrollcue" aria-hidden="true"><span data-i18n="home.scroll">메뉴 보기</span><span class="cue-arrow">⌄</span></div>
@@ -944,7 +954,15 @@ function _smoothD(d,iter){
   if(window.MAPDATA&&!MAPDATA._sm){ MAPDATA.provinces.forEach(p=>{p.d=_smoothD(p.d,2);}); MAPDATA._sm=1; }
   if(window.KOREA&&!KOREA._sm){ KOREA.peninsula=_smoothD(KOREA.peninsula,2); KOREA._sm=1; }
  }catch(e){ console.warn('smooth',e); } })();
-const MAPVIEW={x:-30,y:0,w:700,h:764};  // 전체 지도 뷰(바다 지명 여백 포함)
+const MAPVIEW={x:-30,y:0,w:700,h:764};  // 반도 프레임(기준)
+// 전체지도: 실제 화면 비율에 맞춰 반도를 중앙에 꽉 채움(데스크탑/태블릿 좌우 잘림·레터박스 방지)
+function computeFullVB(){
+ const el=document.getElementById('mapsvg');
+ let ca=(el&&el.clientWidth&&el.clientHeight)?el.clientWidth/el.clientHeight:(MAPVIEW.w/MAPVIEW.h);
+ const cx=MAPVIEW.x+MAPVIEW.w/2, cy=MAPVIEW.y+MAPVIEW.h/2; let w,h;
+ if(ca>=MAPVIEW.w/MAPVIEW.h){h=MAPVIEW.h;w=h*ca;}else{w=MAPVIEW.w;h=w/ca;}
+ return {x:cx-w/2,y:cy-h/2,w:w,h:h};
+}
 // 전체지도: 도/시 → 바다 리더선 + 지명 (호버/클릭 시 그 지역 전통주 메뉴)
 function drawRegionLabels(){
  const g=el("g",{id:"mapLabels"});
@@ -981,7 +999,7 @@ function showProvMenu(code){
 function buildMap(){
  const svg=document.getElementById("mapsvg");
  svg.setAttribute("preserveAspectRatio","xMidYMid meet");
- setVB(MAPVIEW.x,MAPVIEW.y,MAPVIEW.w,MAPVIEW.h);
+ {const fv=computeFullVB();setVB(fv.x,fv.y,fv.w,fv.h);}
  const provCount={};BOTTLES.forEach(b=>{if(b.region&&PROV_OF[b.region])provCount[PROV_OF[b.region]]=(provCount[PROV_OF[b.region]]||0)+1;});
  svg.innerHTML="";
  // 한반도 전체 실루엣(배경) + 바다·부속도서 이름
@@ -1074,7 +1092,7 @@ function zoomOutMap(){
  const ml=document.getElementById('mapLabels'); if(ml)ml.style.display='';   // 전체지도 지명 복원
  document.querySelectorAll('.reglabel').forEach(x=>x.classList.remove('on'));
  barMode='full'; seoulBB=null; updateBar();
- animVB(MAPVIEW.x,MAPVIEW.y,MAPVIEW.w,MAPVIEW.h,700);
+ {const fv=computeFullVB();animVB(fv.x,fv.y,fv.w,fv.h,700);}
  const panel=document.getElementById("mapPanel");
  panel.innerHTML=`<div class="mpt">${esc(t('map.panel0.t'))}</div><div class="mplist" style="font-family:var(--kr);font-size:12px;color:var(--mut)">${esc(t('map.panel0.b'))}</div>`;
 }
@@ -1206,14 +1224,47 @@ function svgToScreen(sx,sy,vb,rect){
  const ox=rect.left+(rect.width-rw)/2, oy=rect.top+(rect.height-rh)/2;
  return {x:ox+(sx-vb.x)*scale, y:oy+(sy-vb.y)*scale};
 }
-let _crigW=0,_crigH=0,_canc={x:0,y:0},_chopTimer=null;
-function csize(){const vw=innerWidth; _crigW=Math.min(Math.max(vw*0.078,46),92); _crigH=_crigW;
- const t=document.getElementById('ctrav'); if(t){t.style.width=_crigW+'px';t.style.height=_crigH+'px';} _canc={x:0.5*_crigW,y:0.88*_crigH};}
+// 5종 캐릭터 리그(rig_meta4): 관절축(비율), 다리/더듬이/팔
+const RIGM=[
+ {W:416,H:379,legs:[{key:'leg',piv:[0.4675,0.7559]}],antPiv:[0.1947,0.4116]},
+ {W:403,H:343,legs:[{key:'leg',piv:[0.5045,0.7522]}],antPiv:[0.2072,0.3382]},
+ {W:388,H:398,legs:[{key:'leg',piv:[0.5090,0.7475]}],antPiv:[0.2461,0.3480]},
+ {W:359,H:347,legs:[{key:'leg',piv:[0.7159,0.7618]}],antPiv:[0.6407,0.2190]},
+ {W:452,H:439,legs:[{key:'legF',piv:[0.3982,0.7882]},{key:'legB',piv:[0.5376,0.7859]}],antPiv:[0.3761,0.2688],armPiv:[0.1925,0.6834],hasArm:true}
+];
+let _crigW=0,_crigH=0,_canc={x:0,y:0},_chopTimer=null,_cIdx=0;
+function _po(p){return (p[0]*100).toFixed(1)+'% '+(p[1]*100).toFixed(1)+'%';}
+function buildRig(i){
+ const m=RIGM[i], f=document.getElementById('cflip'); if(!f)return; let h='';
+ if(m.hasArm){
+   const lb=m.legs.find(l=>l.key==='legB'),lf=m.legs.find(l=>l.key==='legF');
+   h+=`<img class="crl crl-legB" src="u${i}_legB.png" style="transform-origin:${_po(lb.piv)}">`;
+   h+=`<img class="crl crl-legF" src="u${i}_legF.png" style="transform-origin:${_po(lf.piv)}">`;
+   h+=`<img class="crl crl-body" src="u${i}_body.png">`;
+   h+=`<img class="crl crl-arm" src="u${i}_arm.png" style="transform-origin:${_po(m.armPiv)}">`;
+   h+=`<img class="crl crl-ant" src="u${i}_ant.png" style="transform-origin:${_po(m.antPiv)}">`;
+ }else{
+   h+=`<img class="crl crl-leg" src="u${i}_leg.png" style="transform-origin:${_po(m.legs[0].piv)}">`;
+   h+=`<img class="crl crl-body" src="u${i}_body.png">`;
+   h+=`<img class="crl crl-ant" src="u${i}_ant.png" style="transform-origin:${_po(m.antPiv)}">`;
+ }
+ f.innerHTML=h;
+}
+function pickChar(){_cIdx=Math.floor(Math.random()*5); buildRig(_cIdx);}
+function csize(){const vw=innerWidth,m=RIGM[_cIdx]||{W:1,H:1}; _crigW=Math.min(Math.max(vw*0.082,50),98); _crigH=_crigW*(m.H/m.W);
+ const lx=m.legs.reduce((s,l)=>s+l.piv[0],0)/m.legs.length;
+ const t=document.getElementById('ctrav'); if(t){t.style.width=_crigW+'px';t.style.height=_crigH+'px';} _canc={x:lx*_crigW,y:0.93*_crigH};}
 function csetT(x,y){const t=document.getElementById('ctrav');t._pos={x,y};t.style.transform='translate('+(x-_canc.x)+'px,'+(y-_canc.y)+'px)';}
 function csetSh(x,y,sc,op){const s=document.getElementById('cshadow');s.style.transform='translate('+(x-24)+'px,'+(y-5)+'px) scaleX('+sc+')';s.style.opacity=op;}
 const _csleep=ms=>new Promise(r=>setTimeout(r,ms));
+function cface(dir){ // dir>0 오른쪽, dir<0 왼쪽 — 캐릭터가 이동방향을 바라보게(기본 향함 보정)
+ const f=document.getElementById('cflip'); if(!f||!dir)return;
+ const defR=(RIGM[_cIdx].antPiv[0]>0.5); const wantR=dir>0;
+ f.style.transform=(wantR===defR)?'scaleX(1)':'scaleX(-1)';
+}
 async function cjump(ax,ay,bx,by,dur,peak){
  const t=document.getElementById('ctrav'), sh=document.getElementById('cshadow');
+ cface(bx-ax); t.classList.remove('cidle'); t.classList.add('cmove');
  const a={x:ax-_canc.x,y:ay-_canc.y}, b={x:bx-_canc.x,y:by-_canc.y};
  const midX=(a.x+b.x)/2, topY=Math.min(a.y,b.y)-peak;
  sh.animate([{opacity:.05,transform:'translate('+(ax-24)+'px,'+(ay-5)+'px) scaleX(.5)'},{opacity:.2,transform:'translate('+(bx-24)+'px,'+(by-5)+'px) scaleX(1)'}],{duration:dur,fill:'forwards',easing:'ease-in'});
@@ -1224,8 +1275,8 @@ async function cjump(ax,ay,bx,by,dur,peak){
   {transform:'translate('+b.x+'px,'+b.y+'px) scale(1.12,.9)'}
  ],{duration:dur,easing:'cubic-bezier(.4,0,.5,1)',fill:'forwards'});
  try{await an.finished;}catch(e){} t._pos={x:bx,y:by}; t.style.transform='translate('+b.x+'px,'+b.y+'px)';
+ t.classList.remove('cmove'); t.classList.add('cidle');
 }
-function pickChar(){const i=Math.floor(Math.random()*5);const img=document.getElementById('cimg');if(img)img.src='cch'+i+'.png';}
 async function playCricketIntro(){
  const t=document.getElementById('ctrav'); if(!t)return;
  pickChar(); csize();
@@ -1236,7 +1287,7 @@ async function playCricketIntro(){
  const p7=c7?{x:cl(c7.right-c7.width*0.32,44,vw-44),y:cl(c7.top+c7.height*0.32,40,vh-40)}:{x:vw*0.82,y:vh*0.22};
  const p3=c3?{x:cl(c3.right-c3.width*0.20,44,vw-44),y:cl(c3.top+c3.height*0.40,40,vh-40)}:{x:vw*0.42,y:vh*0.42};
  const svg=document.getElementById('mapsvg'), rect=svg.getBoundingClientRect();
- const bp=svgToScreen(271,158,MAPVIEW,rect);
+ const bp=svgToScreen(271,158,computeFullVB(),rect);
  t.style.opacity='1';
  csetT(p2.x,p2.y); csetSh(p2.x,p2.y,.7,.14);
  await _csleep(520);
@@ -1245,7 +1296,7 @@ async function playCricketIntro(){
  document.getElementById('mapStage').classList.add('veil-part');   // 구름 걷힘 시작
  await cjump(p3.x,p3.y,bp.x,bp.y,1250,Math.min(240,Math.abs(p3.y-bp.y)*0.5+120));
  await _csleep(110);
- t.classList.add('cgreet');
+ t.classList.remove('cidle'); t.classList.add('cgreet');
  const bub=document.getElementById('cbubble');
  bub.style.left=(bp.x+_crigW*0.28)+'px'; bub.style.top=(bp.y-_crigH*1.2)+'px';
  await _csleep(150); bub.classList.add('show');
@@ -1310,7 +1361,8 @@ function playMapIntro(){
  // 3) 카메라(지도)는 처음부터 끝까지 멈춤 없이 계속 다가간다 → 남한 뷰로
  setTimeout(()=>{
    svg.classList.remove("pen-only");
-   animVB(MAPVIEW.x,MAPVIEW.y,MAPVIEW.w,MAPVIEW.h,3300,()=>{
+   const fv=computeFullVB();
+   animVB(fv.x,fv.y,fv.w,fv.h,3300,()=>{
      document.body.classList.remove("intro-run");   // 로고·버튼 fade in (한반도 실루엣·바다이름은 유지)
    });
  },300);
@@ -1321,6 +1373,7 @@ function playMapIntro(){
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
 document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
 (function(){const _ct=document.getElementById('ctrav'); if(_ct)_ct.addEventListener('click',e=>{e.stopPropagation();openCricketAI();});})();
+let _rzTO=null; window.addEventListener('resize',()=>{clearTimeout(_rzTO);_rzTO=setTimeout(()=>{try{if(!zoomed){const fv=computeFullVB();setVB(fv.x,fv.y,fv.w,fv.h);scaleOverlay();}}catch(_){}}, 160);});
 splash.addEventListener("click",enter);
 
 /* ===== 스크롤 리빌 애니메이션 ===== */
