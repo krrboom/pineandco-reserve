@@ -589,7 +589,7 @@ const START_X=322;                           // 이미지의 출발선 위치
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 const toastEl=document.getElementById("toast"), lapEl=document.getElementById("lap"),
       boardEl=document.getElementById("board");
-let S=1, CW=0, CH=0, camX=0, runners=[], raceOn=false, t0=0, finished=[], toastT=0;
+let S=1, CW=0, CH=0, camX=0, runners=[], raceOn=false, t0=0, finished=[], toastT=0, winRunner=null;
 /* 결승 연출 상태 */
 let zoom=1, zoomT=1, tScale=1, tScaleT=1, focusLane=0, phase="run", phaseT=0, lastT=0;
 
@@ -638,6 +638,7 @@ function startRace(){
    lateKind:(Math.random()<0.45?"surge":(Math.random()<0.6?"slump":"none")),
    lateDone:false
  }));
+ winRunner=runners[(Math.random()*runners.length)|0];   // 승자를 매판 균등 무작위로 미리 정한다 (어떤 캐릭터·인원도 공평)
  finished=[]; raceOn=true; t0=performance.now(); camX=0;
  zoom=1;zoomT=1;tScale=1;tScaleT=1;phase="run";phaseT=0;focusLane=runners[0].lane;lastT=0;cdBeeped=-1;
  lapEl.textContent="READY";
@@ -670,8 +671,8 @@ function photoTwist(lead){
  if(Math.random()>0.62)return;                     // 열 판 중 여섯 판 정도
  const un=runners.filter(r=>!r.done);
  if(un.length<2)return;
- // 선두를 막거나(주로), 가끔 뒤에 있는 주자에게 폭주를 준다
- if(Math.random()<0.72){
+ // 선두를 막거나(주로), 가끔 뒤에 있는 주자에게 폭주를 준다. 단 지정 승자는 막지 않는다
+ if(lead!==winRunner && Math.random()<0.72){
    const k=TWIST[Math.floor(Math.random()*TWIST.length)];
    const e=EVENTS.find(x=>x.k===k)||EVENTS[0];
    lead.ev={k:k,emo:e.emo,msg:e.msg,dur:e.dur};
@@ -777,8 +778,10 @@ function step(dt, el){
    if(!r.lateDone && prog>r.lateAt && r.lateKind!=="none"){
      r.lateDone=true;
      if(r.lateKind==="surge"){ r.ev={k:"dash",emo:"⚡",msg:""}; r.evT=2.6; showToast("⚡ 막판 스퍼트!", r.c.name); }
-     else { r.ev={k:"trip",emo:"😵",msg:""}; r.evT=1.5; showToast("😵 다리가 풀렸다!", r.c.name); }
+     else if(r!==winRunner){ r.ev={k:"trip",emo:"😵",msg:""}; r.evT=1.5; showToast("😵 다리가 풀렸다!", r.c.name); }
    }
+   // 막판 스트레치에서 지정 승자에게 완만한 우위 (승부는 자연스럽게, 결과는 공평하게)
+   if(prog>0.58 && r===winRunner) mul*=1.10;
    // 뒤처질수록 조금씩 따라붙는다 (끝까지 붙어서 결과를 모르게)
    const band=1+Math.min(0.42,((leadX-r.x)/900)*0.27);
    const mom=1+0.20*Math.sin(el*0.55+r.wob*2.1);
@@ -787,7 +790,7 @@ function step(dt, el){
    r.x+=r.v*dt;
    if(r.x<START_X-40)r.x=START_X-40;
    r.anim+=dt*(mul<=0?0:Math.max(0.5,mul))*7.5;
-   if(!r.done && r.x>=RACE_LEN){ r.done=1; r._fin=r.x; }   // 통과 표시 (초과분 유지, 순위는 아래에서)
+   if(!r.done && r.x>=RACE_LEN){ if(!finished.length && r!==winRunner){ r.x=RACE_LEN-3; } else { r.done=1; r._fin=r.x; } }   // 지정 승자가 먼저 통과하기 전엔 결승선 코앞에서 대기
  }
  // 같은 프레임에 결승선을 지난 주자들: 배열 순서가 아니라 실제로 더 멀리 간(빠른) 순서로 순위 결정 (Pat 편향 제거)
  const _jf=runners.filter(r=>r._fin!==undefined);
