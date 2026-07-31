@@ -6,16 +6,30 @@
 <meta name="theme-color" content="#241a0f">
 <title>CRICKET SEOUL · Menu &amp; 전통주 도감</title>
 <style>
+@font-face{font-family:'NMyeongjo';src:url('f_myeongjo.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'NPenB';src:url('f_penB.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'NPenR';src:url('f_penR.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'BMEuljiro';src:url('f_euljiro.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'Dimibang';src:url('f_dimibang.woff2') format('woff2');font-display:swap}
 :root{
   --paper:#e9e2d3;--paper2:#f0e9db;--sage:#d5ddc4;--sage2:#c7d1b3;
   --ink:#38291a;--ink2:#5f4f3c;--mut:#8a7a63;--gold:#a4854f;
   --dark:#241a0f;--dark2:#170f07;--line:rgba(56,41,26,.16);--cream:#e9e1d1;
-  --serif:Georgia,'Times New Roman','Nanum Myeongjo','Apple SD Gothic Neo',serif;
-  --kr:'Nanum Myeongjo','Apple SD Gothic Neo','Malgun Gothic',serif;
+  --serif:Georgia,'Times New Roman','NMyeongjo','Nanum Myeongjo',serif;
+  --kr:'NMyeongjo','Nanum Myeongjo','Apple SD Gothic Neo','Malgun Gothic',serif;   /* 설명·본문: 옛한글 명조 */
+  --f-pen:'NPenB','NMyeongjo','Apple SD Gothic Neo',serif;   /* 제목·큰글씨: 바른펜 볼드(손글씨) */
+  --f-penr:'NPenR','NMyeongjo','Apple SD Gothic Neo',serif;  /* 강조: 바른펜 레귤러 */
+  --f-eul:'BMEuljiro','NMyeongjo','Apple SD Gothic Neo',sans-serif;  /* 을지로체: 버튼·지역라벨 */
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{background:var(--paper);color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.12);font-family:var(--serif);line-height:1.6;padding-bottom:60px;overflow-x:hidden}
+/* 폰트 적재적소: 제목·큰글씨=바른펜B, 강조=바른펜R, 설명·본문=옛한글명조(--kr) */
+.sec-h .t.kr,.prov-label,.bm-nm,.bm-nm2,.mpt,.b-kr,.rm-kr,.catlabel,.aq-title{font-family:var(--f-pen)}
+b,strong,.b-reg,.maphint,.flag{font-family:var(--f-penr)}
+/* 을지로체: 지역 도/시 라벨 + 호버 버튼(내비/칩) */
+.reglabel,.nav-b,.nav-b .kr,.splash-enter,.langsel .langbtn{font-family:var(--f-eul) !important}
+.lang-pop .langbtn{font-family:'Apple SD Gothic Neo','Malgun Gothic','Hiragino Sans','Noto Sans CJK KR',system-ui,sans-serif !important}  /* 일/중 표현되는 시스템 폰트 */
+body{background:var(--paper);color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.12);font-family:var(--serif);line-height:1.6;padding-bottom:74px;overflow-x:hidden}
 body.night .cover .logo{filter:brightness(0) invert(.9) sepia(.18) saturate(1.3)}
 .cover .logo{transition:filter .7s ease}
 /* 낮↔밤 전환을 부드럽게 (개별 규칙이 있는 요소는 그 규칙이 우선) */
@@ -36,16 +50,23 @@ body,nav,.wrap,.wrap *{transition:color .55s ease}
 .strip .item{display:flex;align-items:center;gap:7px;font-size:10.5px;font-variant-caps:small-caps;letter-spacing:.08em}
 
 /* 네비 */
-nav{position:sticky;top:0;z-index:50;background:var(--paper);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(240,233,219,.93);backdrop-filter:blur(10px);border-top:1px solid var(--line);box-shadow:0 -3px 16px rgba(56,41,26,.12);transition:background .5s linear}
+body.night nav{background:rgba(17,14,22,.93)}
 .navwrap{position:relative;max-width:560px;margin:0 auto}
 .navwrap::after{content:"";position:absolute;top:0;right:0;bottom:0;width:26px;pointer-events:none;background:linear-gradient(to right,rgba(0,0,0,0),var(--paper) 78%);opacity:0;transition:opacity .25s}
 .navwrap.more::after{opacity:1}
 .navin{display:flex;gap:0;overflow-x:auto;padding:0 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
 .navin::-webkit-scrollbar{display:none}
 .navin::before,.navin::after{content:"";flex:1 0 0;min-width:0}
-.nav-b{flex:0 0 auto;background:none;border:none;color:var(--mut);font-family:var(--serif);letter-spacing:.02em;font-size:12px;padding:13px 6px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
-.nav-b .kr{font-family:var(--kr)}
-.nav-b.on{color:var(--ink);border-bottom-color:var(--gold)}
+.nav-b{flex:0 0 auto;background:rgba(255,255,255,.5);border:1px solid var(--line);color:var(--ink);letter-spacing:0;font-size:13px;padding:8px 6px;margin:6px 2.5px;border-radius:11px;cursor:pointer;white-space:nowrap;font-weight:600;transition:background .4s linear,color .4s linear,box-shadow .18s}
+body.night .nav-b{background:rgba(255,255,255,.09)}
+.nav-b .kr{font-family:var(--f-eul)}
+.nav-b.on{color:#fff;background:var(--gold);border-color:var(--gold);box-shadow:0 2px 9px rgba(200,154,60,.38)}
+/* 언어별 하단 버튼 축소 (한국어 외엔 길어서 잘림 방지) */
+body[data-lang="en"] .nav-b{font-size:11px;padding:8px 5px;margin:6px 2px;letter-spacing:0}
+body[data-lang="zh"] .nav-b{font-size:12.5px;padding:8px 6px;margin:6px 2px}
+body[data-lang="ja"] .nav-b{font-size:11.5px;padding:8px 5px;margin:6px 2px}
+.navin{padding:0 2px}
 
 section{padding:28px 20px 8px;scroll-margin-top:60px}
 section+section{border-top:1px solid var(--line);margin-top:14px;padding-top:36px}
@@ -116,13 +137,13 @@ section+section{border-top:1px solid var(--line);margin-top:14px;padding-top:36p
 .mapwrap{background:transparent;padding:4px;position:relative}
 .mapstage{position:relative;width:100%;max-width:400px;margin:0 auto;aspect-ratio:571/764}
 .mapsvg{width:100%;height:100%;display:block}
-.prov{fill:#dde2cd;stroke:#a89f86;stroke-width:.9;cursor:pointer;vector-effect:non-scaling-stroke;
+.prov{fill:#c4d0a6;stroke:#a89f86;stroke-width:.9;cursor:pointer;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;
   transition:fill .35s,opacity .35s}
 .prov.has{fill:#c4d0a6}
 .prov:hover{fill:#a9ba84}
 .prov.active{fill:#a7ba7f;stroke:var(--gold);stroke-width:2}
 .prov.dim{opacity:.45}
-.muni{fill:none;stroke:rgba(70,60,35,.45);stroke-width:1;vector-effect:non-scaling-stroke;pointer-events:none;
+.muni{fill:none;stroke:rgba(70,60,35,.45);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;pointer-events:none;
   animation:fadeIn .5s ease both}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .map-back{position:absolute;left:8px;top:8px;z-index:5;display:none;background:var(--dark);color:#e9e1d1;
@@ -138,6 +159,7 @@ section+section{border-top:1px solid var(--line);margin-top:14px;padding-top:36p
 @keyframes dotPop{from{opacity:0;transform:scale(0)}60%{transform:scale(1.35)}to{opacity:1;transform:scale(1)}}
 .maphint{text-align:center;font-family:var(--kr);font-size:11px;color:var(--mut);margin:8px 0}
 .mappanel{background:var(--paper2);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:12px;min-height:60px}
+.mappanel:empty{display:none}
 .mappanel .mpt{font-family:var(--kr);font-size:14px;color:var(--gold);margin-bottom:8px}
 .mplist a{display:block;font-family:var(--kr);font-size:12.5px;color:var(--ink);text-decoration:none;padding:6px 0;border-bottom:1px dashed var(--line);cursor:pointer}
 .mplist a:last-child{border-bottom:none}
@@ -158,13 +180,13 @@ footer .fs{font-family:var(--kr);font-size:10px;color:#7a6c53;margin-top:12px}
 
 /* ===== 웰컴 스플래시 ===== */
 .splash{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;
-  background:radial-gradient(120% 70% at 50% 30%,#3a2612,#1a1108 70%);
+  background:radial-gradient(120% 70% at 50% 30%,#4d3319,#251710 72%);
   transition:opacity .9s ease, visibility .9s}
 .splash.gone{opacity:0;visibility:hidden}
 .splash-logo{width:200px;max-width:60%;filter:brightness(0) invert(.86) sepia(.25) saturate(1.3) hue-rotate(3deg);
   animation:floatY 4s ease-in-out infinite, fadeUp 1s ease both}
 .splash-welcome{font-family:var(--kr);font-size:19px;color:#efe4cf;letter-spacing:.02em;margin-top:14px;animation:fadeUp 1s .35s ease both}
-.splash-en{font-variant-caps:small-caps;letter-spacing:.28em;font-size:11px;color:var(--gold);padding-left:.28em;animation:fadeUp 1s .55s ease both}
+.splash-en{font-variant-caps:small-caps;letter-spacing:.22em;font-size:17px;color:#f3e4b0;font-weight:600;padding-left:.22em;animation:fadeUp 1s .55s ease both}
 .splash-enter{margin-top:26px;background:none;border:1px solid rgba(216,178,90,.55);color:#efe4cf;font-family:var(--serif);
   font-variant-caps:small-caps;letter-spacing:.14em;font-size:13px;padding:11px 26px;border-radius:999px;cursor:pointer;
   animation:fadeUp 1s .75s ease both, pulse 2.4s 1.6s ease-in-out infinite}
@@ -269,6 +291,118 @@ body.night{text-shadow:0 1px 2px rgba(0,0,0,.45)}
 body.night .iname .shbar{filter:brightness(1.4)}
 .rz-site{display:inline-block;margin-top:9px;font-family:var(--kr);font-size:11.5px;letter-spacing:.02em;
   color:var(--gold);text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:1px}
+.homehero{padding:0;min-height:100dvh;position:relative;width:100vw;margin-left:calc(50% - 50vw)}
+.home-brand{position:absolute;top:0;left:0;right:0;z-index:3;text-align:center;padding:14px 20px 2px;pointer-events:none}
+.home-brand .logo{width:150px;max-width:50%;height:auto}
+.homehero .mapwrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0}
+.homehero .mapstage{aspect-ratio:auto;width:100%;height:100%;max-width:none}
+#sky{transition:opacity .5s ease}
+body.mapzoom #sky{opacity:0}   /* 지도 확대 시 배경 태양/달 숨겨 화면 꽉 채움 */
+.scrollcue{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-family:var(--kr);font-size:12px;color:var(--mut);letter-spacing:.04em;animation:cuebob 1.8s ease-in-out infinite;pointer-events:none}
+.scrollcue .cue-arrow{display:block;font-size:16px;line-height:1;margin-top:2px}
+@keyframes cuebob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+.mapmeta{padding-top:8px}
+.cloudveil{position:fixed;inset:0;z-index:500;pointer-events:none;overflow:hidden;transition:opacity 1.3s ease}
+.cloudveil.fade{opacity:0}
+.pcloud{position:absolute;height:auto;opacity:0;will-change:transform,opacity;transition:transform 3.2s cubic-bezier(.34,0,.24,1),opacity .9s ease}
+.mapstage.veil .pcloud{opacity:1}
+@keyframes sweepL{0%{opacity:1;transform:translateX(0) scale(1)}12%{transform:translateX(-3%)}100%{opacity:0;transform:translateX(-138%) scale(1.4)}}
+@keyframes sweepR{0%{opacity:1;transform:translateX(0) scale(1)}12%{transform:translateX(3%)}100%{opacity:0;transform:translateX(140%) scale(1.4)}}
+.c1{top:1%;left:-9%;width:54%}
+.c3{top:33%;left:-7%;width:56%}
+.c5{bottom:5%;left:-9%;width:54%}
+.c7{top:6%;right:-7%;width:54%}
+.c2{bottom:7%;right:-9%;width:58%}
+.mapstage.veil-part .c1{animation:sweepL 3.6s ease forwards}
+.mapstage.veil-part .c3{animation:sweepL 3.9s ease forwards}
+.mapstage.veil-part .c5{animation:sweepL 3.7s ease forwards}
+.mapstage.veil-part .c7{animation:sweepR 3.6s ease forwards}
+.mapstage.veil-part .c2{animation:sweepR 3.85s ease forwards}
+.c3{transition-delay:.12s}.c2{transition-delay:.16s}.c5{transition-delay:.08s}
+.mapstage.veil .mapsvg{opacity:.35}
+.mapstage.veil-run .mapsvg{opacity:1;transition:opacity 2.4s ease}
+.cloudveil.hide{display:none}
+/* 크리켓 캐릭터 (5종 랜덤 리깅, 최상단, 클릭→AI) */
+.ctrav{position:fixed;left:0;top:0;z-index:702;pointer-events:none;opacity:0;will-change:transform;cursor:pointer}
+.ctrav.clickable{pointer-events:auto}
+.cflip{position:relative;width:100%;height:100%;transform-origin:center bottom}
+.crl{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:bottom center}
+.crl-body{filter:drop-shadow(0 2px 3px rgba(40,50,40,.2))}
+.ctrav.cmove .crl-leg,.ctrav.cmove .crl-legF{animation:crleg .32s ease-in-out infinite}
+.ctrav.cmove .crl-legB{animation:crlegB .32s ease-in-out infinite}
+.ctrav.cmove .crl-ant{animation:crant .32s ease-in-out infinite}
+.ctrav.cmove .crl-arm{animation:crarm .32s ease-in-out infinite}
+@keyframes crleg{0%,100%{transform:rotate(9deg)}50%{transform:rotate(-9deg)}}
+@keyframes crlegB{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}
+@keyframes crant{0%,100%{transform:rotate(3deg)}50%{transform:rotate(-3deg)}}
+@keyframes crarm{0%,100%{transform:rotate(11deg)}50%{transform:rotate(-11deg)}}
+.ctrav.cgreet .crl-ant{animation:crantW .6s ease-in-out infinite}
+.ctrav.cgreet .crl-arm{animation:crarmW .55s ease-in-out infinite}
+@keyframes crantW{0%,100%{transform:rotate(7deg)}50%{transform:rotate(-13deg)}}
+@keyframes crarmW{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(16deg)}}
+.ctrav.cidle .crl-ant{animation:crant 1.9s ease-in-out infinite}
+.cshadow{position:fixed;left:0;top:0;z-index:701;width:60px;height:11px;border-radius:50%;background:rgba(40,50,40,.2);filter:blur(3px);pointer-events:none;opacity:0;will-change:transform}
+.cbubble{position:fixed;left:0;top:0;z-index:703;background:#fff;color:#2c3e2d;font-weight:800;font-size:13px;font-family:'Cinzel',var(--kr),serif;letter-spacing:.02em;padding:6px 13px;border-radius:14px;box-shadow:0 5px 14px rgba(0,0,0,.2);opacity:0;transform:translateY(6px) scale(.8);transition:opacity .3s ease,transform .3s cubic-bezier(.2,1.4,.4,1);pointer-events:none;white-space:nowrap}
+.cbubble::after{content:"";position:absolute;left:20px;bottom:-6px;border:6px solid transparent;border-top-color:#fff;border-bottom:0}
+.cbubble.show{opacity:1;transform:translateY(0) scale(1)}
+@media (prefers-reduced-motion:reduce){.cloudveil{display:none}.mapstage.veil .mapsvg{transform:none;opacity:1}}
+.pen-land{fill:#c3cfb1;stroke:none}
+.pen-sea{fill:#7a8b9c;font-family:var(--kr);font-style:italic;letter-spacing:.12em;font-size:26px}
+.pen-isle{fill:#93a08c;font-family:var(--kr);font-size:15px}
+.seoulmap{opacity:0;transition:opacity .75s ease;pointer-events:none}
+.seoulmap.show{opacity:1}
+.lmk{cursor:pointer;opacity:0;animation:fadeUp .45s ease both;transition:filter .15s}
+.lmk:hover{filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
+.barmk{cursor:pointer;filter:drop-shadow(0 2px 5px rgba(60,40,20,.3))}
+#mapsvg #prov-11.active{stroke:none;fill:#dde2cd}
+/* 크리켓 바 정보 모달 */
+.barmodal{position:fixed;inset:0;z-index:600;display:none;align-items:center;justify-content:center;background:rgba(30,20,10,.45);padding:24px}
+.barmodal.on{display:flex}
+.barmodal .bm-card{background:var(--paper,#faf7ef);border-radius:16px;max-width:340px;width:100%;padding:22px 22px 18px;box-shadow:0 12px 40px rgba(0,0,0,.3);position:relative;font-family:var(--kr)}
+.barmodal .bm-x{position:absolute;top:10px;right:12px;border:0;background:none;font-size:20px;color:#999;cursor:pointer}
+.barmodal .bm-nm{font-family:'Cinzel',serif;font-weight:700;font-size:19px;letter-spacing:.06em;color:var(--pine,#2c3e2d);margin-bottom:14px;text-align:center}
+.barmodal .bm-row{display:flex;gap:10px;font-size:14px;line-height:1.5;padding:7px 0;border-top:1px solid rgba(120,110,80,.15)}
+.barmodal .bm-k{flex:0 0 40px;color:var(--gold,#c89a3c);font-weight:600}
+.barmodal .bm-row a{color:var(--pine,#2c3e2d);font-weight:600;text-decoration:none}
+.barmodal .bm-row span:last-child{flex:1}
+.barmodal .bm-nm2{font-family:var(--kr);font-weight:800;font-size:19px;color:var(--pine,#2c3e2d);text-align:center}
+.barmodal .bm-en2{font-family:serif;font-size:12px;color:#999;text-align:center;margin-bottom:12px}
+.barmodal .bm-go{margin-top:16px;width:100%;padding:11px;border:0;border-radius:10px;background:var(--pine,#2c3e2d);color:#fff;font-family:var(--kr);font-weight:600;font-size:14px;cursor:pointer}
+.barmodal .rm-list{max-height:54vh;overflow-y:auto;margin-top:8px}
+.rm-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid rgba(120,110,80,.14)}
+.rm-nm{flex:1;min-width:0}
+.rm-kr{display:block;font-family:var(--kr);font-weight:600;font-size:14px;color:var(--ink,#3a3320)}
+.rm-cat{display:block;font-family:var(--kr);font-size:11px;color:var(--mut,#8a8168);margin-top:1px}
+.rm-go{flex:0 0 auto;border:0;border-radius:8px;background:var(--pine,#2c3e2d);color:#fff;font-family:var(--kr);font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;white-space:nowrap}
+/* 크리켓 AI 질문창 (디미방체는 이 대화창에서만) */
+.aimodal{position:fixed;inset:0;z-index:800;display:none;align-items:flex-end;justify-content:center;background:rgba(30,20,10,.45)}
+.aimodal.on{display:flex}
+.ai-card{background:var(--paper,#faf7ef);width:100%;max-width:440px;height:min(72vh,580px);border-radius:20px 20px 0 0;display:flex;flex-direction:column;box-shadow:0 -8px 34px rgba(0,0,0,.32);overflow:hidden}
+.ai-head{display:flex;align-items:center;gap:8px;padding:15px 17px;border-bottom:1px solid var(--line)}
+.ai-title{flex:1;font-family:var(--f-pen);font-weight:800;font-size:17px;color:#2c3e2d}
+.ai-x{border:0;background:none;font-size:21px;color:#aaa;cursor:pointer;line-height:1}
+.ai-langs{display:flex;gap:6px;padding:9px 15px 4px;flex-wrap:wrap;font-family:'Apple SD Gothic Neo','Malgun Gothic','Hiragino Sans','Yu Gothic','Microsoft YaHei','Noto Sans CJK KR',system-ui,sans-serif}
+.ai-langs button{border:1px solid var(--line);background:#fff;color:var(--mut);border-radius:14px;padding:5px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:background .15s,color .15s,border-color .15s}
+.ai-langs button.on{background:var(--gold);color:#fff;border-color:var(--gold)}
+.ai-chat{flex:1;overflow-y:auto;padding:15px 16px;display:flex;flex-direction:column;gap:10px;font-family:'Dimibang','NMyeongjo','Hiragino Sans','Yu Gothic','Microsoft YaHei','Noto Sans CJK KR','Malgun Gothic',serif}
+.ai-msg{max-width:82%;padding:9px 13px;border-radius:15px;font-size:15px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.ai-msg.u{align-self:flex-end;background:#2c3e2d;color:#fff;border-bottom-right-radius:5px}
+.ai-msg.a{align-self:flex-start;background:#fff;color:var(--ink,#38291a);border:1px solid var(--line);border-bottom-left-radius:5px}
+.ai-msg.typing{color:var(--mut);letter-spacing:.25em}
+.ai-inp{display:flex;gap:9px;padding:12px 14px;border-top:1px solid var(--line);background:var(--paper2,#f0e9db)}
+.ai-inp input{flex:1;border:1px solid var(--line);border-radius:22px;padding:11px 16px;font-size:15px;font-family:'Dimibang','NMyeongjo','Hiragino Sans','Yu Gothic','Microsoft YaHei','Malgun Gothic',serif;background:#fff;color:var(--ink)}
+.ai-inp button{flex:0 0 auto;border:0;border-radius:50%;width:42px;height:42px;background:#2c3e2d;color:#fff;font-size:16px;cursor:pointer}
+/* 전체지도 도/시 지명 리더선 */
+.leader{stroke:#b0a079;stroke-width:.8;vector-effect:non-scaling-stroke;opacity:.5;pointer-events:none;stroke-dasharray:2.5 2.5}
+.reglabel{font-family:var(--kr);font-weight:600;font-size:15px;fill:#4a4326;cursor:pointer;paint-order:stroke;stroke:var(--paper,#f0ebe0);stroke-width:3px}
+.reglabel:hover,.reglabel.on{fill:var(--gold,#c89a3c)}
+#mapPen{transition:opacity 1.3s ease}
+#mapsvg.pen-hide #mapPen{opacity:0}
+#mapsvg .prov{transition:opacity 1.3s ease}
+#mapsvg.pen-only .prov{opacity:0}
+#mapsvg #prov-24:not(.active),#mapsvg #prov-29:not(.active){fill:#c4d0a6}
+.home-brand,.scrollcue,nav{transition:opacity 1s ease}
+body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:0}
 </style>
 </head>
 <body>
@@ -280,11 +414,8 @@ body.night .iname .shbar{filter:brightness(1.4)}
   <div class="langsel" id="langsel">
     <button class="langbtn on" data-l="ko">한국어</button>
     <button class="langbtn" data-l="en">English</button>
-    <button class="langbtn" data-l="zh">中文</button>
-    <button class="langbtn" data-l="ja">日本語</button>
   </div>
   <button class="splash-enter" id="enterBtn" data-i18n="splash.enter">터치하여 입장</button>
-  <div class="splash-hint" data-i18n="splash.hint">🦗 귀뚜라미 소리와 함께 들어가세요</div>
 </div>
 
 <button id="soundToggle" class="sound-toggle" aria-label="sound">🔊</button>
@@ -298,10 +429,23 @@ body.night .iname .shbar{filter:brightness(1.4)}
 
 <div class="wrap">
 
-<div class="cover">
-  <img class="logo" src="logo.png" alt="Cricket Seoul">
-  <div class="philo" data-i18n="cover.philo">모두가 들을 수 있는 귀뚜라미의 울음은 사회적 지위에 상관없이 자연에서 들리는 아름다운 소리 중 하나입니다. 우리는 귀뚜라미의 소리처럼 많은 사람들에게 한국적인 술과 음식을 들려주려 합니다.</div>
-</div>
+<section data-p="map" class="homehero">
+  <div class="mapwrap"><div class="mapstage" id="mapStage">
+    <svg class="mapsvg" id="mapsvg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <button id="mapBack" class="map-back">← 전체 지도</button>
+    <div class="cloudveil" id="cloudveil" aria-hidden="true">
+      <img class="pcloud c1" src="cloud_1.png" alt="">
+      <img class="pcloud c2" src="cloud_2.png" alt="">
+      <img class="pcloud c3" src="cloud_3.png" alt="">
+      <img class="pcloud c5" src="cloud_5.png" alt="">
+      <img class="pcloud c7" src="cloud_7.png" alt="">
+    </div>
+    <div class="cshadow" id="cshadow" aria-hidden="true"></div>
+    <div class="ctrav" id="ctrav" title="크리켓에게 물어보기"><div class="cflip" id="cflip"></div></div>
+    <div class="cbubble" id="cbubble">Welcome To Cricket!</div>
+  </div></div>
+</section>
+<div class="mapmeta"><div class="mappanel" id="mapPanel"></div></div>
 
 <div id="sky"><i class="sun" id="sun"></i><i class="moon" id="moon"></i><div id="stars"></div></div>
 <nav><div class="navwrap" id="navwrap"><div class="navin" id="nav">
@@ -316,7 +460,7 @@ body.night .iname .shbar{filter:brightness(1.4)}
 </div></div></nav>
 
 <section data-p="cocktail">
-  <div class="sec-h"><div class="t sc" data-i18n="sec.cocktail.t">Cocktail</div><div class="d" data-i18n="sec.cocktail.d">클래식을 한국 전통주로 비틀다</div><div class="rule"></div></div>
+  <div class="sec-h"><div class="t sc" data-i18n="sec.cocktail.t">Cocktail</div><div class="rule"></div></div>
   <div class="unit" data-i18n="unit.cocktail">모든 칵테일 ₩25,000 · 탭 시스템으로 알콜/무알콜 선택 가능</div>
   <div id="cocktailList"></div>
 </section>
@@ -348,13 +492,6 @@ body.night .iname .shbar{filter:brightness(1.4)}
   <div class="chips" id="soolChips"></div>
   <div class="unit" data-i18n="unit.sool">가격 = 잔 / 병 (단위 1,000원)</div>
   <div id="soolList"></div>
-</section>
-
-<section data-p="map">
-  <div class="sec-h"><div class="t kr" data-i18n="sec.map.t">전통주 지도</div><div class="d" data-i18n="sec.map.d">지역에 손을 올리면 그곳의 술이 보입니다</div><div class="rule"></div></div>
-  <div class="mapwrap"><div class="mapstage" id="mapStage"><svg class="mapsvg" id="mapsvg" xmlns="http://www.w3.org/2000/svg"></svg><button id="mapBack" class="map-back">← 전체 지도</button></div></div>
-  <div class="maphint" data-i18n="map.hint">🖐️ 지역을 누르면 확대되고, 그 안의 점(양조지)을 누르면 술이 아래에 나옵니다</div>
-  <div class="mappanel" id="mapPanel"><div class="mpt">지역을 선택하세요</div><div class="mplist" style="font-family:var(--kr);font-size:12px;color:var(--mut)">시·도에 손을 올리거나 누르면 그 지역이 커지고, 전통주가 생산된 자리에 점이 찍힙니다.</div></div>
 </section>
 
 <section data-p="game">
@@ -452,9 +589,19 @@ body.night .iname .shbar{filter:brightness(1.4)}
 <script src="i18n_zh.js"></script>
 <script src="i18n_ja.js"></script>
 <script src="map_data.js"></script>
+<script src="map_korea.js"></script>
 <script src="map_muni.js"></script>
 <script src="research_data.js"></script>
 <div class="lb" id="lb"><button class="x" id="lbX" aria-label="close">✕</button><img id="lbImg" alt=""></div>
+<div class="barmodal" id="barModal" onclick="if(event.target===this)this.classList.remove('on')"><div class="bm-card"><button class="bm-x" onclick="document.getElementById('barModal').classList.remove('on')">✕</button><div class="bm-body"></div></div></div>
+<div class="barmodal" id="bottleModal" onclick="if(event.target===this)this.classList.remove('on')"><div class="bm-card"><button class="bm-x" onclick="document.getElementById('bottleModal').classList.remove('on')">✕</button><div class="bm-body"></div></div></div>
+<div class="barmodal" id="regionModal" onclick="if(event.target===this)this.classList.remove('on')"><div class="bm-card"><button class="bm-x" onclick="document.getElementById('regionModal').classList.remove('on')">✕</button><div class="bm-body"></div></div></div>
+<div class="aimodal" id="aiModal" onclick="if(event.target===this)closeCricketAI()"><div class="ai-card">
+  <div class="ai-head"><span class="ai-title" id="aiTitle">무엇이든지 물어보세요</span><button class="ai-x" onclick="closeCricketAI()" aria-label="close">✕</button></div>
+  <div class="ai-langs" id="aiLangs"><button data-l="ko" onclick="aiSetLang('ko')">한국어</button><button data-l="en" onclick="aiSetLang('en')">EN</button><button data-l="zh" onclick="aiSetLang('zh')">中文</button><button data-l="ja" onclick="aiSetLang('ja')">日本語</button></div>
+  <div class="ai-chat" id="aiChat"></div>
+  <div class="ai-inp"><input id="aiInput" type="text" placeholder="크리켓에게 물어보세요…" onkeydown="if(event.key==='Enter')cricketAsk()"><button onclick="cricketAsk()" aria-label="send">➤</button></div>
+</div></div>
 
 <script>
 /* ===== 다국어(i18n) 프레임워크 ===== */
@@ -606,6 +753,10 @@ function priceStr(bt){const G=t("glass"),B=t("bottle"),f=v=>(v*1000).toLocaleStr
  if(bt.b)return B+" "+f(bt.b);
  if(bt.g)return G+" "+f(bt.g); return"";}
 const byId=Object.fromEntries(BOTTLES.map(b=>[b.id,b]));
+// 술병 이미지(랜드마크)가 있는 바틀 id — b_<id>.png 존재
+const LM_IDS=new Set(["boksundoga","fogmag","minhwaju","jiranjigyo-fig","sucre","seoul-gold","chorokseom-sonamu","mars-sour","ihwaju","ellyeop-takju","inner-nectar","inner-flow","inner-calm","hwajeonilchwi","ellyeop-cheongju","hangahanju","maruna","pungjeong","naju-pear","daetong-daeip","chorokseom-spring","gyeongseong-gwahaju","dudumulmul","kiwi-wine","omirose-gyeol","omirose-yeon","yul-red","yul-white","seonunsan-bokbunja","sahwa-yuja","damsol","kiwi-sool","hwasim-sweetpotato","andong-jinmaek","ryu24","tangja-c","kione-eagle","gowoon-oak","mongro","ggeek-pale","chusa40","soorok","hwayo-xp"]);
+// 크리켓 바 정보 (검색 확인)
+const BARINFO={addr:"서울 강남구 언주로164길 35-6 1층",hours:"매일 19:00 ~ 02:00",tel:"0507-1467-2557"};
 
 /* ===== 칵테일/푸드 렌더 ===== */
 function renderCocktails(){
@@ -720,6 +871,7 @@ const SVGNS="http://www.w3.org/2000/svg";
 const PROV_OF={seoul:'11',incheon:'23',yangpyeong:'31',hwaseong:'31',yongin:'31',yeoju:'31',gimpo:'31',guri:'31',namyangju:'31',hoengseong:'32',chuncheon:'32',cheongju:'33',chungju:'33',yeongdong:'33',gongju:'34',yesan:'34',daejeon:'25',daegu:'22',andong:'37',sangju:'37',mungyeong:'37',gimhae:'38',hamyang:'38',changwon:'38',sacheon:'38',ulsan:'26',jeonju:'35',sunchang:'35',gochang:'35',damyang:'36',naju:'36',jeju:'39',goyang:'31'};
 function cityXY(la,lo){const p=MAPDATA.proj;return [(lo*p.cosLat-p.minX)*p.S+p.pad,(-la-p.minY)*p.S+p.pad];}
 let activeProv=null, zoomed=false, vbAnim=null;
+let barMode='full', seoulBB=null;  // 크리켓 바 상태
 let VB={x:0,y:0,w:0,h:0};
 const BACKTXT={ko:"← 전체 지도",en:"← Whole map",zh:"← 全国地图",ja:"← 全体マップ"};
 function el(tag,attrs){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
@@ -739,17 +891,130 @@ function animVB(tx,ty,tw,th,dur,done){
 function scaleOverlay(){
  const s=VB.w/MAPDATA.vbW;
  document.querySelectorAll("#mapMuni .muni").forEach(p=>{p.setAttribute("stroke-dasharray",(3.2*s).toFixed(2)+" "+(2.4*s).toFixed(2));});
- document.querySelectorAll("#mapDyn .mdot").forEach(d=>d.setAttribute("r",(4.6*s).toFixed(2)));
- document.querySelectorAll("#mapDyn .mhit").forEach(d=>d.setAttribute("r",(30*s).toFixed(2)));
- document.querySelectorAll("#mapDyn .mdot-label").forEach(t=>t.setAttribute("font-size",(9*s).toFixed(2)));
  document.querySelectorAll("#mapDyn .prov-label").forEach(t=>t.setAttribute("font-size",(16*s).toFixed(2)));
+ // 술병 랜드마크: 화면상 일정 크기(뷰폭 비율), 양조지 위 중심하단 정렬, 여러 개는 가로 배치
+ const bw=VB.w*0.075, bh=bw*1.7, gap=-bw*0.28;   // 같은 지역 병끼리 겹치듯 밀착
+ document.querySelectorAll("#mapDyn .lmk").forEach(g=>{
+   const mx=+g.getAttribute("data-mx"), my=+g.getAttribute("data-my");
+   const i=+g.getAttribute("data-i"), n=+g.getAttribute("data-n");
+   const total=n*bw+(n-1)*gap, x=mx-total/2+i*(bw+gap), y=my-bh;
+   g.setAttribute("width",bw.toFixed(2)); g.setAttribute("height",bh.toFixed(2));
+   g.setAttribute("x",x.toFixed(2)); g.setAttribute("y",y.toFixed(2));
+ });
+ updateBar();
+}
+function updateBar(){
+ const bar=document.getElementById("barSeoul"); if(!bar)return;
+ if(barMode==='hidden'){ bar.style.display="none"; return; }
+ bar.style.display="";
+ const w=VB.w*0.099, h=w/0.832;   // 고정 화면비율(줌과 무관하게 유지) — 바 10% 확대
+ let cx,cy,bottom=true;
+ if(barMode==='seoul' && seoulBB){ cx=seoulBB.x+seoulBB.width*0.66; cy=seoulBB.y+seoulBB.height*0.70; bottom=false; } // 강남구
+ else { cx=271; cy=155; }  // 전체지도 서울
+ bar.setAttribute("width",w.toFixed(2)); bar.setAttribute("height",h.toFixed(2));
+ bar.setAttribute("x",(cx-w/2).toFixed(2)); bar.setAttribute("y",(bottom?cy-h:cy-h/2).toFixed(2));
+}
+function showBarInfo(){
+ const m=document.getElementById("barModal"); if(!m)return;
+ m.querySelector(".bm-body").innerHTML=`<div class="bm-nm">CRICKET SEOUL</div>
+   <div class="bm-row"><span class="bm-k">주소</span><span>${esc(BARINFO.addr)}</span></div>
+   <div class="bm-row"><span class="bm-k">영업</span><span>${esc(BARINFO.hours)}</span></div>
+   <div class="bm-row"><span class="bm-k">전화</span><a href="tel:${esc(BARINFO.tel)}">${esc(BARINFO.tel)}</a></div>`;
+ m.classList.add("on");
+}
+function showBottleInfo(id){
+ const b=byId[id]; if(!b)return;
+ const m=document.getElementById("bottleModal"); if(!m)return;
+ m.querySelector(".bm-body").innerHTML=`<div class="bm-nm2">${esc(b.kr)}</div>
+   <div class="bm-en2">${esc(b.name)}</div>
+   <div class="bm-row"><span class="bm-k">종류</span><span>${esc(t('cat.'+b.cat+'.label'))} · ${b.abv}%</span></div>
+   <div class="bm-row"><span class="bm-k">지역</span><span>${b.region?esc(regName(b.region)):esc(fl('unknown'))}</span></div>
+   <div class="bm-row"><span class="bm-k">특징</span><span>${esc(b.desc||'')}</span></div>
+   <button class="bm-go" onclick="document.getElementById('bottleModal').classList.remove('on');gotoBottle('${id}')">메뉴에서 보기 →</button>`;
+ m.classList.add("on");
+}
+/* 지도 외곽선을 살짝 둥글게 (크리켓 브랜드 톤) — Chaikin 코너 커팅 */
+function _chaikin(pts,closed){
+ const n=pts.length, r=[];
+ if(!closed) r.push(pts[0]);
+ const lim=closed?n:n-1;
+ for(let i=0;i<lim;i++){ const a=pts[i], b=pts[(i+1)%n];
+   r.push([a[0]*0.75+b[0]*0.25, a[1]*0.75+b[1]*0.25]);
+   r.push([a[0]*0.25+b[0]*0.75, a[1]*0.25+b[1]*0.75]); }
+ if(!closed) r.push(pts[n-1]);
+ return r;
+}
+function _smoothD(d,iter){
+ return String(d).split('M').filter(s=>s.trim()).map(sub=>{
+   const closed=/z/i.test(sub);
+   const nums=(sub.match(/-?\d*\.?\d+/g)||[]).map(Number);
+   let pts=[]; for(let i=0;i+1<nums.length;i+=2)pts.push([nums[i],nums[i+1]]);
+   if(pts.length<4) return 'M'+sub.replace(/z/i,'')+(closed?'Z':'');
+   for(let k=0;k<iter;k++)pts=_chaikin(pts,closed);
+   let o='M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
+   for(let i=1;i<pts.length;i++)o+='L'+pts[i][0].toFixed(1)+' '+pts[i][1].toFixed(1);
+   return o+(closed?'Z':'');
+ }).join('');
+}
+(function(){ try{
+  if(window.MAPDATA&&!MAPDATA._sm){ MAPDATA.provinces.forEach(p=>{p.d=_smoothD(p.d,2);}); MAPDATA._sm=1; }
+  if(window.KOREA&&!KOREA._sm){ KOREA.peninsula=_smoothD(KOREA.peninsula,2); KOREA._sm=1; }
+ }catch(e){ console.warn('smooth',e); } })();
+const MAPVIEW={x:-30,y:0,w:700,h:764};  // 반도 프레임(기준)
+// 전체지도: 실제 화면 비율에 맞춰 반도를 중앙에 꽉 채움(데스크탑/태블릿 좌우 잘림·레터박스 방지)
+function computeFullVB(){
+ let ca=(innerWidth&&innerHeight)?innerWidth/innerHeight:(MAPVIEW.w/MAPVIEW.h);
+ ca=Math.max(0.5,Math.min(2.4,ca));
+ const cx=MAPVIEW.x+MAPVIEW.w/2, cy=MAPVIEW.y+MAPVIEW.h/2; let w,h;
+ if(ca>=MAPVIEW.w/MAPVIEW.h){h=MAPVIEW.h;w=h*ca;}else{w=MAPVIEW.w;h=w/ca;}
+ return {x:cx-w/2,y:cy-h/2,w:w,h:h};
+}
+// 전체지도: 도/시 → 바다 리더선 + 지명 (호버/클릭 시 그 지역 전통주 메뉴)
+function drawRegionLabels(){
+ const g=el("g",{id:"mapLabels"});
+ const cnt={}; BOTTLES.forEach(b=>{const c=PROV_OF[b.region]; if(c)cnt[c]=(cnt[c]||0)+1;});
+ const codes=Object.keys(cnt);
+ const cen={}; codes.forEach(c=>{const e2=document.getElementById('prov-'+c); if(e2){const bb=e2.getBBox(); cen[c]=[bb.x+bb.width/2, bb.y+bb.height/2];} else cen[c]=[300,400];});
+ const left=[],right=[],bottom=[];
+ codes.forEach(c=>{const [x,y]=cen[c]; if(y>705)bottom.push(c); else if(x<305)left.push(c); else right.push(c);});
+ left.sort((a,b)=>cen[a][1]-cen[b][1]); right.sort((a,b)=>cen[a][1]-cen[b][1]); bottom.sort((a,b)=>cen[a][0]-cen[b][0]);
+ const SHORT={"33":"충북","34":"충남","35":"전북","36":"전남","37":"경북","38":"경남"};
+ const nm=code=>{const kr=(MAPDATA.provinces.find(p=>p.code===code)||{}).kr||code; return LANG==='ko'?(SHORT[code]||kr):provName(code,kr);};
+ const add=(code,lx,ly,anchor)=>{
+   g.appendChild(el("line",{class:"leader",x1:cen[code][0],y1:cen[code][1],x2:lx,y2:ly}));
+   const t=el("text",{class:"reglabel","text-anchor":anchor,x:lx+(anchor==='end'?-4:anchor==='start'?4:0),y:ly,"data-code":code});
+   t.textContent=nm(code);
+   t.addEventListener("click",e=>{e.stopPropagation();showProvMenu(code);});
+   g.appendChild(t);
+ };
+ const spread=(list,x,anchor)=>{const n=list.length,y0=118,y1=765,step=n>1?Math.min(42,(y1-y0)/(n-1)):0; list.forEach((c,i)=>add(c,x, n>1?y0+i*step:400, anchor));};
+ spread(left,4,'end'); spread(right,636,'start');
+ { const n=bottom.length,x0=190,x1=460,step=n>1?(x1-x0)/(n-1):0; bottom.forEach((c,i)=>add(c, n>1?x0+i*step:315, 748,'middle')); }
+ return g;
+}
+function showProvMenu(code){
+ const list=BOTTLES.filter(b=>PROV_OF[b.region]===code);
+ const prov=MAPDATA.provinces.find(p=>p.code===code)||{};
+ const m=document.getElementById("regionModal"); if(!m)return;
+ m.querySelector(".bm-body").innerHTML=`<div class="bm-nm">${esc(provName(code,prov.kr||code))}</div>
+   <div class="bm-en2">전통주 ${list.length}${esc(t('map.count'))}</div>
+   <div class="rm-list">${list.map(b=>`<div class="rm-row"><div class="rm-nm"><span class="rm-kr">${esc(b.kr)}</span><span class="rm-cat">${esc(t('cat.'+b.cat+'.label'))} · ${b.abv}%</span></div><button class="rm-go" onclick="document.getElementById('regionModal').classList.remove('on');gotoBottle('${b.id}')">메뉴보기</button></div>`).join("")}</div>`;
+ m.classList.add("on");
+ document.querySelectorAll('.reglabel').forEach(x=>x.classList.toggle('on',x.getAttribute('data-code')===code));
 }
 function buildMap(){
  const svg=document.getElementById("mapsvg");
  svg.setAttribute("preserveAspectRatio","xMidYMid meet");
- setVB(0,0,MAPDATA.vbW,MAPDATA.vbH);
+ {const fv=computeFullVB();setVB(fv.x,fv.y,fv.w,fv.h);}
  const provCount={};BOTTLES.forEach(b=>{if(b.region&&PROV_OF[b.region])provCount[PROV_OF[b.region]]=(provCount[PROV_OF[b.region]]||0)+1;});
  svg.innerHTML="";
+ // 한반도 전체 실루엣(배경) + 바다·부속도서 이름
+ if(window.KOREA){
+   const pen=el("g",{id:"mapPen"});
+   pen.appendChild(el("path",{class:"pen-land",d:KOREA.peninsula}));
+   (KOREA.seas||[]).forEach(s=>{const tx=el("text",{class:"pen-sea",x:s.x,y:s.y,"text-anchor":"middle"});tx.textContent=s.t;pen.appendChild(tx);});
+   svg.appendChild(pen);
+ }
  // 작은 광역시는 도에 가려지지 않게 나중에 그린다
  const METRO=["11","21","22","23","24","25","26","29"];
  const ordered=[...MAPDATA.provinces].sort((a,b)=>(METRO.indexOf(a.code)>=0?1:0)-(METRO.indexOf(b.code)>=0?1:0));
@@ -758,48 +1023,67 @@ function buildMap(){
    path.addEventListener("click",e=>{e.stopPropagation();activateProv(p.code);});
    svg.appendChild(path);
  });
+ svg.appendChild(drawRegionLabels());     // 도/시 → 바다 리더선 + 지명
  svg.appendChild(el("g",{id:"mapMuni"}));  // 시군구 점선
  svg.appendChild(el("g",{id:"mapDyn"}));   // 라벨+양조지 점
+ // 크리켓 바 랜드마크 (최상단, 클릭 가능) — 전체지도=서울, 서울확대=강남구, 다른도=숨김
+ const bar=el("image",{id:"barSeoul",class:"barmk",preserveAspectRatio:"xMidYMid meet"});
+ bar.setAttribute("href","cricket_bar.png"); bar.setAttributeNS("http://www.w3.org/1999/xlink","href","cricket_bar.png");
+ bar.addEventListener("click",e=>{e.stopPropagation();showBarInfo();});
+ svg.appendChild(bar);
+ barMode='full';
 }
 function activateProv(code){
  activeProv=code;zoomed=true;
  const svg=document.getElementById("mapsvg");
  [...svg.querySelectorAll(".prov")].forEach(pp=>{pp.classList.toggle("active",pp.id==="prov-"+code);pp.classList.toggle("dim",pp.id!=="prov-"+code);});
  const activeEl=document.getElementById("prov-"+code);
+ const ml=document.getElementById('mapLabels'); if(ml)ml.style.display='none';   // 확대 시 전체지도 지명 숨김
+ document.body.classList.add('mapzoom');   // 확대 시 배경 태양/달 숨김(지도가 화면 꽉 채움)
  const muni=document.getElementById("mapMuni"),dyn=document.getElementById("mapDyn");
  svg.insertBefore(activeEl,muni);
  // 시군구 경계(점선)
  muni.innerHTML="";
- ((window.MAPMUNI||{})[code]||[]).forEach(m=>muni.appendChild(el("path",{class:"muni",d:m.d})));
+ ((window.MAPMUNI||{})[code]||[]).forEach(m=>muni.appendChild(el("path",{class:"muni",d:(m._sd||(m._sd=_smoothD(m.d,1)))})));
  // 실제 화면 확대: viewBox를 그 도의 영역으로
  const bb=activeEl.getBBox();
- const aspect=MAPDATA.vbW/MAPDATA.vbH;
+ // 실제 화면 비율로 확대 → 데스크탑/태블릿에서 좌우 잘림·레터박스 없이 꽉 참
+ let aspect=(innerWidth&&innerHeight)?(innerWidth/innerHeight):(MAPDATA.vbW/MAPDATA.vbH);
+ aspect=Math.max(0.55,Math.min(2.3,aspect));
  let w=bb.width,h=bb.height;
  if(w/h<aspect)w=h*aspect;else h=w/aspect;
- w*=1.3;h*=1.3;
- const minW=MAPDATA.vbW*0.16; if(w<minW){w=minW;h=w/aspect;} // 너무 작은 광역시 과확대 방지
+ // 서울은 지도 이미지가 크게 보이도록 더 타이트하게 확대(과확대 방지 minW 미적용)
+ if(code==='11'){ w*=1.087;h*=1.087; }  // 서울 확대 3% 더 크게
+ else { w*=1.3;h*=1.3; const minW=MAPDATA.vbW*0.16; if(w<minW){w=minW;h=w/aspect;} }
  const cx=bb.x+bb.width/2,cy=bb.y+bb.height/2;
  animVB(cx-w/2,cy-h/2,w,h,760);
  // 라벨 + 양조지 점
  const prov=MAPDATA.provinces.find(p=>p.code===code);
  dyn.innerHTML="";
+ // 서울 확대 지도 이미지 (서울 영역에 딱 맞춤, 확대되며 페이드인) — 한강 포함
+ if(code==='11'){
+   const px=bb.width*0.045, py=bb.height*0.045;   // 서울지도 이미지 약 9% 확대(기존보다 5% 더 큼)
+   const smap=el("image",{x:bb.x-px,y:bb.y-py,width:bb.width+px*2,height:bb.height+py*2,class:"seoulmap",id:"seoulMap",preserveAspectRatio:"none","pointer-events":"none"});
+   smap.setAttribute("href","seoul_map.png");
+   smap.setAttributeNS("http://www.w3.org/1999/xlink","href","seoul_map.png");
+   dyn.appendChild(smap);
+   requestAnimationFrame(()=>requestAnimationFrame(()=>smap.classList.add("show")));
+ }
  const label=el("text",{class:"prov-label",x:cx,y:bb.y-bb.height*0.04,"text-anchor":"middle"});
  label.textContent=provName(prov.code,prov.kr);dyn.appendChild(label);
+ // 술병 랜드마크: 각 양조지 위치에 그 지역 술 이미지 (클릭 → 메뉴 바로가기)
  const cities=Object.keys(PROV_OF).filter(k=>PROV_OF[k]===code);
- cities.forEach((k,i)=>{
-   const cnt=BOTTLES.filter(b=>b.region===k).length; if(!cnt) return;
-   const[x,y]=cityXY(REG[k].la,REG[k].lo);
-   const pick=e=>{e.stopPropagation();selectCity(k);};
-   // 실제로 눌리는 영역 (투명, 점보다 훨씬 크게)
-   const hit=el("circle",{class:"mhit",cx:x,cy:y-3,r:30,fill:"rgba(0,0,0,0)"});
-   hit.dataset.k=k; hit.addEventListener("click",pick);
-   const dot=el("circle",{class:"mdot",cx:x,cy:y,r:4.6,style:"animation-delay:"+(i*50)+"ms"});
-   dot.dataset.k=k; dot.addEventListener("click",pick);
-   const tx=el("text",{class:"mdot-label",x:x,y:y-7,"text-anchor":"middle",style:"animation-delay:"+(i*50)+"ms"});
-   tx.textContent=cityName(k)+" ·"+cnt;
-   tx.dataset.k=k; tx.addEventListener("click",pick);
-   dyn.appendChild(hit);dyn.appendChild(dot);dyn.appendChild(tx);
+ cities.forEach(k=>{
+   const bts=BOTTLES.filter(b=>b.region===k && LM_IDS.has(b.id)); if(!bts.length) return;
+   const[cxp,cyp]=cityXY(REG[k].la,REG[k].lo);
+   bts.forEach((b,i)=>{
+     const g=el("image",{class:"lmk",preserveAspectRatio:"xMidYMax meet","data-mx":cxp,"data-my":cyp,"data-i":i,"data-n":bts.length,style:"animation-delay:"+(i*60)+"ms"});
+     g.setAttribute("href","b_"+b.id+".png"); g.setAttributeNS("http://www.w3.org/1999/xlink","href","b_"+b.id+".png");
+     g.addEventListener("click",e=>{e.stopPropagation();showBottleInfo(b.id);});
+     dyn.appendChild(g);
+   });
  });
+ barMode=(code==='11')?'seoul':'hidden'; if(code==='11')seoulBB=bb;
  scaleOverlay();
  const bk=document.getElementById("mapBack");
  bk.textContent=BACKTXT[LANG]||BACKTXT.ko;bk.classList.add("show");
@@ -810,10 +1094,14 @@ function zoomOutMap(){
  [...svg.querySelectorAll(".prov")].forEach(pp=>pp.classList.remove("active","dim"));
  document.getElementById("mapMuni").innerHTML="";
  document.getElementById("mapDyn").innerHTML="";
+ document.body.classList.remove('mapzoom');
  document.getElementById("mapBack").classList.remove("show");
- animVB(0,0,MAPDATA.vbW,MAPDATA.vbH,700);
+ const ml=document.getElementById('mapLabels'); if(ml)ml.style.display='';   // 전체지도 지명 복원
+ document.querySelectorAll('.reglabel').forEach(x=>x.classList.remove('on'));
+ barMode='full'; seoulBB=null; updateBar();
+ {const fv=computeFullVB();animVB(fv.x,fv.y,fv.w,fv.h,700);}
  const panel=document.getElementById("mapPanel");
- panel.innerHTML=`<div class="mpt">${esc(t('map.panel0.t'))}</div><div class="mplist" style="font-family:var(--kr);font-size:12px;color:var(--mut)">${esc(t('map.panel0.b'))}</div>`;
+ panel.innerHTML='';
 }
 function selectCity(k){
  const list=BOTTLES.filter(b=>b.region===k);
@@ -848,16 +1136,16 @@ if(lb&&lbImg){
 }
 buildMap();
 document.getElementById("mapBack").addEventListener("click",e=>{e.stopPropagation();zoomOutMap();});
-function selectRegion(k){ // 도감/칵테일에서 지도로 올 때: 해당 도 활성 + 도시 선택
- const code=PROV_OF[k]; if(code) activateProv(code);
- selectCity(k);
- document.getElementById("mapPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
+function selectRegion(k){ // 도감/칵테일에서 지도로: 해당 도 확대(랜드마크 표시) + 지역 메뉴 창
+ const code=PROV_OF[k]; if(!code)return;
+ activateProv(code);
+ setTimeout(()=>showProvMenu(code),820);
 }
 
 /* ===== 한 페이지 스크롤 + 카테고리 바로가기 ===== */
 const secs=[...document.querySelectorAll("section[data-p]")];
 const navb=[...document.querySelectorAll(".nav-b")];
-function navH(){const n=document.querySelector("nav");return n?n.offsetHeight:0;}
+function navH(){return 8;}
 function jumpTo(p){
  const s=document.querySelector('section[data-p="'+p+'"]');if(!s)return;
  const y=s.getBoundingClientRect().top+window.scrollY-navH()-6;
@@ -935,8 +1223,178 @@ soundToggle.onclick=()=>{muted=!muted;soundToggle.textContent=muted?"🔇":"🔊
 
 /* ===== 웰컴 스플래시 입장 ===== */
 const splash=document.getElementById("splash");
-function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
+const PEN_VB={x:-57,y:-627,w:803,h:1418};  // 하늘에서 내려오는 시작 뷰(넓고 높게)
+/* ===== 크리켓 캐릭터 인트로 (구름 폴짝 → 바 착지 → 인사) ===== */
+function svgToScreen(sx,sy,vb,rect){
+ const scale=Math.min(rect.width/vb.w, rect.height/vb.h);
+ const rw=vb.w*scale, rh=vb.h*scale;
+ const ox=rect.left+(rect.width-rw)/2, oy=rect.top+(rect.height-rh)/2;
+ return {x:ox+(sx-vb.x)*scale, y:oy+(sy-vb.y)*scale};
+}
+// 5종 캐릭터 리그(rig_meta4): 관절축(비율), 다리/더듬이/팔
+const RIGM=[
+ {W:416,H:379,legs:[{key:'leg',piv:[0.4675,0.7559]}],antPiv:[0.1947,0.4116]},
+ {W:403,H:343,legs:[{key:'leg',piv:[0.5045,0.7522]}],antPiv:[0.2072,0.3382]},
+ {W:388,H:398,legs:[{key:'leg',piv:[0.5090,0.7475]}],antPiv:[0.2461,0.3480]},
+ {W:359,H:347,legs:[{key:'leg',piv:[0.7159,0.7618]}],antPiv:[0.6407,0.2190]},
+ {W:452,H:439,legs:[{key:'legF',piv:[0.3982,0.7882]},{key:'legB',piv:[0.5376,0.7859]}],antPiv:[0.3761,0.2688],armPiv:[0.1925,0.6834],hasArm:true}
+];
+let _crigW=0,_crigH=0,_canc={x:0,y:0},_chopTimer=null,_cIdx=0;
+function _po(p){return (p[0]*100).toFixed(1)+'% '+(p[1]*100).toFixed(1)+'%';}
+function buildRig(i){
+ const m=RIGM[i], f=document.getElementById('cflip'); if(!f)return; let h='';
+ if(m.hasArm){
+   const lb=m.legs.find(l=>l.key==='legB'),lf=m.legs.find(l=>l.key==='legF');
+   h+=`<img class="crl crl-legB" src="u${i}_legB.png" style="transform-origin:${_po(lb.piv)}">`;
+   h+=`<img class="crl crl-legF" src="u${i}_legF.png" style="transform-origin:${_po(lf.piv)}">`;
+   h+=`<img class="crl crl-body" src="u${i}_body.png">`;
+   h+=`<img class="crl crl-arm" src="u${i}_arm.png" style="transform-origin:${_po(m.armPiv)}">`;
+   h+=`<img class="crl crl-ant" src="u${i}_ant.png" style="transform-origin:${_po(m.antPiv)}">`;
+ }else{
+   h+=`<img class="crl crl-leg" src="u${i}_leg.png" style="transform-origin:${_po(m.legs[0].piv)}">`;
+   h+=`<img class="crl crl-body" src="u${i}_body.png">`;
+   h+=`<img class="crl crl-ant" src="u${i}_ant.png" style="transform-origin:${_po(m.antPiv)}">`;
+ }
+ f.innerHTML=h;
+}
+function pickChar(){_cIdx=Math.floor(Math.random()*5); buildRig(_cIdx);}
+function csize(){const vw=innerWidth,m=RIGM[_cIdx]||{W:1,H:1}; _crigW=Math.min(Math.max(vw*0.082,50),98); _crigH=_crigW*(m.H/m.W);
+ const lx=m.legs.reduce((s,l)=>s+l.piv[0],0)/m.legs.length;
+ const t=document.getElementById('ctrav'); if(t){t.style.width=_crigW+'px';t.style.height=_crigH+'px';} _canc={x:lx*_crigW,y:0.93*_crigH};}
+function cclampTX(tx){return Math.max(4,Math.min((innerWidth||360)-_crigW-4,tx));}
+function csetT(x,y){const t=document.getElementById('ctrav');t._pos={x,y};t.style.transform='translate('+cclampTX(x-_canc.x)+'px,'+(y-_canc.y)+'px)';}
+function csetSh(x,y,sc,op){const s=document.getElementById('cshadow');s.style.transform='translate('+(x-24)+'px,'+(y-5)+'px) scaleX('+sc+')';s.style.opacity=op;}
+const _csleep=ms=>new Promise(r=>setTimeout(r,ms));
+function cface(dir){ // dir>0 오른쪽, dir<0 왼쪽 — 캐릭터가 이동방향을 바라보게(기본 향함 보정)
+ const f=document.getElementById('cflip'); if(!f||!dir)return;
+ const defR=(RIGM[_cIdx].antPiv[0]>0.5); const wantR=dir>0;
+ f.style.transform=(wantR===defR)?'scaleX(1)':'scaleX(-1)';
+}
+async function cjump(ax,ay,bx,by,dur,peak){
+ const t=document.getElementById('ctrav'), sh=document.getElementById('cshadow');
+ cface(bx-ax); t.classList.remove('cidle'); t.classList.add('cmove');
+ const a={x:ax-_canc.x,y:ay-_canc.y}, b={x:bx-_canc.x,y:by-_canc.y};
+ const midX=(a.x+b.x)/2, topY=Math.min(a.y,b.y)-peak;
+ sh.animate([{opacity:.05,transform:'translate('+(ax-24)+'px,'+(ay-5)+'px) scaleX(.5)'},{opacity:.2,transform:'translate('+(bx-24)+'px,'+(by-5)+'px) scaleX(1)'}],{duration:dur,fill:'forwards',easing:'ease-in'});
+ const an=t.animate([
+  {transform:'translate('+a.x+'px,'+a.y+'px) scale(1.06,.94)'},
+  {transform:'translate('+(a.x*.7+midX*.3)+'px,'+(a.y-peak*.5)+'px) scale(.94,1.08)',offset:.18},
+  {transform:'translate('+midX+'px,'+topY+'px) scale(1.02,1)',offset:.5},
+  {transform:'translate('+b.x+'px,'+b.y+'px) scale(1.12,.9)'}
+ ],{duration:dur,easing:'cubic-bezier(.4,0,.5,1)',fill:'forwards'});
+ try{await an.finished;}catch(e){} t._pos={x:bx,y:by}; t.style.transform='translate('+cclampTX(b.x)+'px,'+b.y+'px)';
+ t.classList.remove('cmove'); t.classList.add('cidle');
+}
+async function playCricketIntro(){
+ const t=document.getElementById('ctrav'); if(!t)return;
+ pickChar(); csize();
+ const vw=innerWidth,vh=innerHeight, cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const R=id=>{const e=document.querySelector('.pcloud.'+id);return e?e.getBoundingClientRect():null;};
+ const c2=R('c2'),c7=R('c7'),c3=R('c3');
+ // 구름 위에 정확히 앉게(발이 구름 표면에). 두번째 구름(c7)은 왼쪽끝.
+ const p2=c2?{x:cl(c2.left+c2.width*0.30,44,vw-44),y:cl(c2.top+c2.height*0.47,40,vh-40)}:{x:vw*0.56,y:vh*0.72};
+ const p7=c7?{x:cl(c7.left+c7.width*0.28,44,vw-44),y:cl(c7.top+c7.height*0.47,40,vh-40)}:{x:vw*0.30,y:vh*0.24};
+ const p3=c3?{x:cl(c3.right-c3.width*0.22,44,vw-44),y:cl(c3.top+c3.height*0.50,40,vh-40)}:{x:vw*0.42,y:vh*0.44};
+ const svg=document.getElementById('mapsvg'), rect=svg.getBoundingClientRect();
+ const bp=svgToScreen(271,158,computeFullVB(),rect);
+ t.style.opacity='1';
+ csetT(p2.x,p2.y); csetSh(p2.x,p2.y,.7,.14);
+ await _csleep(520);
+ await cjump(p2.x,p2.y,p7.x,p7.y,720,72); await _csleep(200);
+ await cjump(p7.x,p7.y,p3.x,p3.y,720,64); await _csleep(220);
+ document.getElementById('mapStage').classList.add('veil-part');   // 구름 걷힘 시작
+ await cjump(p3.x,p3.y,bp.x,bp.y,1250,Math.min(240,Math.abs(p3.y-bp.y)*0.5+120));
+ await _csleep(110);
+ t.classList.remove('cidle'); t.classList.add('cgreet');
+ const bub=document.getElementById('cbubble');
+ bub.style.left=(bp.x+_crigW*0.28)+'px'; bub.style.top=(bp.y-_crigH*1.2)+'px';
+ await _csleep(150); bub.classList.add('show');
+ await _csleep(2600);
+ bub.classList.remove('show');       // 말풍선만 사라짐, 캐릭터는 유지
+ t.classList.remove('cgreet'); t.classList.add('cidle','clickable');
+ startRandomHops();                  // 이후 화면을 랜덤하게 계속 점프
+}
+function startRandomHops(){
+ const t=document.getElementById('ctrav'); if(!t)return;
+ if(_chopTimer)clearTimeout(_chopTimer);
+ async function hop(){
+   if(!t.isConnected||t.style.display==='none')return;
+   const vw=innerWidth,vh=innerHeight,m=54;
+   const cur=t._pos||{x:vw*0.5,y:vh*0.5};
+   const nx=m+Math.random()*(vw-2*m), ny=vh*0.16+Math.random()*(vh*0.62);
+   t.classList.remove('cidle');
+   csetSh(cur.x,cur.y,.9,.16);
+   await cjump(cur.x,cur.y,nx,ny,650+Math.random()*350,58+Math.random()*80);
+   t.classList.add('cidle');
+   _chopTimer=setTimeout(hop,1300+Math.random()*2800);
+ }
+ _chopTimer=setTimeout(hop,1000);
+}
+/* ===== 크리켓 AI 질문창 (plaza-ai, 4개 언어) ===== */
+const AI_URL='https://cricket-ai.showjojo100.workers.dev';   // 크리켓 서울 전용 AI(귀뚜라미 페르소나+전통주 그라운딩), Cloudflare Workers AI
+const AI_L={ko:{t:'무엇이든지 물어보세요',ph:'크리켓에게 물어보세요…',hi:'안녕하세요. 전통주·칵테일·크리켓 서울, 무엇이든 물어보세요.',er:'연결이 잠깐 불안정해요. 잠시 후 다시 시도해 주세요.'},
+ en:{t:'Ask me anything',ph:'Ask Cricket…',hi:'Hi. Ask me anything about Korean spirits, cocktails, or Cricket Seoul.',er:'Connection hiccup. Please try again in a moment.'},
+ zh:{t:'尽管问我',ph:'问蟋蟀…',hi:'你好。关于韩国传统酒、鸡尾酒或 Cricket Seoul，尽管问我。',er:'连接不稳定，请稍后再试。'},
+ ja:{t:'何でも聞いてください',ph:'クリケットに質問…',hi:'こんにちは。韓国の伝統酒・カクテル・Cricket Seoul、何でもどうぞ。',er:'接続が不安定です。少し待って再試行してください。'}};
+let _aiHist=[];
+function aiSyncLangBtns(){document.querySelectorAll('#aiLangs button').forEach(b=>b.classList.toggle('on',b.dataset.l===LANG));}
+function aiGreeting(){const p=(typeof t==='function')?t('cover.philo'):''; return p||(AI_L[LANG]||AI_L.ko).hi;}
+function openCricketAI(){
+ const m=document.getElementById('aiModal'); if(!m)return; const L=AI_L[LANG]||AI_L.ko;
+ document.getElementById('aiTitle').textContent=L.t;
+ document.getElementById('aiInput').placeholder=L.ph;
+ aiSyncLangBtns();
+ if(!document.getElementById('aiChat').children.length)aiAdd('a',aiGreeting());
+ m.classList.add('on'); setTimeout(()=>{try{document.getElementById('aiInput').focus();}catch(e){}},120);
+}
+function aiSetLang(l){
+ LANG=l; if(typeof applyLang==='function')applyLang();
+ const L=AI_L[LANG]||AI_L.ko;
+ document.getElementById('aiTitle').textContent=L.t;
+ document.getElementById('aiInput').placeholder=L.ph;
+ aiSyncLangBtns();
+ const c=document.getElementById('aiChat'); if(c){c.innerHTML='';_aiHist=[];aiAdd('a',aiGreeting());}
+ try{document.getElementById('aiInput').focus();}catch(e){}
+}
+function closeCricketAI(){const m=document.getElementById('aiModal');if(m)m.classList.remove('on');}
+function aiAdd(role,text){const c=document.getElementById('aiChat');const d=document.createElement('div');d.className='ai-msg '+(role==='u'?'u':'a');d.textContent=text;c.appendChild(d);c.scrollTop=c.scrollHeight;return d;}
+async function cricketAsk(){
+ const inp=document.getElementById('aiInput'); const q=(inp.value||'').trim(); if(!q)return;
+ const L=AI_L[LANG]||AI_L.ko; inp.value=''; aiAdd('u',q); _aiHist.push({role:'user',content:q});
+ const tp=aiAdd('a','· · ·'); tp.classList.add('typing');
+ try{
+   const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,lang:LANG,history:_aiHist.slice(-6)})});
+   const j=await r.json(); const ans=(j&&j.answer&&String(j.answer).trim())||L.er;
+   tp.classList.remove('typing'); tp.textContent=ans; _aiHist.push({role:'assistant',content:ans});
+ }catch(e){ tp.classList.remove('typing'); tp.textContent=L.er; }
+ const c=document.getElementById('aiChat'); c.scrollTop=c.scrollHeight;
+}
+function playMapIntro(){
+ const svg=document.getElementById("mapsvg"), st=document.getElementById("mapStage"), veil=document.getElementById("cloudveil");
+ if(!svg||!st||st.dataset.intro)return; st.dataset.intro="1";
+ if(matchMedia("(prefers-reduced-motion:reduce)").matches){if(veil)veil.classList.add("hide");return;}
+ // 1) 한반도 전체 지형(도 채색 숨김·로고 숨김) + 구름1 당초무늬가 덮음
+ if(window.KOREA){setVB(PEN_VB.x,PEN_VB.y,PEN_VB.w,PEN_VB.h);scaleOverlay();svg.classList.add("pen-only");}
+ document.body.classList.add("intro-run");
+ st.classList.add("veil");
+ // 2) 구름1 확대·희끄무레 + 7구름 등장
+ requestAnimationFrame(()=>requestAnimationFrame(()=>st.classList.add("veil-run")));
+ // 3) 카메라(지도)는 처음부터 끝까지 멈춤 없이 계속 다가간다 → 남한 뷰로
+ setTimeout(()=>{
+   svg.classList.remove("pen-only");
+   const fv=computeFullVB();
+   animVB(fv.x,fv.y,fv.w,fv.h,3300,()=>{
+     document.body.classList.remove("intro-run");   // 로고·버튼 fade in (한반도 실루엣·바다이름은 유지)
+   });
+ },300);
+ playCricketIntro();   // 크리켓 캐릭터: 구름 폴짝 → 바 착지 → 인사 (구름 걷힘 veil-part 트리거 포함)
+ setTimeout(()=>st.classList.add("veil-part"),2600);   // 안전장치: 캐릭터 실패해도 구름은 반드시 걷힘
+ setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run","veil-part"); },6400);
+}
+function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
 document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
+(function(){const _ct=document.getElementById('ctrav'); if(_ct)_ct.addEventListener('click',e=>{e.stopPropagation();openCricketAI();});})();
+let _rzTO=null; window.addEventListener('resize',()=>{clearTimeout(_rzTO);_rzTO=setTimeout(()=>{try{if(!zoomed){const fv=computeFullVB();setVB(fv.x,fv.y,fv.w,fv.h);scaleOverlay();}}catch(_){}}, 160);});
 splash.addEventListener("click",enter);
 
 /* ===== 스크롤 리빌 애니메이션 ===== */
@@ -1040,13 +1498,16 @@ function applyLang(){
  if(!DICT[LANG])LANG="ko";
  try{localStorage.setItem("cricketLang",LANG);}catch(_){}
  document.documentElement.lang=(LANG==="zh"?"zh-CN":LANG);
+ document.body.dataset.lang=LANG;
  document.querySelectorAll("[data-i18n]").forEach(e=>{e.innerHTML=t(e.dataset.i18n);});
  navb.forEach(b=>{b.textContent=t("nav."+b.dataset.t);});
  setTimeout(navFade,0);
  renderCocktails();renderFoods();renderSoolChips();renderSool();
+ // 전체지도 도/시 리더선 지명도 언어에 맞춰 다시 그림
+ try{const old=document.getElementById("mapLabels"); if(old){const nl=drawRegionLabels(); if(zoomed)nl.style.display="none"; old.replaceWith(nl);}}catch(_){}
  if(activeProv){const a=activeProv;activeProv=null;activateProv(a);}
  else{const panel=document.getElementById("mapPanel");
-   panel.innerHTML=`<div class="mpt">${esc(t('map.panel0.t'))}</div><div class="mplist" style="font-family:var(--kr);font-size:12px;color:var(--mut)">${esc(t('map.panel0.b'))}</div>`;}
+   panel.innerHTML='';}
  document.querySelectorAll(".langbtn").forEach(x=>x.classList.toggle("on",x.dataset.l===LANG));
  const bk=document.getElementById("mapBack"); if(bk)bk.textContent=BACKTXT[LANG]||BACKTXT.ko;
  applyReveal(); nightK=-1; updateDayNight();
