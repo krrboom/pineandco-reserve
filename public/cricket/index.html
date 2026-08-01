@@ -971,7 +971,8 @@ function _smoothD(d,iter){
  }catch(e){ console.warn('smooth',e); } })();
 const MAPVIEW={x:-30,y:0,w:700,h:764};  // 반도 프레임(기준·데스크탑)
 // 모바일 전용 타이트 프레임: 남한(도 bbox x12~558 / y12~752, 중심 285·382)에 딱 붙여 반도를 크게
-const MAPVIEW_M={cx:367,cy:382,w:433,h:748};  // 내륙 중심(백령도 등 서쪽 섬은 프레임 밖으로 크롭)
+const MAPVIEW_M={cx:367,cy:320,w:433,h:748};  // 내륙 중심(백령도 등 서쪽 섬 크롭, 세로도 내륙 중앙)
+const JEJU_INSET={dx:300,dy:-70};  // 모바일 확대뷰: 제주를 오른쪽아래(부산 옆) 인셋으로
 // 전체지도: 실제 화면 비율에 맞춰 반도를 중앙에 꽉 채움(데스크탑/태블릿 좌우 잘림·레터박스 방지)
 function computeFullVB(){
  let ca=(innerWidth&&innerHeight)?innerWidth/innerHeight:(MAPVIEW.w/MAPVIEW.h);
@@ -983,6 +984,13 @@ function computeFullVB(){
  if(ca>=bw/bh){h=bh;w=h*ca;}else{w=bw;h=w/ca;}
  return {x:cx-w/2,y:cy-h/2,w:w,h:h};
 }
+// 모바일 전체지도에서 제주를 오른쪽아래 인셋으로 옮김(+실루엣의 실제위치 제주/북한 숨김). 제주 확대 클릭 시엔 off로 실제위치 복원.
+function applyJejuInset(on){
+ const p=document.getElementById('prov-39'); if(!p)return;
+ const pen=document.querySelector('#mapPen .pen-land');
+ if(on){ p.setAttribute('transform','translate('+JEJU_INSET.dx+','+JEJU_INSET.dy+')'); if(pen)pen.style.opacity='0'; }
+ else { p.removeAttribute('transform'); if(pen)pen.style.opacity=''; }
+}
 // 전체지도: 도/시 → 바다 리더선 + 지명 (호버/클릭 시 그 지역 전통주 메뉴)
 function drawRegionLabels(){
  const g=el("g",{id:"mapLabels"});
@@ -991,6 +999,8 @@ function drawRegionLabels(){
  const cen={}; codes.forEach(c=>{const e2=document.getElementById('prov-'+c); if(e2){const bb=e2.getBBox(); cen[c]=[bb.x+bb.width/2, bb.y+bb.height/2];} else cen[c]=[300,400];});
  const left=[],right=[],bottom=[];
  codes.forEach(c=>{const [x,y]=cen[c]; if(y>705)bottom.push(c); else if(c==='25'||x<305)left.push(c); else right.push(c);});  // 대전(25)은 왼쪽으로
+ const mobM=!!(innerWidth&&innerWidth<560);
+ if(mobM && cen['39']) cen['39']=[cen['39'][0]+JEJU_INSET.dx, cen['39'][1]+JEJU_INSET.dy];  // 제주 인셋(프로빈스도 transform으로 이동)
  left.sort((a,b)=>cen[a][1]-cen[b][1]); right.sort((a,b)=>cen[a][1]-cen[b][1]); bottom.sort((a,b)=>cen[a][0]-cen[b][0]);
  const SHORT={"33":"충북","34":"충남","35":"전북","36":"전남","37":"경북","38":"경남"};
  const nm=code=>{const kr=(MAPDATA.provinces.find(p=>p.code===code)||{}).kr||code; return LANG==='ko'?(SHORT[code]||kr):provName(code,kr);};
@@ -1008,7 +1018,9 @@ function drawRegionLabels(){
  const y0=Math.max(90,vb.y+vb.h*0.16), y1=Math.min(760,vb.y+vb.h*0.86);
  const spread=(list,x,anchor)=>{const n=list.length,step=n>1?Math.min(52,(y1-y0)/(n-1)):0; list.forEach((c,i)=>add(c,x, n>1?y0+i*step:388, anchor));};
  spread(left,leftX,'start'); spread(right,rightX,'end');   // 좌=안쪽(오른쪽)으로, 우=안쪽(왼쪽)으로 뻗어 프레임 안에 유지
- { const n=bottom.length,x0=200,x1=440,step=n>1?(x1-x0)/(n-1):0; bottom.forEach((c,i)=>add(c, n>1?x0+i*step:315, 744,'middle')); }
+ const _btm=mobM?bottom.filter(c=>c!=='39'):bottom;
+ { const n=_btm.length,x0=200,x1=440,step=n>1?(x1-x0)/(n-1):0; _btm.forEach((c,i)=>add(c, n>1?x0+i*step:315, 744,'middle')); }
+ if(mobM && cen['39']) add('39', cen['39'][0], cen['39'][1]-58, 'middle');   // 제주 인셋 라벨(인셋 섬 위)
  return g;
 }
 function showProvMenu(code){
@@ -1054,6 +1066,7 @@ function buildMap(){
 }
 function activateProv(code){
  activeProv=code;zoomed=true;
+ if(code==='39')applyJejuInset(false);   // 제주 확대: 인셋 해제하고 실제 위치로(양조지 랜드마크 정합)
  const svg=document.getElementById("mapsvg");
  [...svg.querySelectorAll(".prov")].forEach(pp=>{pp.classList.toggle("active",pp.id==="prov-"+code);pp.classList.toggle("dim",pp.id!=="prov-"+code);});
  const activeEl=document.getElementById("prov-"+code);
@@ -1118,6 +1131,7 @@ function zoomOutMap(){
  const ml=document.getElementById('mapLabels'); if(ml)ml.style.display='';   // 전체지도 지명 복원
  document.querySelectorAll('.reglabel').forEach(x=>x.classList.remove('on'));
  barMode='full'; seoulBB=null; updateBar();
+ applyJejuInset(innerWidth<560);   // 전체지도 복귀: 모바일이면 제주 인셋 다시 적용
  {const fv=computeFullVB();animVB(fv.x,fv.y,fv.w,fv.h,700);}
  const panel=document.getElementById("mapPanel");
  panel.innerHTML='';
@@ -1404,9 +1418,11 @@ async function cricketAsk(){
 function playMapIntro(){
  const svg=document.getElementById("mapsvg"), st=document.getElementById("mapStage"), veil=document.getElementById("cloudveil");
  if(!svg||!st||st.dataset.intro)return; st.dataset.intro="1";
- if(matchMedia("(prefers-reduced-motion:reduce)").matches){if(veil)veil.classList.add("hide");return;}
+ if(matchMedia("(prefers-reduced-motion:reduce)").matches){if(veil)veil.classList.add("hide");applyJejuInset(innerWidth<560);return;}
  // 1) 한반도 전체 지형(도 채색 숨김·로고 숨김) + 구름1 당초무늬가 덮음
- if(window.KOREA){setVB(PEN_VB.x,PEN_VB.y,PEN_VB.w,PEN_VB.h);scaleOverlay();svg.classList.add("pen-only");}
+ // 시작: 최종 뷰(computeFullVB)와 같은 중앙에서 더 작은 크기(2.2배 축소)로 → 구름 걷히며 중앙으로 확대
+ if(window.KOREA){const _fv=computeFullVB(),K=2.2,_cx=_fv.x+_fv.w/2,_cy=_fv.y+_fv.h/2;
+   setVB(_cx-_fv.w*K/2,_cy-_fv.h*K/2,_fv.w*K,_fv.h*K);scaleOverlay();svg.classList.add("pen-only");}
  document.body.classList.add("intro-run");
  st.classList.add("veil");
  // 2) 구름1 확대·희끄무레 + 7구름 등장
@@ -1417,6 +1433,7 @@ function playMapIntro(){
    const fv=computeFullVB();
    animVB(fv.x,fv.y,fv.w,fv.h,3300,()=>{
      document.body.classList.remove("intro-run");   // 로고·버튼 fade in (한반도 실루엣·바다이름은 유지)
+     applyJejuInset(innerWidth<560);   // 최종 뷰 도달: 모바일이면 제주 인셋(+북한 실루엣 숨김)
    });
  },300);
  playCricketIntro();   // 크리켓 캐릭터: 구름 폴짝 → 바 착지 → 인사 (구름 걷힘 veil-part 트리거 포함)
