@@ -35,9 +35,9 @@
   .tray{position:relative;width:100%;max-width:480px;aspect-ratio:1042/1089;background:url(ui/box.png) center/100% 100% no-repeat;
     transition:transform .8s cubic-bezier(.2,.9,.25,1);transform-origin:center center}
   .tray.small{transform:scale(.32)}
-  #board{position:absolute;left:15%;right:13%;top:14%;bottom:13%;display:grid;gap:.4%;align-content:center;justify-content:center;touch-action:manipulation;transition:opacity .45s ease}
-  .tile{aspect-ratio:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .08s}
-  .tile img{width:122%;height:122%;object-fit:contain;object-position:center;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(120,90,40,.32))}
+  #board{position:absolute;left:14%;right:12%;top:13.5%;bottom:12.5%;display:grid;gap:.3%;touch-action:manipulation;transition:opacity .45s ease}
+  .tile{cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .08s;min-width:0;min-height:0}
+  .tile img{width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(120,90,40,.32))}
   .tile:active{transform:scale(.9)}
   .tile.pop{animation:spinUp .55s cubic-bezier(.45,0,.75,1) forwards;pointer-events:none}
   @keyframes spinUp{0%{transform:translateY(0) rotate(0) scale(1);opacity:1}70%{opacity:1}100%{transform:translateY(-260%) rotate(360deg) scale(.4);opacity:0}}
@@ -45,12 +45,12 @@
   .foot .imgbtn{width:150px;max-width:42vw}
 
   #rage{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:30;gap:0;
-    background:#f6ecd3 url(game_pat.png) repeat;background-size:200px;overflow:hidden;padding:16px 12px}
+    background:#f6ecd3 url(game_pat.png) repeat;background-size:200px;overflow:hidden;padding:4px 12px}
   #rage.on{display:flex;animation:fade .12s ease both}
-  .rage-logo{width:min(62vw,300px);flex-shrink:0;position:relative;z-index:2;margin-bottom:-7%;pointer-events:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.28))}
-  #rageImg{width:auto;height:min(46vh,430px);flex-shrink:0;position:relative;z-index:1;object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,.32));animation:ragebob .5s ease-in-out infinite}
-  .rage-pissed{width:min(66vw,320px);flex-shrink:0;margin-top:-6%;pointer-events:none;filter:drop-shadow(0 3px 8px rgba(0,0,0,.2))}
-  #rageAgain{width:170px;max-width:48vw;margin-top:3.5%}
+  .rage-logo{width:min(50vw,250px);flex-shrink:0;position:relative;z-index:2;margin-bottom:-9%;pointer-events:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.28))}
+  #rageImg{width:auto;height:min(60vh,560px);flex-shrink:0;position:relative;z-index:1;object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,.32));animation:ragebob .5s ease-in-out infinite}
+  .rage-pissed{width:min(54vw,278px);flex-shrink:0;margin-top:-7%;pointer-events:none;filter:drop-shadow(0 3px 8px rgba(0,0,0,.2))}
+  #rageAgain{width:154px;max-width:44vw;margin-top:2%}
 
   @keyframes fade{from{opacity:0}to{opacity:1}}
   @keyframes logoPop{from{transform:scale(.2)}to{transform:scale(1)}}
@@ -110,17 +110,32 @@ const FACES={
   m2:{calm:'faces/m2_calm.png', mad:['faces/m2_mad1.png','faces/m2_mad2.png']}
 };
 const SETS=['m1','m2'];
-// BGM: 3곡 중 랜덤으로 하나 골라 계속 loop (첫 터치 때 재생 — 브라우저 자동재생 정책)
+// 오디오: iOS Safari는 audio.volume이 안 먹힘(하드웨어 전용) → Web Audio GainNode로 볼륨 제어
 const BGM=['bgm0.mp3','bgm1.mp3','bgm2.mp3'];
-const bgmEl=new Audio(BGM[Math.floor(Math.random()*BGM.length)]); bgmEl.loop=true; bgmEl.volume=0.5;
-let bgmOn=false, muted=false;
-function startBGM(){ if(bgmOn||muted)return; bgmEl.play().then(()=>{bgmOn=true;}).catch(()=>{}); }
+const bgmEl=new Audio(BGM[Math.floor(Math.random()*BGM.length)]); bgmEl.loop=true; bgmEl.volume=1;
+let bgmOn=false, muted=false, masterVol=1;
+let actx=null, masterGain=null, musicGain=null, bgmNode=null;
+const SFXSRC={bye:'sfx_byebye.mp3', click:'sfx_click.mp3', scream:'sfx_scream.mp3'};
+const SFXBUF={};
+function ac(){
+  if(!actx){ try{
+    actx=new(window.AudioContext||window.webkitAudioContext)();
+    masterGain=actx.createGain(); masterGain.gain.value=(muted?0:masterVol); masterGain.connect(actx.destination);
+    musicGain=actx.createGain(); musicGain.gain.value=0.5; musicGain.connect(masterGain);
+    loadSfx();
+  }catch(e){} }
+  if(actx&&actx.state==='suspended')actx.resume();
+  return actx;
+}
+async function loadSfx(){ if(!actx)return; for(const k in SFXSRC){ if(SFXBUF[k])continue;
+  try{ const r=await fetch(SFXSRC[k]); const ab=await r.arrayBuffer(); SFXBUF[k]=await actx.decodeAudioData(ab); }catch(e){} } }
+function play(name,vol){ if(muted||masterVol<=0)return; const c=ac(); const buf=SFXBUF[name]; if(!c||!buf||!masterGain)return;
+  try{ const s=c.createBufferSource(); s.buffer=buf; const g=c.createGain(); g.gain.value=vol||1; s.connect(g); g.connect(masterGain); s.start(); }catch(e){} }
+function applyVol(){ if(masterGain)masterGain.gain.value=(muted?0:masterVol); }
+function startBGM(){ if(bgmOn||muted)return; const c=ac(); if(!c)return;
+  try{ if(!bgmNode){ bgmNode=c.createMediaElementSource(bgmEl); bgmNode.connect(musicGain); } }catch(e){}
+  bgmEl.play().then(()=>{bgmOn=true;}).catch(()=>{}); }
 ['pointerdown','touchstart','keydown'].forEach(e=>document.addEventListener(e,startBGM));
-// 효과음: 얼굴 탭=byebye, 버튼=click, 화난민국=scream (겹쳐 재생되게 clone)
-const SFX_BYE=new Audio('sfx_byebye.mp3'), SFX_CLICK=new Audio('sfx_click.mp3'), SFX_SCREAM=new Audio('sfx_scream.mp3');
-SFX_BYE.volume=0.75; SFX_CLICK.volume=0.6; SFX_SCREAM.volume=0.9;
-[SFX_BYE,SFX_CLICK,SFX_SCREAM].forEach(a=>a.load());
-function play(base){ if(muted||masterVol<=0)return; try{ const a=base.cloneNode(); a.volume=Math.min(1,base.volume*masterVol); a.play().catch(()=>{}); }catch(e){} }
 let SIZE=16, ANGRY=1;
 let angrySet=new Set(), over=false, tapped=0, rageTimer=null;
 const $=id=>document.getElementById(id);
@@ -128,16 +143,8 @@ function pick(a){return a[Math.floor(Math.random()*a.length)];}
 // 미리 로드
 Object.values(FACES).forEach(f=>{[f.calm,...f.mad].forEach(s=>{const i=new Image();i.src=s;});});
 
-let actx=null;
-function ac(){if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(actx&&actx.state==='suspended')actx.resume();return actx;}
-function beep(f,d,v,t){const c=ac();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type=t||'square';o.frequency.value=f;
-  g.gain.setValueAtTime(0.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(v||0.12,c.currentTime+0.01);g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+(d||0.12));
-  o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+(d||0.12)+0.02);}
-function sfxTap(){beep(300+Math.random()*60,0.07,0.09,'triangle');}
-function sfxRage(){const c=ac();if(!c)return;[0,80,160,240].forEach((t,i)=>setTimeout(()=>beep(130-i*12,0.24,0.22,'sawtooth'),t));}
-
 function bindChips(id,attr,cb){document.querySelectorAll('#'+id+' .chip').forEach(ch=>ch.onclick=()=>{
-  document.querySelectorAll('#'+id+' .chip').forEach(x=>x.classList.remove('on'));ch.classList.add('on');cb(+ch.dataset[attr]);play(SFX_CLICK);});}
+  document.querySelectorAll('#'+id+' .chip').forEach(x=>x.classList.remove('on'));ch.classList.add('on');cb(+ch.dataset[attr]);play('click',0.9);});}
 bindChips('sizeChips','n',v=>SIZE=v);
 bindChips('angryChips','a',v=>ANGRY=v);
 
@@ -150,6 +157,7 @@ function buildBoard(){
   while(angrySet.size<Math.min(ANGRY,SIZE-1)) angrySet.add(Math.floor(Math.random()*SIZE));
   const board=$('board'); board.innerHTML='';
   board.style.gridTemplateColumns='repeat('+cols(SIZE)+',1fr)';
+  board.style.gridTemplateRows='repeat('+cols(SIZE)+',1fr)';
   for(let i=0;i<SIZE;i++){
     const set=pick(SETS);   // 타일마다 랜덤(섞인 느낌)
     const t=document.createElement('div'); t.className='tile'; t.dataset.i=i; t.dataset.set=set;
@@ -171,24 +179,22 @@ function onTap(t,i){
   if(over||t.classList.contains('pop'))return;
   ac();
   if(angrySet.has(i)){ over=true; showRage(t.dataset.set); }
-  else { tapped++; t.classList.add('pop'); play(SFX_BYE); $('hint').textContent=(SIZE-tapped)+' minguk left'; }   // 시계방향 회전하며 위로 쏙
+  else { tapped++; t.classList.add('pop'); play('bye',0.95); $('hint').textContent=(SIZE-tapped)+' minguk left'; }   // 시계방향 회전하며 위로 쏙
 }
 function showRage(set){
   const mad=FACES[set].mad; let f=0;
   const img=$('rageImg'); img.src=mad[0];
   $('game').style.display='none';   // 뒤 게임판 숨김
-  $('rage').classList.add('on'); play(SFX_SCREAM);
+  $('rage').classList.add('on'); play('scream',1);
   if(navigator.vibrate)navigator.vibrate([90,50,90,50,160]);
   rageTimer=setInterval(()=>{ f^=1; img.src=mad[f]; }, 170);   // 입 벌렸다 닫았다
 }
 
-$('muteBtn').onclick=e=>{ e.stopPropagation(); muted=!muted;
+$('muteBtn').onclick=e=>{ e.stopPropagation(); muted=!muted; applyVol();
   if(muted){ bgmEl.pause(); $('muteBtn').textContent='🔇'; }
-  else { muted=false; bgmEl.play().then(()=>bgmOn=true).catch(()=>{}); $('muteBtn').textContent='🔊'; } };
-// 볼륨 조절 (왼쪽 아래) — bgm+효과음 마스터 볼륨
-let masterVol=1;
-function applyVol(){ bgmEl.volume=0.5*masterVol; }
-$('volBtn').onclick=e=>{ e.stopPropagation(); $('volPanel').classList.toggle('show'); };
+  else { startBGM(); $('muteBtn').textContent='🔊'; } };
+// 볼륨 조절 (왼쪽 아래) — bgm+효과음 마스터 볼륨 (GainNode)
+$('volBtn').onclick=e=>{ e.stopPropagation(); ac(); $('volPanel').classList.toggle('show'); };
 $('volSlider').oninput=e=>{ masterVol=e.target.value/100; applyVol();
   $('volBtn').textContent = masterVol===0?'🔈':(masterVol<0.5?'🔉':'🔊'); };
 const clickBtn=fn=>e=>{ play(SFX_CLICK); fn(e); };
