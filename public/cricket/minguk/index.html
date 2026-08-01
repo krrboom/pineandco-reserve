@@ -197,7 +197,7 @@ $('muteBtn').onclick=e=>{ e.stopPropagation(); muted=!muted; applyVol();
 $('volBtn').onclick=e=>{ e.stopPropagation(); ac(); $('volPanel').classList.toggle('show'); };
 $('volSlider').oninput=e=>{ masterVol=e.target.value/100; applyVol();
   $('volBtn').textContent = masterVol===0?'🔈':(masterVol<0.5?'🔉':'🔊'); };
-const clickBtn=fn=>e=>{ play(SFX_CLICK); fn(e); };
+const clickBtn=fn=>e=>{ play('click',0.9); fn(e); };
 $('startBtn').onclick=clickBtn(startGame);
 $('restartBtn').onclick=clickBtn(newRound);
 $('rageAgain').onclick=clickBtn(startGame);
