@@ -2,6 +2,8 @@ window.I18N_EN={"ui":{
 "nav.cocktail":"Cocktails","nav.food":"Food","nav.flight":"Flights","nav.sool":"Guide","nav.map":"Map","nav.about":"About",
 "game.race.d":"Our bartenders run, a cup of makgeolli already in them. Who is fastest?",
 "game.race.t":"Cricket Derby",
+"game.minguk.d":"Where is the angry Minguk hiding?",
+"game.minguk.t":"Find Minguk!",
 "sec.game.d":"One round of makgeolli on the line",
 "sec.game.t":"Table Games",
 "nav.game":"Play",

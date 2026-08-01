@@ -3,6 +3,8 @@ window.I18N_KO = {
 "nav.cocktail":"칵테일","nav.food":"안주","nav.flight":"플라이트","nav.sool":"도감","nav.map":"지도","nav.about":"소개",
 "game.race.d":"크리켓 바텐더들이 달립니다. 막걸리 한 잔 걸치고 달리는데 누가 가장 빠를까요?",
 "game.race.t":"크리켓 경주",
+"game.minguk.d":"화난 민국이는 어디있을까요??",
+"game.minguk.t":"민국이를 찾아라!",
 "sec.game.d":"막걸리 한 잔 걸고 한 판?",
 "sec.game.t":"술자리 놀이",
 "nav.game":"놀이",

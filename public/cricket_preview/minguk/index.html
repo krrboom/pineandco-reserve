@@ -1,0 +1,200 @@
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>ANGRY MINGUK 😡</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{--cream:#f6ecd3;--box:#fffdf7}
+  html,body{height:100%}
+  img{image-rendering:auto}
+  body{font-family:'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;color:#3a2a16;
+    background:var(--cream) url(game_pat.png) repeat;background-size:200px;
+    min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;overflow:hidden;user-select:none}
+  .wrap{width:100%;max-width:480px;margin:auto}
+
+  #home{display:flex;flex-direction:column;gap:12px;align-items:center;animation:fade .4s ease both}
+  .title{width:86%;max-width:400px;filter:drop-shadow(0 4px 8px rgba(120,60,20,.25));margin-bottom:2px}
+  .opt{position:relative;width:100%;aspect-ratio:1049/439;background:center/100% 100% no-repeat;background-image:url(ui/banner_size.png)}
+  .opt.ang{background-image:url(ui/banner_angry.png)}
+  .opt .chips{position:absolute;left:6%;right:5%;top:43%;bottom:11%;display:flex;gap:2.5%;align-items:stretch;justify-content:center}
+  .chip{flex:1 1 0;max-width:24%;background:center/contain no-repeat;cursor:pointer;transition:transform .12s,filter .12s;filter:saturate(.85) brightness(.97)}
+  .chip.on{transform:translateY(-4px) scale(1.07);filter:drop-shadow(0 4px 7px rgba(200,150,40,.65)) brightness(1.06)}
+  .imgbtn{cursor:pointer;transition:transform .08s;display:block}
+  .imgbtn:active{transform:translateY(3px) scale(.98)}
+  .mute{position:fixed;top:12px;right:12px;z-index:40;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.82);border:1.5px solid #d3b978;font-size:19px;cursor:pointer;box-shadow:0 2px 8px rgba(150,120,60,.28);display:flex;align-items:center;justify-content:center;padding:0}
+  .volwrap{position:fixed;left:12px;bottom:12px;z-index:40;display:flex;align-items:center;gap:8px}
+  .vol{position:static}
+  #volPanel{display:none;align-items:center;background:rgba(255,255,255,.9);border:1.5px solid #d3b978;border-radius:22px;padding:7px 14px;box-shadow:0 2px 8px rgba(150,120,60,.28)}
+  #volPanel.show{display:flex}
+  #volSlider{width:120px;accent-color:#c89a3c;cursor:pointer}
+  #startBtn{width:64%;max-width:300px;margin-top:4px}
+  .credit{text-align:center;font-size:12px;color:#9c8250;line-height:1.6;margin-top:2px}
+
+  #game{display:none;flex-direction:column;gap:12px;align-items:center;width:100%}
+  .hint{font-size:14px;color:#7a5f34;text-align:center;font-weight:700;min-height:18px}
+  .tray{position:relative;width:100%;max-width:480px;aspect-ratio:1042/1089;background:url(ui/box.png) center/100% 100% no-repeat;
+    transition:transform .8s cubic-bezier(.2,.9,.25,1);transform-origin:center center}
+  .tray.small{transform:scale(.32)}
+  #board{position:absolute;left:15%;right:13%;top:14%;bottom:13%;display:grid;gap:.4%;align-content:center;justify-content:center;touch-action:manipulation;transition:opacity .45s ease}
+  .tile{aspect-ratio:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .08s}
+  .tile img{width:122%;height:122%;object-fit:contain;object-position:center;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(120,90,40,.32))}
+  .tile:active{transform:scale(.9)}
+  .tile.pop{animation:spinUp .55s cubic-bezier(.45,0,.75,1) forwards;pointer-events:none}
+  @keyframes spinUp{0%{transform:translateY(0) rotate(0) scale(1);opacity:1}70%{opacity:1}100%{transform:translateY(-260%) rotate(360deg) scale(.4);opacity:0}}
+  .foot{display:flex;gap:12px;align-items:center}
+  .foot .imgbtn{width:150px;max-width:42vw}
+
+  #rage{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:30;gap:0;
+    background:#f6ecd3 url(game_pat.png) repeat;background-size:200px;overflow:hidden;padding:16px 12px}
+  #rage.on{display:flex;animation:fade .12s ease both}
+  .rage-logo{width:min(62vw,300px);flex-shrink:0;position:relative;z-index:2;margin-bottom:-7%;pointer-events:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.28))}
+  #rageImg{width:auto;height:min(46vh,430px);flex-shrink:0;position:relative;z-index:1;object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,.32));animation:ragebob .5s ease-in-out infinite}
+  .rage-pissed{width:min(66vw,320px);flex-shrink:0;margin-top:1.5%;pointer-events:none;filter:drop-shadow(0 3px 8px rgba(0,0,0,.2))}
+  #rageAgain{width:170px;max-width:48vw;margin-top:3.5%}
+
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @keyframes logoPop{from{transform:scale(.2)}to{transform:scale(1)}}
+  @keyframes ragebob{0%,100%{transform:translateY(4px) rotate(-1.2deg)}50%{transform:translateY(-4px) rotate(1.2deg)}}
+</style></head>
+<body>
+<button id="muteBtn" class="mute" aria-label="sound">🔊</button>
+<div class="volwrap">
+  <button id="volBtn" class="mute vol" aria-label="volume">🔊</button>
+  <div id="volPanel"><input id="volSlider" type="range" min="0" max="100" value="100" aria-label="volume level"></div>
+</div>
+<div class="wrap">
+  <!-- start -->
+  <div id="home">
+    <img class="title" src="ui/title.png" alt="ANGRY MINGUK">
+    <div class="opt" id="sizeCard">
+      <div class="chips" id="sizeChips">
+        <div class="chip" data-n="9" style="background-image:url(ui/opt_9.png)"></div>
+        <div class="chip on" data-n="16" style="background-image:url(ui/opt_16.png)"></div>
+        <div class="chip" data-n="25" style="background-image:url(ui/opt_25.png)"></div>
+        <div class="chip" data-n="36" style="background-image:url(ui/opt_36.png)"></div>
+      </div>
+    </div>
+    <div class="opt ang" id="angryCard">
+      <div class="chips" id="angryChips">
+        <div class="chip on" data-a="1" style="background-image:url(ui/opt_1.png)"></div>
+        <div class="chip" data-a="2" style="background-image:url(ui/opt_2.png)"></div>
+        <div class="chip" data-a="3" style="background-image:url(ui/opt_3.png)"></div>
+      </div>
+    </div>
+    <img class="imgbtn" id="startBtn" src="ui/btn_start.png" alt="START">
+    <div class="credit">Take turns tapping a minguk.<br>Whoever taps the angry one drinks 🍺</div>
+  </div>
+
+  <!-- game -->
+  <div id="game">
+    <div class="hint" id="hint">Tap a minguk</div>
+    <div class="tray"><div id="board"></div></div>
+    <div class="foot">
+      <img class="imgbtn" id="homeBtn" src="ui/btn_back.png" alt="BACK">
+      <img class="imgbtn" id="restartBtn" src="ui/btn_shuffle.png" alt="SHUFFLE AGAIN">
+    </div>
+  </div>
+</div>
+
+<!-- rage -->
+<div id="rage">
+  <img class="rage-logo" src="ui/rage_logo.png" alt="ANGRY MINGUK">
+  <img id="rageImg" src="" alt="">
+  <img class="rage-pissed" src="ui/pissed.png" alt="FXXKING PISSED OFF">
+  <img class="imgbtn" id="rageAgain" src="ui/btn_retry.png" alt="RETRY">
+</div>
+
+<script>
+const FACES={
+  m1:{calm:'faces/m1_calm.png', mad:['faces/m1_mad1.png','faces/m1_mad2.png']},
+  m2:{calm:'faces/m2_calm.png', mad:['faces/m2_mad1.png','faces/m2_mad2.png']}
+};
+const SETS=['m1','m2'];
+// BGM: 3곡 중 랜덤으로 하나 골라 계속 loop (첫 터치 때 재생 — 브라우저 자동재생 정책)
+const BGM=['bgm0.mp3','bgm1.mp3','bgm2.mp3'];
+const bgmEl=new Audio(BGM[Math.floor(Math.random()*BGM.length)]); bgmEl.loop=true; bgmEl.volume=0.5;
+let bgmOn=false, muted=false;
+function startBGM(){ if(bgmOn||muted)return; bgmEl.play().then(()=>{bgmOn=true;}).catch(()=>{}); }
+['pointerdown','touchstart','keydown'].forEach(e=>document.addEventListener(e,startBGM));
+// 효과음: 얼굴 탭=byebye, 버튼=click, 화난민국=scream (겹쳐 재생되게 clone)
+const SFX_BYE=new Audio('sfx_byebye.mp3'), SFX_CLICK=new Audio('sfx_click.mp3'), SFX_SCREAM=new Audio('sfx_scream.mp3');
+SFX_BYE.volume=0.75; SFX_CLICK.volume=0.6; SFX_SCREAM.volume=0.9;
+[SFX_BYE,SFX_CLICK,SFX_SCREAM].forEach(a=>a.load());
+function play(base){ if(muted||masterVol<=0)return; try{ const a=base.cloneNode(); a.volume=Math.min(1,base.volume*masterVol); a.play().catch(()=>{}); }catch(e){} }
+let SIZE=16, ANGRY=1;
+let angrySet=new Set(), over=false, tapped=0, rageTimer=null;
+const $=id=>document.getElementById(id);
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+// 미리 로드
+Object.values(FACES).forEach(f=>{[f.calm,...f.mad].forEach(s=>{const i=new Image();i.src=s;});});
+
+let actx=null;
+function ac(){if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(actx&&actx.state==='suspended')actx.resume();return actx;}
+function beep(f,d,v,t){const c=ac();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type=t||'square';o.frequency.value=f;
+  g.gain.setValueAtTime(0.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(v||0.12,c.currentTime+0.01);g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+(d||0.12));
+  o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+(d||0.12)+0.02);}
+function sfxTap(){beep(300+Math.random()*60,0.07,0.09,'triangle');}
+function sfxRage(){const c=ac();if(!c)return;[0,80,160,240].forEach((t,i)=>setTimeout(()=>beep(130-i*12,0.24,0.22,'sawtooth'),t));}
+
+function bindChips(id,attr,cb){document.querySelectorAll('#'+id+' .chip').forEach(ch=>ch.onclick=()=>{
+  document.querySelectorAll('#'+id+' .chip').forEach(x=>x.classList.remove('on'));ch.classList.add('on');cb(+ch.dataset[attr]);play(SFX_CLICK);});}
+bindChips('sizeChips','n',v=>SIZE=v);
+bindChips('angryChips','a',v=>ANGRY=v);
+
+function cols(n){return Math.round(Math.sqrt(n));}
+function buildBoard(){
+  over=false; tapped=0;
+  if(rageTimer){clearInterval(rageTimer);rageTimer=null;}
+  $('rage').classList.remove('on');
+  angrySet=new Set();
+  while(angrySet.size<Math.min(ANGRY,SIZE-1)) angrySet.add(Math.floor(Math.random()*SIZE));
+  const board=$('board'); board.innerHTML='';
+  board.style.gridTemplateColumns='repeat('+cols(SIZE)+',1fr)';
+  for(let i=0;i<SIZE;i++){
+    const set=pick(SETS);   // 타일마다 랜덤(섞인 느낌)
+    const t=document.createElement('div'); t.className='tile'; t.dataset.i=i; t.dataset.set=set;
+    const im=document.createElement('img'); im.src=FACES[set].calm; im.alt=''; t.appendChild(im);
+    t.addEventListener('click',()=>onTap(t,i));
+    board.appendChild(t);
+  }
+  $('hint').textContent=SIZE+' minguk · '+ANGRY+' angry hidden';
+}
+function startGame(){
+  ac(); $('home').style.display='none'; $('game').style.display='flex'; buildBoard();
+  const tray=document.querySelector('.tray'), board=$('board');
+  board.style.opacity='0'; tray.classList.add('small');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>tray.classList.remove('small')));
+  setTimeout(()=>{ board.style.opacity='1'; }, 780);
+}
+function newRound(){ buildBoard(); $('board').style.opacity='1'; }
+function onTap(t,i){
+  if(over||t.classList.contains('pop'))return;
+  ac();
+  if(angrySet.has(i)){ over=true; showRage(t.dataset.set); }
+  else { tapped++; t.classList.add('pop'); play(SFX_BYE); $('hint').textContent=(SIZE-tapped)+' minguk left'; }   // 시계방향 회전하며 위로 쏙
+}
+function showRage(set){
+  const mad=FACES[set].mad; let f=0;
+  const img=$('rageImg'); img.src=mad[0];
+  $('game').style.display='none';   // 뒤 게임판 숨김
+  $('rage').classList.add('on'); play(SFX_SCREAM);
+  if(navigator.vibrate)navigator.vibrate([90,50,90,50,160]);
+  rageTimer=setInterval(()=>{ f^=1; img.src=mad[f]; }, 170);   // 입 벌렸다 닫았다
+}
+
+$('muteBtn').onclick=e=>{ e.stopPropagation(); muted=!muted;
+  if(muted){ bgmEl.pause(); $('muteBtn').textContent='🔇'; }
+  else { muted=false; bgmEl.play().then(()=>bgmOn=true).catch(()=>{}); $('muteBtn').textContent='🔊'; } };
+// 볼륨 조절 (왼쪽 아래) — bgm+효과음 마스터 볼륨
+let masterVol=1;
+function applyVol(){ bgmEl.volume=0.5*masterVol; }
+$('volBtn').onclick=e=>{ e.stopPropagation(); $('volPanel').classList.toggle('show'); };
+$('volSlider').oninput=e=>{ masterVol=e.target.value/100; applyVol();
+  $('volBtn').textContent = masterVol===0?'🔈':(masterVol<0.5?'🔉':'🔊'); };
+const clickBtn=fn=>e=>{ play(SFX_CLICK); fn(e); };
+$('startBtn').onclick=clickBtn(startGame);
+$('restartBtn').onclick=clickBtn(newRound);
+$('rageAgain').onclick=clickBtn(startGame);
+$('homeBtn').onclick=clickBtn(()=>{ if(rageTimer){clearInterval(rageTimer);rageTimer=null;} $('rage').classList.remove('on'); $('game').style.display='none'; $('home').style.display='flex'; });
+</script>
+</body></html>

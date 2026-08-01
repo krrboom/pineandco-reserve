@@ -2,6 +2,8 @@ window.I18N_ZH={"ui": {
 "nav.cocktail":"鸡尾酒","nav.food":"下酒菜","nav.flight":"套组","nav.sool":"图鉴","nav.map":"地图","nav.about":"关于",
 "game.race.d":"Cricket 的调酒师们要跑了。都先干了一杯马格利，谁最快呢？",
 "game.race.t":"Cricket 赛跑",
+"game.minguk.d":"生气的民国躲在哪里呢？",
+"game.minguk.t":"找出民国！",
 "sec.game.d":"赌一杯马格利，来一局？",
 "sec.game.t":"酒桌游戏",
 "nav.game":"游戏",

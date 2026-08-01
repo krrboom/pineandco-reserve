@@ -2,6 +2,8 @@ window.I18N_JA={"ui": {
 "nav.cocktail":"カクテル","nav.food":"肴","nav.flight":"フライト","nav.sool":"図鑑","nav.map":"マップ","nav.about":"紹介",
 "game.race.d":"クリケットのバーテンダーが走ります。マッコリを一杯ひっかけて、一番速いのは誰でしょう。",
 "game.race.t":"クリケット競走",
+"game.minguk.d":"怒ったミングクはどこにいる？",
+"game.minguk.t":"ミングクを探せ！",
 "sec.game.d":"マッコリ一杯賭けて一勝負？",
 "sec.game.t":"飲みの席の遊び",
 "nav.game":"遊び",
