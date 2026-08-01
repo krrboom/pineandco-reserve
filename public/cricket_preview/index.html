@@ -971,7 +971,7 @@ function _smoothD(d,iter){
  }catch(e){ console.warn('smooth',e); } })();
 const MAPVIEW={x:-30,y:0,w:700,h:764};  // 반도 프레임(기준·데스크탑)
 // 모바일 전용 타이트 프레임: 남한(도 bbox x12~558 / y12~752, 중심 285·382)에 딱 붙여 반도를 크게
-const MAPVIEW_M={cx:285,cy:382,w:534,h:748};
+const MAPVIEW_M={cx:367,cy:382,w:433,h:748};  // 내륙 중심(백령도 등 서쪽 섬은 프레임 밖으로 크롭)
 // 전체지도: 실제 화면 비율에 맞춰 반도를 중앙에 꽉 채움(데스크탑/태블릿 좌우 잘림·레터박스 방지)
 function computeFullVB(){
  let ca=(innerWidth&&innerHeight)?innerWidth/innerHeight:(MAPVIEW.w/MAPVIEW.h);
@@ -1155,6 +1155,8 @@ if(lb&&lbImg){
 }
 buildMap();
 document.getElementById("mapBack").addEventListener("click",e=>{e.stopPropagation();zoomOutMap();});
+// 확대된 지도에서 바다(지도 외 빈 공간)를 터치/클릭해도 전체지도로 복귀 (도·라벨·랜드마크·바는 stopPropagation이라 안 걸림)
+document.getElementById("mapsvg").addEventListener("click",function(){ if(zoomed&&typeof zoomOutMap==='function')zoomOutMap(); });
 function selectRegion(k){ // 도감/칵테일에서 지도로: 해당 도 확대(랜드마크 표시) + 지역 메뉴 창
  const code=PROV_OF[k]; if(!code)return;
  activateProv(code);
