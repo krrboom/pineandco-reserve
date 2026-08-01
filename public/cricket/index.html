@@ -147,7 +147,7 @@ section+section{border-top:1px solid var(--line);margin-top:14px;padding-top:36p
 .prov:hover{fill:#a9ba84}
 .prov.active{fill:#a7ba7f;stroke:var(--gold);stroke-width:2}
 .prov.dim{opacity:.45}
-.muni{fill:none;stroke:rgba(70,60,35,.45);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;pointer-events:none;
+.muni{fill:none;stroke:rgba(70,60,35,.45);stroke-width:1;stroke-dasharray:2 1.6;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;pointer-events:none;
   animation:fadeIn .5s ease both}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .map-back{position:absolute;left:8px;top:8px;z-index:5;display:none;background:var(--dark);color:#e9e1d1;
@@ -902,10 +902,10 @@ function animVB(tx,ty,tw,th,dur,done){
 // 줌 배율에 맞춰 글자·점·선 크기를 화면상 일정하게 유지
 function scaleOverlay(){
  const s=VB.w/MAPDATA.vbW;
- document.querySelectorAll("#mapMuni .muni").forEach(p=>{p.setAttribute("stroke-dasharray",(3.2*s).toFixed(2)+" "+(2.4*s).toFixed(2));});
+ // muni 점선은 non-scaling-stroke+고정 dasharray라 프레임마다 다시 안 씀(줌 최적화)
  document.querySelectorAll("#mapDyn .prov-label").forEach(t=>t.setAttribute("font-size",(16*s).toFixed(2)));
- // 도 리더선 지명: 뷰폭 비율로 역보정해 화면상 크게(터치 쉽게) 고정
- document.querySelectorAll("#mapLabels .reglabel").forEach(t=>t.setAttribute("font-size",(23*s).toFixed(2)));
+ // 도 리더선 지명: 전체지도에서만 크기 보정(확대 시 숨겨져 있어 스킵 → 줌 최적화)
+ if(!zoomed) document.querySelectorAll("#mapLabels .reglabel").forEach(t=>t.setAttribute("font-size",(23*s).toFixed(2)));
  // 술병 랜드마크: 화면상 일정 크기(뷰폭 비율), 양조지 위 중심하단 정렬, 여러 개는 가로 배치
  const bw=VB.w*0.075, bh=bw*1.7, gap=-bw*0.28;   // 같은 지역 병끼리 겹치듯 밀착
  document.querySelectorAll("#mapDyn .lmk").forEach(g=>{
@@ -1575,6 +1575,9 @@ function applyLang(){
 }
 function setLang(l){LANG=l;applyLang();}
 document.querySelectorAll(".langbtn").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();setLang(b.dataset.l);document.getElementById("langPop").classList.remove("show");}));
+// 병/서울지도 이미지 유휴시간 미리 로드 → 도 클릭 확대 시 디코드 끊김 방지
+(function(){function pre(){try{LM_IDS.forEach(id=>{const i=new Image();i.src='b_'+id+'.png';});const s=new Image();s.src='seoul_map.png';}catch(_){}}
+ if(window.requestIdleCallback)requestIdleCallback(pre,{timeout:3500});else setTimeout(pre,1600);})();
 const langPop=document.getElementById("langPop");
 document.getElementById("langToggle").onclick=e=>{e.stopPropagation();langPop.classList.toggle("show");};
 document.addEventListener("click",()=>langPop.classList.remove("show"));
