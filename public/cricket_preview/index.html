@@ -30,6 +30,10 @@ b,strong,.b-reg,.maphint,.flag{font-family:var(--f-penr)}
 .reglabel,.nav-b,.nav-b .kr,.splash-enter,.langsel .langbtn{font-family:var(--f-eul) !important}
 .lang-pop .langbtn{font-family:'Apple SD Gothic Neo','Malgun Gothic','Hiragino Sans','Noto Sans CJK KR',system-ui,sans-serif !important}  /* 일/중 표현되는 시스템 폰트 */
 body{background:var(--paper);color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.12);font-family:var(--serif);line-height:1.6;padding-bottom:74px;overflow-x:hidden}
+/* 크리켓 로고 반복 패턴 배경(입장 후 fade in). 마스크+--ink라 낮/밤 색 자동 반전 */
+#cricketbg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .45s ease;background-color:var(--ink);
+  -webkit-mask:url(cricket_pattern_tile.png) repeat;mask:url(cricket_pattern_tile.png) repeat;-webkit-mask-size:240px;mask-size:240px}
+body.pattern-in #cricketbg{opacity:.05}
 body.night .cover .logo{filter:brightness(0) invert(.9) sepia(.18) saturate(1.3)}
 .cover .logo{transition:filter .7s ease}
 /* 낮↔밤 전환을 부드럽게 (개별 규칙이 있는 요소는 그 규칙이 우선) */
@@ -454,6 +458,7 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
 </section>
 <div class="mapmeta"><div class="mappanel" id="mapPanel"></div></div>
 
+<div id="cricketbg"></div>
 <div id="sky"><i class="sun" id="sun"></i><i class="moon" id="moon"></i><div id="stars"></div></div>
 <nav><div class="navwrap" id="navwrap"><div class="navin" id="nav">
   <button class="nav-b on" data-t="cocktail">Cocktail</button>
@@ -1434,6 +1439,7 @@ function playMapIntro(){
    animVB(fv.x,fv.y,fv.w,fv.h,3300,()=>{
      document.body.classList.remove("intro-run");   // 로고·버튼 fade in (한반도 실루엣·바다이름은 유지)
      applyJejuInset(innerWidth<560);   // 최종 뷰 도달: 모바일이면 제주 인셋(+북한 실루엣 숨김)
+     document.body.classList.add('pattern-in');   // 크리켓 패턴 배경 fade in
    });
  },300);
  playCricketIntro();   // 크리켓 캐릭터: 구름 폴짝 → 바 착지 → 인사 (구름 걷힘 veil-part 트리거 포함)
