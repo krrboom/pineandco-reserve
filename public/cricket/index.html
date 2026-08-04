@@ -413,6 +413,30 @@ body.mapzoom #sky{opacity:0}   /* 지도 확대 시 배경 태양/달 숨겨 화
 #mapsvg #prov-24:not(.active),#mapsvg #prov-29:not(.active){fill:#c4d0a6}
 .home-brand,.scrollcue,nav{transition:opacity 1s ease}
 body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:0}
+
+/* ===== 3주년 팝업 메뉴 (오늘만) ===== */
+#annivPop{position:fixed;inset:0;z-index:1200;background:#f3e9d2;display:none;flex-direction:column;opacity:0;transition:opacity .4s ease}
+#annivPop.show{display:flex;opacity:1}
+#annivPop::before{content:"";position:absolute;inset:0;background-color:#b8975a;
+  -webkit-mask:url(cricket_pattern_tile.png) repeat;mask:url(cricket_pattern_tile.png) repeat;-webkit-mask-size:200px;mask-size:200px;opacity:.11;pointer-events:none}
+.anniv-scroll{position:relative;z-index:1;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 20px 16px;display:flex;flex-direction:column;align-items:center}
+.anniv-logo{width:min(80%,330px);margin:2px auto 16px;filter:drop-shadow(0 3px 6px rgba(120,70,20,.18))}
+.anniv-card{width:100%;max-width:430px;color:#3a2a16}
+.am-title{font-family:var(--serif);font-size:25px;font-weight:700;text-align:center;color:#2c2013;margin:4px 0 2px}
+.am-by{font-family:var(--serif);font-style:italic;font-size:12.5px;text-align:center;color:#7a6142;margin-bottom:12px}
+.am-all{font-family:var(--serif);font-size:15px;text-align:center;color:#3a2a16;background:#fffaf0;border:1px solid #d8c39a;border-radius:20px;padding:5px 0;width:150px;margin:0 auto 20px}
+.am-sec{margin-bottom:17px;text-align:center}
+.am-sec h3{font-family:var(--serif);font-size:19px;color:#2c2013;margin-bottom:6px}
+.am-line{font-family:var(--serif);font-size:14.5px;line-height:1.5;color:#3a2a16}
+.am-with{font-size:13.5px;line-height:1.6;color:#5a4326;margin-top:4px}
+.wtag{display:inline-block;background:#e0894f;color:#fff;font-family:var(--f-eul);font-size:11px;padding:1px 9px;border-radius:9px;margin-right:5px}
+.am-div{height:0;border-top:2px dashed #c9ad78;width:56%;max-width:270px;margin:6px auto 20px}
+.am-cat{font-family:var(--serif);font-size:17px;font-weight:700;text-align:center;color:#2c2013;margin:18px 0 6px;letter-spacing:.10em}
+.am-row{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:330px;margin:9px auto;font-family:var(--serif)}
+.am-row .nm{font-size:15.5px;color:#2c2013;font-weight:600;white-space:nowrap}
+.am-row .am-price{font-size:14.5px;color:#3a2a16;background:#fffaf0;border-radius:14px;padding:3px 13px;border:1px solid #dcc79e;white-space:nowrap}
+.anniv-btn{position:relative;z-index:2;flex-shrink:0;border:none;border-top:1px solid rgba(120,90,50,.28);background:#2c3e2d;color:#f3ead2;font-family:var(--f-eul);font-size:17px;letter-spacing:.03em;padding:16px;cursor:pointer;width:100%}
+.anniv-btn:active{background:#22301f}
 </style>
 </head>
 <body>
@@ -426,6 +450,45 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
     <button class="langbtn" data-l="en">English</button>
   </div>
   <button class="splash-enter" id="enterBtn" data-i18n="splash.enter">터치하여 입장</button>
+</div>
+
+<!-- 3주년 팝업 메뉴 (오늘만 · 지도 인트로 끝난 뒤 등장) -->
+<div id="annivPop">
+  <div class="anniv-scroll">
+    <img class="anniv-logo" src="anniv_title.png" alt="Cricket 3rd Anniversary">
+    <div class="anniv-card">
+      <div class="am-title">Tonight's Cocktails &amp; Bites</div>
+      <div class="am-by">Made by Bannie Kang &amp; Tryson Quek from SideDoor</div>
+      <div class="am-all">All ₩28,000</div>
+      <div class="am-sec">
+        <h3>· House Favorite ·</h3>
+        <div class="am-line">Nerd Makgeolli · Tanqueray Gin · Cucumber Dill · Melon Soda</div>
+        <div class="am-with"><span class="wtag">With</span>Smoked Salmon · Seaweed Cream · Ikura · Bacon Sablée</div>
+      </div>
+      <div class="am-sec">
+        <h3>· After Hours ·</h3>
+        <div class="am-line">Tanqueray Gin · Campari · Sweet Vermouth · Espresso · Passion Fruit</div>
+        <div class="am-with"><span class="wtag">With</span>Foie Gras · Passion Fruit · Peanut Butter · Sherry Leek</div>
+      </div>
+      <div class="am-sec">
+        <h3>· Familiar Stranger ·</h3>
+        <div class="am-line">Nerd Makgeolli · Peanut Butter Grappa · Rose · Strawberry Cordial</div>
+        <div class="am-with"><span class="wtag">With</span>Cheese Mousse · Chocolate Texture · Olive Oil Caviar</div>
+      </div>
+      <div class="am-div"></div>
+      <div class="am-title">Tonight's Bottle Menu</div>
+      <div class="am-cat">TAKJU</div>
+      <div class="am-row"><span class="nm">· NERD 12 Jogakbo ·</span><span class="am-price">₩50,000</span></div>
+      <div class="am-cat">SPARKLING</div>
+      <div class="am-row"><span class="nm">· Omyrose Yeon ·</span><span class="am-price">₩150,000</span></div>
+      <div class="am-row"><span class="nm">· Omyrose Kyol ·</span><span class="am-price">₩280,000</span></div>
+      <div class="am-cat">SPIRIT</div>
+      <div class="am-row"><span class="nm">· Chusa 40 ·</span><span class="am-price">₩180,000</span></div>
+      <div class="am-row"><span class="nm">· Kione Eagle ·</span><span class="am-price">₩320,000</span></div>
+      <div class="am-row"><span class="nm">· Kione Batch 8 ·</span><span class="am-price">₩400,000</span></div>
+    </div>
+  </div>
+  <button id="annivEnter" class="anniv-btn">메뉴 보기 · View Menu</button>
 </div>
 
 <button id="soundToggle" class="sound-toggle" aria-label="sound">🔊</button>
@@ -1429,7 +1492,7 @@ async function cricketAsk(){
 function playMapIntro(){
  const svg=document.getElementById("mapsvg"), st=document.getElementById("mapStage"), veil=document.getElementById("cloudveil");
  if(!svg||!st||st.dataset.intro)return; st.dataset.intro="1";
- if(matchMedia("(prefers-reduced-motion:reduce)").matches){if(veil)veil.classList.add("hide");applyJejuInset(innerWidth<560);return;}
+ if(matchMedia("(prefers-reduced-motion:reduce)").matches){if(veil)veil.classList.add("hide");applyJejuInset(innerWidth<560);setTimeout(showAnniv,300);return;}
  // 1) 한반도 전체 지형(도 채색 숨김·로고 숨김) + 구름1 당초무늬가 덮음
  // 시작: 최종 뷰(computeFullVB)와 같은 중앙에서 더 작은 크기(2.2배 축소)로 → 구름 걷히며 중앙으로 확대
  if(window.KOREA){const _fv=computeFullVB(),K=2.2,_cx=_fv.x+_fv.w/2,_cy=_fv.y+_fv.h/2;
@@ -1446,11 +1509,21 @@ function playMapIntro(){
      document.body.classList.remove("intro-run");   // 로고·버튼 fade in (한반도 실루엣·바다이름은 유지)
      applyJejuInset(innerWidth<560);   // 최종 뷰 도달: 모바일이면 제주 인셋(+북한 실루엣 숨김)
      document.body.classList.add('pattern-in');   // 크리켓 패턴 배경 fade in
+     setTimeout(showAnniv,450);   // 지도 확대 애니메이션 끝난 뒤 3주년 팝업
    });
  },300);
  playCricketIntro();   // 크리켓 캐릭터: 구름 폴짝 → 바 착지 → 인사 (구름 걷힘 veil-part 트리거 포함)
  setTimeout(()=>st.classList.add("veil-part"),2600);   // 안전장치: 캐릭터 실패해도 구름은 반드시 걷힘
  setTimeout(()=>{ if(veil)veil.classList.add("hide"); st.classList.remove("veil","veil-run","veil-part"); },6400);
+}
+// 3주년 팝업: 오늘만. 한국시간 2026-08-05 03:00(=오늘 밤 새벽 3시) 이후 자동 비활성. 지도 인트로가 끝난 뒤 1회 노출.
+const ANNIV_EXPIRE=Date.parse('2026-08-05T03:00:00+09:00');
+let annivPending=Date.now()<ANNIV_EXPIRE;
+function showAnniv(){ if(!annivPending)return; annivPending=false;
+  const p=document.getElementById('annivPop'); if(!p)return;
+  p.classList.add('show');
+  const b=document.getElementById('annivEnter');
+  if(b) b.onclick=()=>{ p.classList.remove('show'); setTimeout(()=>{try{p.remove();}catch(_){}},420); };
 }
 function enter(){splash.classList.add("gone");startCricket();document.getElementById("langToggle").classList.add("show");playMapIntro();setTimeout(()=>{try{splash.remove();}catch(_){}} ,1000);}
 document.getElementById("enterBtn").addEventListener("click",e=>{e.stopPropagation();enter();});
