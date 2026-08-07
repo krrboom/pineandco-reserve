@@ -56,8 +56,27 @@ function doPost(e) {
   }
 }
 
-// 브라우저에서 URL 열었을 때 확인용
-function doGet() { return json({ ok: true, msg: 'Pine waiting webhook alive' }); }
+// GET: ?list=1 → 웨이팅전체 전체 목록(JSON, 최신 먼저). 그 외엔 헬스체크.
+// 매니징 앱이 서버(/api/waiting/sheet)를 통해 이걸 읽어 앱 안에서 표로 보여준다.
+function doGet(e) {
+  if (e && e.parameter && e.parameter.list) {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sh = ss.getSheetByName(SHEETS.ALL);
+    if (!sh || sh.getLastRow() < 2) return json({ ok: true, rows: [] });
+    var vals = sh.getRange(2, 1, sh.getLastRow() - 1, HEADERS.length).getDisplayValues();
+    // 컬럼: 기록시각,영업일,요일,등록시각,대기(분),번호,이름,인원,전화,이메일,결과,구분,좌석
+    var rows = vals.map(function (r) {
+      return {
+        bizDate: r[1], weekday: r[2], regTime: r[3], number: r[5],
+        name: r[6], party: r[7], phone: String(r[8]).replace(/^'/, ''),
+        email: r[9], outcome: r[10], group: r[11],
+      };
+    });
+    rows.reverse(); // 최신 먼저
+    return json({ ok: true, rows: rows });
+  }
+  return json({ ok: true, msg: 'Pine waiting webhook alive' });
+}
 
 /* ── 한 건을 시트 한 줄로 변환 ─────────────────────────────────── */
 function buildRow(d) {
