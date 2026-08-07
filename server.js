@@ -1125,6 +1125,11 @@ function scheduleDailyReset() {
   console.log(`⏰ Waiting-only daily reset (2AM KST) scheduled in ${Math.round(ms/1000/60)} minutes`);
   setTimeout(() => {
     console.log('🔄 Daily 2AM KST reset — clearing waiting queue and waiting history');
+    // Since called guests no longer auto-cancel, log any still-notified leftovers as
+    // no-show before the reset so the sheet/stats don't silently lose them.
+    queue.filter(q => q.status === 'called').forEach(q => {
+      try { moveToWaitHistory(q, 'auto_cancelled'); } catch (e) { console.error(e); }
+    });
     Object.keys(cancelTimers).forEach(id => { clearTimeout(cancelTimers[id]); delete cancelTimers[id]; });
     queue = [];
     waitHistory = [];
