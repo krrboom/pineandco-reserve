@@ -452,16 +452,12 @@ function render(){
       <div class="called-banner">
         <div class="called-title">YOUR TABLE IS READY</div>
         <div class="called-title" style="font-size:12px;margin-top:4px;">자리가 마련되었습니다</div>
-        <div class="called-sub" style="margin-top:12px;">5분 내로 방문 부탁드리겠습니다<br>We kindly ask you to arrive within 5 minutes</div>
+        <div class="called-sub" style="margin-top:12px;">곧 방문 부탁드리겠습니다<br>Please come by soon</div>
         <div class="called-sub" style="margin-top:8px;font-size:11px;">시간이 더 필요하시면 편하게 연락주세요<br>Need more time? Please don't hesitate to call us</div>
-      </div>
-      <div class="timer-wrap">
-        <div id="tb" class="timer-bar" style="width:100%"></div>
-        <div id="tt" class="timer-text"></div>
       </div>
       <button class="btn-primary" style="margin-top:16px;background:rgba(160,80,80,.5);font-size:11px;" onclick="cantCome()">CAN'T MAKE IT / 못 갈 것 같아요</button>
       <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>`;
-    startTimer(me.calledAt);return;
+    return;
   }
 
   // 등록 완료 후 대기 중

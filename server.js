@@ -741,8 +741,8 @@ function buildWaitEmailHTML(type, entry, url, extra) {
 
         <p style="color:#f0ebe0;font-size:15px;line-height:1.7;margin:0 0 8px;">Your table is now ready.</p>
         <p style="color:#a89478;font-size:13px;line-height:1.7;margin:0 0 28px;">
-          We kindly ask you to arrive within <strong style="color:#c9a96e;">${min} minutes</strong>.<br>
-          <span style="color:#7a6550;">${min}분 내로 방문 부탁드리겠습니다.</span>
+          We kindly ask you to arrive soon.<br>
+          <span style="color:#7a6550;">곧 방문 부탁드리겠습니다.</span>
         </p>
 
         <p style="margin:28px 0 4px;"><a href="${url}" style="${btnStyle}">View Details</a></p>
@@ -791,6 +791,38 @@ function buildWaitEmailHTML(type, entry, url, extra) {
   };
 }
 
+// ── Apology email for guests we couldn't seat before closing ──
+// Sent manually by staff from manage.html. Dark Pine & Co branding, bilingual,
+// with a reserve-ahead call to action.
+function buildApologyEmailHTML(entry) {
+  const biz = CONFIG.BUSINESS_PHONE;
+  const reserveUrl = `${CONFIG.PUBLIC_URL}/reserve.html`;
+  const name = entry.name || 'there';
+  return {
+    subject: `🌲 Pine & Co — 늦었지만, 사과의 인사를 전합니다`,
+    html: `<div style="background:#0f0a06;padding:32px 16px;font-family:Georgia,serif;">
+      <div style="max-width:520px;margin:0 auto;background:#1e1208;color:#f0ebe0;padding:48px 32px;text-align:center;border-radius:14px;border:1px solid rgba(184,147,90,.15);box-shadow:0 8px 32px rgba(0,0,0,.4);">
+        <div style="font-family:Georgia,serif;font-size:14px;letter-spacing:5px;color:#b8935a;margin-bottom:8px;font-weight:300;">PINE &amp; CO</div>
+        <div style="font-family:Georgia,serif;font-size:9px;letter-spacing:3px;color:#7a6550;margin-bottom:36px;">SEOUL · COCKTAIL BAR</div>
+        <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 20px;">A HEARTFELT APOLOGY</p>
+        <div style="font-family:Georgia,serif;font-size:30px;color:#b8935a;font-weight:300;margin:0 0 28px;letter-spacing:-.5px;line-height:1.3;">Dear ${name},<br><span style="font-size:20px;color:#a89478;">늦었지만 사과드립니다</span></div>
+        <p style="color:#f0ebe0;font-size:15px;line-height:1.8;margin:0 0 10px;">You came to see us, but that evening was unusually busy and we couldn't get back to you about a table in time.</p>
+        <p style="color:#a89478;font-size:13px;line-height:1.8;margin:0 0 28px;">지난 방문 때 저희를 찾아주셨는데, 그날 자리가 유난히 붐벼 웨이팅 안내를 제때 드리지 못했습니다.<br>오래 기다리셨을 텐데 좌석을 마련해드리지 못해, 진심으로 죄송합니다.</p>
+        <hr style="border:none;border-top:1px solid rgba(184,147,90,.25);margin:28px auto;width:60px;"/>
+        <p style="color:#f0ebe0;font-size:15px;line-height:1.8;margin:0 0 10px;">Next time, we'd love to host you properly.</p>
+        <p style="color:#a89478;font-size:13px;line-height:1.8;margin:0 0 28px;">다음 방문 땐 꼭 편하게 모시고 싶습니다. 아래에서 미리 예약해 주시면,<br>원활한 안내를 위해 <strong style="color:#c9a96e;">자리를 확실히 준비</strong>해 두겠습니다.</p>
+        <p style="margin:28px 0;"><a href="${reserveUrl}" style="display:inline-block;padding:16px 44px;background:#b8935a;color:#1e1208;text-decoration:none;border-radius:8px;font-family:Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">Reserve a Table · 예약하기</a></p>
+        <hr style="border:none;border-top:1px solid rgba(184,147,90,.25);margin:28px auto;width:60px;"/>
+        <p style="color:#a89478;font-size:13px;line-height:1.8;margin:0 0 6px;">Thank you, sincerely, for thinking of us.</p>
+        <p style="color:#c9a96e;font-size:14px;line-height:1.8;margin:0 0 4px;">그럼에도 저희에게 관심 가져주셔서 진심으로 감사드립니다.</p>
+        <p style="color:#7a6550;font-size:13px;font-style:italic;margin:16px 0 0;">— Pine &amp; Co Seoul</p>
+        <hr style="border:none;border-top:1px solid rgba(184,147,90,.15);margin:36px 0 16px;"/>
+        <p style="font-size:10px;color:#5a4530;letter-spacing:1px;margin:0;line-height:1.6;">Pine &amp; Co Seoul · ${biz}<br>You're receiving this because you joined our waiting list.</p>
+      </div>
+    </div>`,
+  };
+}
+
 // ── Helper: convert Korean name to 'Guest' to keep SMS in 1 segment (GSM-7) ──
 // SMS billing: any non-ASCII char forces UCS-2 (70 chars/seg vs 160). Foreign names = personalized, Korean names = 'Guest'.
 function asciiName(name) {
@@ -831,16 +863,18 @@ async function sendWaitingMessage(entry, type, extra = {}) {
       tpl  : CONFIG.TPL_CALL,
       vars : { '#{이름}': entry.name, '#{번호}': String(entry.number),
                '#{분}': String(min), '#{링크}': url },
-      sms  : `PINE&CO: #${entry.number} ${asciiName(entry.name)}, your table is ready. Arrive in ${min} min. ${url}`,
+      sms  : `PINE&CO: #${entry.number} ${asciiName(entry.name)}, your table is ready — please come by soon. Details: ${url} | Can't make it? ${url}?cant=1`,
       smsKr: `[PINE&CO]\n`
            + `${entry.name}님, 자리가 준비되었습니다!\n`
-           + `웨이팅 ${entry.number}번 / ${min}분 내 방문 부탁드립니다.\n`
+           + `웨이팅 ${entry.number}번 / 곧 방문 부탁드립니다.\n`
            + `\n`
            + `${entry.name}, your table is ready!\n`
            + `Waiting #${entry.number}\n`
-           + `Please arrive within ${min} minutes.\n`
+           + `Please come by soon.\n`
            + `\n`
-           + `${url}\n`
+           + `안내: ${url}\n`
+           + `못 가시면 여기서 알려주세요 / Can't make it:\n`
+           + `${url}?cant=1\n`
            + `Tel: ${biz}`,
     },
     cancel: {
@@ -1063,39 +1097,15 @@ function moveToWaitHistory(entry, outcome) {
   logWaitingEvent(h);
 }
 
-function startCancelTimer(id) {
-  if (cancelTimers[id]) clearTimeout(cancelTimers[id]);
-  cancelTimers[id] = setTimeout(async () => {
-    await withQueueLock(async () => {
-      const entry = queue.find(q => q.id === id);
-      if (!entry || entry.status !== 'called') return;
-      try { await sendWaitingMessage(entry, 'cancel'); } catch(e) { console.error(e); }
-      moveToWaitHistory(entry, 'auto_cancelled');
-      queue = queue.filter(q => q.id !== id);
-      delete cancelTimers[id];
-      broadcastQueue();
-      console.log(`⏰ Auto-cancel (${CONFIG.AUTO_CANCEL_MIN} min): ${entry.name} (#${entry.number})`);
-    });
-  }, CONFIG.AUTO_CANCEL_MIN * 60 * 1000);
-}
+// ── NO AUTO-CANCEL (staff-decision policy) ──
+// Called guests are NEVER auto-removed on a timeout. They stay in the queue with
+// an elapsed-since-call clock, and staff decide when to check them in or cancel
+// (see /api/queue/noshow). This function is kept as a no-op so existing callers
+// don't break; it no longer schedules any removal or "spot expired" message.
+function startCancelTimer(_id) { /* intentionally disabled — see note above */ }
 
-function recoverTimers() {
-  const now = Date.now();
-  queue.forEach(e => {
-    if (e.status === 'called' && e.calledAt) {
-      const elapsed = now - e.calledAt;
-      const remaining = (CONFIG.AUTO_CANCEL_MIN * 60 * 1000) - elapsed;
-      if (remaining <= 0) {
-        console.log(`⏰ Expired during downtime: ${e.name} (#${e.number})`);
-        queue = queue.filter(q => q.id !== e.id);
-      } else {
-        console.log(`🔄 Recovering timer for ${e.name} (#${e.number}), ${Math.ceil(remaining/1000)}s left`);
-        startCancelTimer(e.id);
-      }
-    }
-  });
-  if (queue.length > 0) saveQueue();
-}
+// On restart, keep called guests exactly as they were (no expiry sweep).
+function recoverTimers() { /* no-op — called guests persist until staff act */ }
 
 // ── Daily 2AM KST reset (waiting queue + history only; reservations unaffected) ──
 // Business hours: 7PM - 2AM. So waiting list is valid from 7PM until the next day 2AM.
@@ -1298,7 +1308,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (_req, res) => res.redirect('/reserve.html'));
 
 // Short URL for waiting SMS links
-app.get('/t/:id', (req, res) => res.redirect('/customer.html?id=' + req.params.id));
+app.get('/t/:id', (req, res) => {
+  // Preserve the ?cant=1 deep-link (email/SMS "can't go" button) through the redirect.
+  const cant = req.query.cant ? '&cant=1' : '';
+  res.redirect('/customer.html?id=' + encodeURIComponent(req.params.id) + cant);
+});
 
 // ─────────────────────────────────────────────────────────────
 //  SHARED APIs
@@ -1535,6 +1549,21 @@ app.post('/api/queue/decline/:id', async (req, res) => {
   } catch (e) { console.error('DECLINE error:', e); res.status(500).json({ error: 'Server error.' }); }
 });
 
+// ── Staff: cancel a called guest who never showed → logged as NO-SHOW (노쇼) ──
+// Used by the "취소" button on a notified guest. Quiet removal (no SMS/email).
+app.post('/api/queue/noshow/:id', async (req, res) => {
+  try {
+    await withQueueLock(async () => {
+      if (cancelTimers[req.params.id]) { clearTimeout(cancelTimers[req.params.id]); delete cancelTimers[req.params.id]; }
+      const entry = queue.find(q => q.id === req.params.id);
+      if (entry) moveToWaitHistory(entry, 'auto_cancelled'); // 'auto_cancelled' maps to 노쇼 in the sheet
+      queue = queue.filter(q => q.id !== req.params.id);
+      broadcastQueue();
+    });
+    res.json({ ok: true });
+  } catch (e) { console.error('NOSHOW error:', e); res.status(500).json({ error: 'Server error.' }); }
+});
+
 // ── Staff: guest checked in (seated) ──
 app.post('/api/queue/done/:id', async (req, res) => {
   try {
@@ -1622,6 +1651,63 @@ app.get('/api/waiting/close', (_req, res) => {
     stillWaiting, stillNotified,
     checkedInList: checkedIn,
   });
+});
+
+// ── Delivery-channel diagnostics (booleans only, no secrets) ──
+// Answers "are foreign SMS / Korean SMS / email actually configured?"
+app.get('/api/waiting/diag', (_req, res) => {
+  res.json({
+    dev: IS_DEV,                                   // true → SMS simulated, not really sent
+    koreanSmsAligo: !IS_DEV,                        // +82 등 한국번호 → Aligo 실제 발송 가능
+    foreignSmsTwilio: IS_TWILIO_READY,             // 외국번호 → Twilio 실제 발송 가능
+    kakaoAlimtalk: !!(CONFIG.KAKAO_SENDER_KEY && CONFIG.KAKAO_SENDER_KEY !== 'YOUR_SENDER_KEY'),
+    emailReady: IS_EMAIL_READY,
+    emailProvider: IS_RESEND_READY ? 'resend' : (IS_GMAIL_READY ? 'gmail' : 'none'),
+  });
+});
+
+// ── Full waiting log proxy (reads the sheet's 웨이팅전체 via Apps Script doGet) ──
+// Lets manage.html show the whole history in-app without opening the spreadsheet.
+app.get('/api/waiting/sheet', (_req, res) => {
+  const base = CONFIG.SHEETS_WEBHOOK;
+  if (!base) return res.status(400).json({ error: 'Sheet webhook not configured' });
+  const url = base + (base.includes('?') ? '&' : '?') + 'list=1';
+  const get = (u, depth = 0) => {
+    try {
+      const rq = https.get(u, r => {
+        if ((r.statusCode === 301 || r.statusCode === 302) && r.headers.location && depth < 4) {
+          return get(r.headers.location, depth + 1);
+        }
+        let b = ''; r.on('data', d => b += d); r.on('end', () => {
+          try { res.json(JSON.parse(b)); }
+          catch { res.status(502).json({ error: 'sheet parse failed', raw: b.slice(0, 200) }); }
+        });
+      });
+      rq.on('error', e => res.status(502).json({ error: e.message }));
+    } catch (e) { res.status(502).json({ error: e.message }); }
+  };
+  get(url);
+});
+
+// ── Send apology email to guests we couldn't seat (staff-triggered) ──
+app.post('/api/waiting/apology', async (req, res) => {
+  try {
+    const { pin, recipients } = req.body || {};
+    if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+    if (!Array.isArray(recipients) || !recipients.length) return res.status(400).json({ error: 'No recipients' });
+    if (!IS_EMAIL_READY) return res.status(400).json({ error: 'Email not configured' });
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let sent = 0, failed = 0;
+    for (const r of recipients) {
+      const email = (r.email || '').trim();
+      if (!emailRe.test(email)) { failed++; continue; }
+      const data = buildApologyEmailHTML({ name: r.name, email });
+      try { await sendEmail(email, data.subject, data.html); sent++; }
+      catch (e) { console.error('Apology send fail', email, e.message); failed++; }
+    }
+    console.log(`✉️ Apology emails: ${sent} sent, ${failed} failed`);
+    res.json({ ok: true, sent, failed });
+  } catch (e) { console.error('APOLOGY error:', e); res.status(500).json({ error: 'Server error.' }); }
 });
 
 // ═════════════════════════════════════════════════════════════

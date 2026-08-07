@@ -245,6 +245,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--tx);
     <div id="dayHistBody" style="display:none;margin-top:8px;"></div>
   </div>
 
+  <!-- 전체 웨이팅 기록(시트) + 사과 메일 -->
+  <div class="day-hist-wrap" style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="day-hist-toggle" style="flex:1;min-width:180px;" onclick="showAllWaiting()">📋 전체 웨이팅 기록 (시트)</button>
+    <button class="day-hist-toggle" style="flex:1;min-width:180px;" onclick="showApologyPicker()">✉️ 못 앉은 손님께 사과 메일</button>
+  </div>
+
   <button class="at" onclick="document.getElementById('aF').classList.toggle('open')">+ STAFF ADD RESERVATION</button>
   <div class="af" id="aF">
     <div class="row"><input type="date" id="aD"/><select id="aTm"><option value="19:00">19:00</option><option value="20:00">20:00</option><option value="21:00">21:00</option><option value="23:00">23:00</option></select></div>
@@ -517,6 +523,15 @@ function timeAgo(ts){
   if(s<3600)return Math.floor(s/60)+'m';
   return Math.floor(s/3600)+'h';
 }
+// 호출 이후 경과 시간 (시:분). 자동소멸 없앤 대신 얼마나 지났는지 실시간 표시.
+function elapsedHM(ts){
+  var mins=Math.floor((Date.now()-ts)/60000);
+  if(mins<0)mins=0;
+  var hh=Math.floor(mins/60), mm=mins%60;
+  var color=mins>=30?'#a05050':mins>=10?'#c9a030':'#4a7c59';
+  var txt=hh>0?(hh+'시간 '+mm+'분'):(mm+'분');
+  return '<span style="color:'+color+';font-weight:600;">호출 후 '+txt+' 경과</span>';
+}
 function timeRemain(calledAt){
   var total=5*60*1000;
   var elapsed=Date.now()-calledAt;
@@ -642,12 +657,12 @@ function renderTodayWaitingMini(){
       if(e.email)h+=' · '+esc(e.email);
       h+='</div>';
       if(e.assignedSeat)h+='<div class="wc-seat">🪑 '+esc(e.assignedSeat)+'</div>';
-      if(e.calledAt)h+='<div class="wc-timer">⏰ '+timeRemain(e.calledAt)+'</div>';
+      if(e.calledAt)h+='<div class="wc-timer">⏱ '+elapsedHM(e.calledAt)+'</div>';
       h+='</div></div>';
       h+='<div class="wc-ax">';
       h+='<button class="btn-done" onclick="wDone(\''+e.id+'\')">CHECK-IN</button>';
       h+='<button class="btn-undo" onclick="wUndo(\''+e.id+'\')">UNDO</button>';
-      h+='<button class="btn-decline" onclick="wDecline(\''+e.id+'\')">CAN\'T COME</button>';
+      h+='<button class="btn-decline" onclick="wNoShow(\''+e.id+'\')">취소</button>';
       h+='</div></div>';
     });
   }
@@ -1374,11 +1389,11 @@ function waitCard(e,called){
   h+='</div>';
   if(called){
     if(e.assignedSeat)h+='<div class="wc-seat">🪑 '+esc(e.assignedSeat)+'</div>';
-    if(e.calledAt)h+='<div class="wc-timer">⏰ '+timeRemain(e.calledAt)+'</div>';
+    if(e.calledAt)h+='<div class="wc-timer">⏱ '+elapsedHM(e.calledAt)+'</div>';
     h+='<div class="wc-ax">';
     h+='<button class="btn-done" onclick="wDone(\''+e.id+'\')">CHECK-IN</button>';
     h+='<button class="btn-undo" onclick="wUndo(\''+e.id+'\')">UNDO</button>';
-    h+='<button class="btn-decline" onclick="wDecline(\''+e.id+'\')">DECLINE</button>';
+    h+='<button class="btn-decline" onclick="wNoShow(\''+e.id+'\')">취소</button>';
     h+='</div>';
   }else{
     h+='<div class="wc-meta">'+timeAgo(e.joinedAt)+' 전 등록</div>';
@@ -1412,6 +1427,100 @@ async function wDecline(id){
   if(!confirm(e.name+'님이 못 오신다고 하셨습니까?\n(즉시 취소, 자동취소 메시지 발송 안함)'))return;
   await fetch('/api/queue/decline/'+id,{method:'POST'});
   fl('❌ '+e.name+' 거절됨');
+}
+// 호출했는데 안 온 손님을 직원이 취소 → 노쇼로 기록 (조용히 제거, 문자/메일 없음)
+async function wNoShow(id){
+  var e=(wQueue||[]).find(function(q){return q.id===id;});
+  if(!e)return;
+  if(!confirm(e.name+'님을 취소 처리할까요? (노쇼 기록)\n조용히 제거되고 문자·메일은 가지 않습니다.'))return;
+  await fetch('/api/queue/noshow/'+id,{method:'POST'});
+  fl('취소됨: '+e.name+' (노쇼 기록)');
+}
+
+// ═══════════ 공용 모달 헬퍼 ═══════════
+function ensureOverlay(id){
+  var ov=document.getElementById(id);
+  if(!ov){ov=document.createElement('div');ov.id=id;ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;';document.body.appendChild(ov);}
+  return ov;
+}
+function modalShell(title,inner,id){
+  return '<div style="background:#fafaf7;color:#2a2118;max-width:640px;width:100%;max-height:88vh;overflow:auto;border-radius:14px;padding:18px;box-shadow:0 12px 48px rgba(0,0,0,.4);">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:700;">'+title+'</div>'
+    +'<button onclick="closeOverlay(\''+id+'\')" style="border:none;background:none;font-size:22px;cursor:pointer;color:#888;line-height:1;">×</button></div>'
+    +'<div class="mbody">'+inner+'</div></div>';
+}
+function closeOverlay(id){var ov=document.getElementById(id);if(ov)ov.remove();}
+
+// ═══════════ ② 전체 웨이팅 기록 (시트) ═══════════
+async function showAllWaiting(){
+  var ov=ensureOverlay('allWaitOv');
+  ov.innerHTML=modalShell('📋 전체 웨이팅 기록',
+    '<input id="awSearch" oninput="fillAllWaiting(this.value)" placeholder="이름·전화·이메일 검색" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:8px;font-size:13px;box-sizing:border-box;">'
+    +'<div id="awTable" style="max-height:62vh;overflow:auto;"><div style="padding:24px;text-align:center;color:#888;">시트에서 불러오는 중...</div></div>',
+    'allWaitOv');
+  var data=await fetch('/api/waiting/sheet').then(function(r){return r.json();}).catch(function(){return null;});
+  window._allWait=(data&&data.rows)?data.rows:null;
+  if(!window._allWait){var t0=document.getElementById('awTable');if(t0)t0.innerHTML='<div style="padding:24px;color:#c0392b;">불러오기 실패. 잠시 후 다시 시도해주세요.</div>';return;}
+  fillAllWaiting('');
+}
+function fillAllWaiting(q){
+  var rows=window._allWait||[]; q=(q||'').trim().toLowerCase();
+  if(q)rows=rows.filter(function(r){return ((r.name||'')+(r.phone||'')+(r.email||'')).toLowerCase().indexOf(q)>=0;});
+  var h='<div style="font-size:11px;color:#888;margin-bottom:6px;">'+rows.length+'건</div>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#eee;">'
+    +'<th style="text-align:left;padding:6px;">영업일</th><th style="text-align:left;padding:6px;">등록</th><th style="text-align:left;padding:6px;">이름</th>'
+    +'<th style="text-align:left;padding:6px;">전화</th><th style="text-align:left;padding:6px;">이메일</th><th style="text-align:left;padding:6px;">결과</th></tr></thead><tbody>';
+  rows.slice(0,800).forEach(function(r){
+    h+='<tr style="border-bottom:1px solid #eee;"><td style="padding:6px;white-space:nowrap;">'+esc(r.bizDate||'')+'</td><td style="padding:6px;">'+esc(r.regTime||'')
+      +'</td><td style="padding:6px;">'+esc(r.name||'')+'</td><td style="padding:6px;white-space:nowrap;">'+esc(r.phone||'')
+      +'</td><td style="padding:6px;word-break:break-all;">'+esc(r.email||'')+'</td><td style="padding:6px;">'+esc(r.outcome||'')+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  var t=document.getElementById('awTable'); if(t)t.innerHTML=h;
+}
+
+// ═══════════ ③ 사과 메일 (미착석 손님) ═══════════
+async function showApologyPicker(){
+  var ov=ensureOverlay('apolOv');
+  ov.innerHTML=modalShell('✉️ 사과 메일 — 대상 선택','<div style="padding:24px;text-align:center;color:#888;">불러오는 중...</div>','apolOv');
+  var data=await fetch('/api/waiting/sheet').then(function(r){return r.json();}).catch(function(){return null;});
+  if(!data||!data.rows){ov.querySelector('.mbody').innerHTML='<div style="padding:24px;color:#c0392b;">불러오기 실패.</div>';return;}
+  var cands=data.rows.filter(function(r){return r.group!=='들어옴' && r.email && /@/.test(r.email);});
+  var seen={}; cands=cands.filter(function(r){var k=(r.email||'').toLowerCase();if(seen[k])return false;seen[k]=1;return true;});
+  window._apolCands=cands;
+  var dates=[],ds={}; cands.forEach(function(r){if(r.bizDate&&!ds[r.bizDate]){ds[r.bizDate]=1;dates.push(r.bizDate);}});
+  dates.sort().reverse(); var latest=dates[0]||'';
+  var body='<div style="font-size:12px;color:#666;margin-bottom:8px;">좌석을 못 받은(취소·노쇼) + 이메일 있는 손님이에요. 보낼 사람을 고르세요.</div>';
+  body+='<label style="font-size:12px;">영업일: <select id="apolDate" onchange="fillApology()"><option value="">전체</option>';
+  dates.forEach(function(d){body+='<option value="'+d+'"'+(d===latest?' selected':'')+'>'+d+'</option>';});
+  body+='</select></label>';
+  body+='<div style="margin:8px 0;"><button onclick="apolToggleAll(true)" style="font-size:11px;padding:4px 8px;">전체선택</button> <button onclick="apolToggleAll(false)" style="font-size:11px;padding:4px 8px;">전체해제</button></div>';
+  body+='<div id="apolList" style="max-height:48vh;overflow:auto;border:1px solid #eee;border-radius:6px;"></div>';
+  body+='<button onclick="sendApology()" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:7px;background:#b8935a;color:#1e1208;font-weight:700;font-size:14px;cursor:pointer;">선택한 손님에게 사과 메일 발송</button>';
+  ov.querySelector('.mbody').innerHTML=body;
+  fillApology();
+}
+function fillApology(){
+  var d=(document.getElementById('apolDate')||{}).value||'';
+  var rows=(window._apolCands||[]).filter(function(r){return !d||r.bizDate===d;});
+  var h='';
+  if(!rows.length)h='<div style="padding:16px;color:#888;font-size:12px;">대상이 없어요.</div>';
+  rows.forEach(function(r){
+    h+='<label style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid #f0f0f0;font-size:12px;cursor:pointer;">'
+      +'<input type="checkbox" class="apolChk" data-email="'+esc(r.email)+'" data-name="'+esc(r.name||'')+'" checked>'
+      +'<span style="flex:1;"><strong>'+esc(r.name||'')+'</strong> · '+esc(r.email)+'<br><span style="color:#999;">'+esc(r.bizDate||'')+' '+esc(r.regTime||'')+' · '+esc(r.outcome||'')+'</span></span></label>';
+  });
+  var l=document.getElementById('apolList'); if(l)l.innerHTML=h;
+}
+function apolToggleAll(v){var cs=document.querySelectorAll('.apolChk');for(var i=0;i<cs.length;i++)cs[i].checked=v;}
+async function sendApology(){
+  var cs=document.querySelectorAll('.apolChk:checked'),recipients=[];
+  for(var i=0;i<cs.length;i++)recipients.push({email:cs[i].getAttribute('data-email'),name:cs[i].getAttribute('data-name')});
+  if(!recipients.length){alert('선택된 손님이 없어요.');return;}
+  if(!confirm(recipients.length+'명에게 사과 메일을 발송할까요?'))return;
+  var res=await fetch('/api/waiting/apology',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin,recipients:recipients})}).then(function(r){return r.json();}).catch(function(){return null;});
+  if(res&&res.ok){fl('사과 메일 발송: '+res.sent+'명 성공'+(res.failed?(' / '+res.failed+'명 실패'):''));closeOverlay('apolOv');}
+  else{alert('발송 실패: '+((res&&res.error)||'서버 오류'));}
 }
 async function wDelete(id){
   var e=(wQueue||[]).find(function(q){return q.id===id;});
