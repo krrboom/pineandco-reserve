@@ -244,6 +244,7 @@ function loadQueue() {
       calledAt: typeof e.calledAt === 'number' ? e.calledAt : null,
       notifiedVia: e.notifiedVia || null,
       guestCantCome: typeof e.guestCantCome === 'number' ? e.guestCantCome : null,
+      guestComing:   typeof e.guestComing   === 'number' ? e.guestComing   : null,
     }));
     if (queue.length !== parsed.length) {
       console.warn(`⚠️  Removed ${parsed.length - queue.length} invalid entries from queue`);
@@ -757,6 +758,9 @@ function buildWaitEmailHTML(type, entry, url, extra) {
   // Secondary / "can't go" button — muted so it never competes with the primary CTA
   const btn2Style = 'display:inline-block;padding:12px 32px;background:transparent;color:#a89478;text-decoration:none;border:1px solid rgba(184,147,90,.35);border-radius:8px;font-family:Georgia,serif;font-size:12px;font-weight:500;letter-spacing:1px;';
   const cantBtn = `<p style="margin:8px 0 4px;"><a href="${url}?cant=1" style="${btn2Style}">Can't go this time / 못 갈 것 같아요</a></p>`;
+  // Green "I'm coming" primary button (call email only)
+  const comingBtnStyle = 'display:inline-block;padding:16px 44px;background:#4a7c59;color:#f0ebe0;text-decoration:none;border-radius:8px;font-family:Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;';
+  const comingBtn = `<p style="margin:28px 0 8px;"><a href="${url}?coming=1" style="${comingBtnStyle}">On my way / 갈게요</a></p>`;
   const dividerStyle = 'border:none;border-top:1px solid rgba(184,147,90,.25);margin:28px auto;width:60px;';
 
   const templates = {
@@ -793,7 +797,8 @@ function buildWaitEmailHTML(type, entry, url, extra) {
           <span style="color:#7a6550;">곧 방문 부탁드리겠습니다.</span>
         </p>
 
-        <p style="margin:28px 0 4px;"><a href="${url}" style="${btnStyle}">View Details</a></p>
+        <p style="color:#c9a96e;font-size:12px;letter-spacing:1px;margin:0 0 4px;">Are you coming? / 오시나요?</p>
+        ${comingBtn}
         ${cantBtn}
 
         <hr style="${dividerStyle}"/>
@@ -911,18 +916,15 @@ async function sendWaitingMessage(entry, type, extra = {}) {
       tpl  : CONFIG.TPL_CALL,
       vars : { '#{이름}': entry.name, '#{번호}': String(entry.number),
                '#{분}': String(min), '#{링크}': url },
-      sms  : `PINE&CO: #${entry.number} ${asciiName(entry.name)}, your table is ready — please come by soon. Details: ${url} | Can't make it? ${url}?cant=1`,
+      sms  : `PINE&CO: #${entry.number} ${asciiName(entry.name)}, your table is ready! Tap here and let us know — Coming or Can't make it: ${url}`,
       smsKr: `[PINE&CO]\n`
            + `${entry.name}님, 자리가 준비되었습니다!\n`
-           + `웨이팅 ${entry.number}번 / 곧 방문 부탁드립니다.\n`
+           + `웨이팅 ${entry.number}번\n`
            + `\n`
-           + `${entry.name}, your table is ready!\n`
-           + `Waiting #${entry.number}\n`
-           + `Please come by soon.\n`
-           + `\n`
-           + `안내: ${url}\n`
-           + `못 가시면 여기서 알려주세요 / Can't make it:\n`
-           + `${url}?cant=1\n`
+           + `아래를 눌러 오시는지 알려주세요.\n`
+           + `[온다 / 못온다] 버튼이 있어요.\n`
+           + `Tap below to tell us: Coming / Can't make it\n`
+           + `${url}\n`
            + `Tel: ${biz}`,
     },
     cancel: {
@@ -1362,9 +1364,9 @@ app.get('/', (_req, res) => res.redirect('/reserve.html'));
 
 // Short URL for waiting SMS links
 app.get('/t/:id', (req, res) => {
-  // Preserve the ?cant=1 deep-link (email/SMS "can't go" button) through the redirect.
-  const cant = req.query.cant ? '&cant=1' : '';
-  res.redirect('/customer.html?id=' + encodeURIComponent(req.params.id) + cant);
+  // Preserve the ?cant=1 / ?coming=1 deep-links (email/SMS decision buttons).
+  const extra = (req.query.cant ? '&cant=1' : '') + (req.query.coming ? '&coming=1' : '');
+  res.redirect('/customer.html?id=' + encodeURIComponent(req.params.id) + extra);
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -1578,12 +1580,32 @@ app.post('/api/queue/cant-come/:id', async (req, res) => {
       if (!entry) return;
       if (cancelTimers[entry.id]) { clearTimeout(cancelTimers[entry.id]); delete cancelTimers[entry.id]; }
       entry.guestCantCome = Date.now();
+      entry.guestComing = null; // they changed their mind
       flagged = true;
       console.log(`🚫 Guest says can't come: ${entry.name} (#${entry.number}) — awaiting staff confirm`);
       broadcastQueue();
     });
     res.json({ ok: true, flagged });
   } catch (e) { console.error('CANT-COME error:', e); res.status(500).json({ error: 'Server error.' }); }
+});
+
+// ── Guest: "I'm coming" → positive confirmation flag ──
+// Guest taps this from the call email / status page. Just flags guestComing so
+// staff see a green "온다고 함" marker; no queue change. Clears any prior can't-come.
+app.post('/api/queue/coming/:id', async (req, res) => {
+  try {
+    let flagged = false;
+    await withQueueLock(async () => {
+      const entry = queue.find(q => q.id === req.params.id);
+      if (!entry) return;
+      entry.guestComing = Date.now();
+      entry.guestCantCome = null; // changed their mind → clear the cancel flag
+      flagged = true;
+      console.log(`✅ Guest confirms coming: ${entry.name} (#${entry.number})`);
+      broadcastQueue();
+    });
+    res.json({ ok: true, flagged });
+  } catch (e) { console.error('COMING error:', e); res.status(500).json({ error: 'Server error.' }); }
 });
 
 // ── Guest: can't come (cancel immediately) ──

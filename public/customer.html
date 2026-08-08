@@ -170,6 +170,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cre
 let cfg={},queue=[],myId=new URLSearchParams(location.search).get('id'),submitted=false,partySize=2;
 // Deep-link from the "Can't go this time" email button → show a focused confirm screen
 let cantMode=new URLSearchParams(location.search).get('cant')==='1';
+let comingMode=new URLSearchParams(location.search).get('coming')==='1';
 
 // Country codes — Korea first, then common tourist countries
 const COUNTRIES=[
@@ -389,6 +390,15 @@ async function cantCome(){
   await reloadQueue();render();
 }
 
+// "갈게요/온다" → 직원에게 온다는 표시(초록 배지). 큐는 그대로.
+async function coming(){
+  if(!myId)return;
+  try{await fetch(`/api/queue/coming/${myId}`,{method:'POST'});}catch{}
+  comingMode=false;
+  flash('곧 뵙겠습니다! / See you soon!');
+  await reloadQueue();render();
+}
+
 let _ti=null;
 function startTimer(ca){
   if(_ti)clearInterval(_ti);
@@ -427,6 +437,36 @@ function render(){
     return;
   }
 
+  // 온다고 이미 눌렀을 때 — 곧 뵙겠습니다
+  if(me&&me.guestComing&&me.status==='called'){
+    app.innerHTML=`
+      <div class="my-card">
+        <div class="my-num">${me.number}</div>
+        <div class="my-label">YOUR NUMBER</div>
+        <p class="my-pos" style="margin-top:16px;color:#4a7c59;">곧 뵙겠습니다! 🙌</p>
+        <p style="font-size:14px;color:var(--muted);margin-top:6px;line-height:1.6;">
+          오신다고 전달했어요. 자리에서 기다릴게요.<br>See you soon — your table is waiting.</p>
+      </div>
+      <button class="btn-cancel" style="margin-top:12px;" onclick="cantCome()">앗, 못 가게 됐어요 / Actually, can't make it</button>
+      <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>`;
+    return;
+  }
+
+  // 이메일 "On my way" 버튼으로 들어옴 (?coming=1) — 확인 화면
+  if(comingMode&&me){
+    app.innerHTML=`
+      <div class="my-card">
+        <div class="my-num">${me.number}</div>
+        <div class="my-label">YOUR NUMBER</div>
+        <p class="my-pos" style="margin-top:16px;">오시나요?</p>
+        <p style="font-size:14px;color:var(--muted);margin-top:6px;line-height:1.6;">
+          지금 오시는 중인가요?<br>On your way?</p>
+      </div>
+      <button class="btn-primary" style="margin-top:16px;background:#4a7c59;" onclick="coming()">네, 갈게요 / Yes, I'm coming</button>
+      <button class="btn-cancel" style="margin-top:8px;" onclick="comingMode=false;cantCome();">아니요, 못 가요 / No, can't make it</button>`;
+    return;
+  }
+
   // 이메일 "Can't go this time" 버튼으로 들어옴 (?cant=1) — 확인 화면
   if(cantMode&&me){
     app.innerHTML=`
@@ -455,7 +495,8 @@ function render(){
         <div class="called-sub" style="margin-top:12px;">곧 방문 부탁드리겠습니다<br>Please come by soon</div>
         <div class="called-sub" style="margin-top:8px;font-size:11px;">시간이 더 필요하시면 편하게 연락주세요<br>Need more time? Please don't hesitate to call us</div>
       </div>
-      <button class="btn-primary" style="margin-top:16px;background:rgba(160,80,80,.5);font-size:11px;" onclick="cantCome()">CAN'T MAKE IT / 못 갈 것 같아요</button>
+      <button class="btn-primary" style="margin-top:16px;background:#4a7c59;" onclick="coming()">ON MY WAY / 갈게요</button>
+      <button class="btn-primary" style="margin-top:8px;background:rgba(160,80,80,.5);font-size:11px;" onclick="cantCome()">CAN'T MAKE IT / 못 갈 것 같아요</button>
       <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>`;
     return;
   }
