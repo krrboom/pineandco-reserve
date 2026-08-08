@@ -379,6 +379,50 @@ async function logReservationCreation(r) {
   } catch (e) { console.error('📋 [LOG] Error:', e.message); }
 }
 
+// ── Mark a reservation's status in the 예약로그 sheet (cancelled / noshow) ──
+// CRITICAL: the hourly syncReservationsFromSheet() re-creates any 예약로그 row that
+// isn't cancelled/noshow and is missing from the server. Without writing the
+// terminal status back to the sheet, a cancelled/deleted reservation gets
+// resurrected on the next sync. This closes that loop. Matches every log row for
+// the reservation (by confirmCode when present, else name+date+time).
+async function markStatusInSheet(r, status) {
+  if (!CONFIG.GOOGLE_SHEET_ID || !CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY) return;
+  if (!r) return;
+  try {
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(
+      CONFIG.GOOGLE_CLIENT_EMAIL, null,
+      CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      ['https://www.googleapis.com/auth/spreadsheets']
+    );
+    const sheets = google.sheets({ version: 'v4', auth });
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID, range: '예약로그!A:N',
+    });
+    const rows = resp.data.values || [];
+    const nk = s => String(s || '').replace(/\s/g, '').toLowerCase();
+    const code = (r.confirmCode || '').trim();
+    const targetKey = nk(r.name) + '|' + nk(r.date) + '|' + nk(r.time);
+    // 예약로그 columns: A접수시간 B확인코드 C예약날짜 D시간 E이름 ... N상태
+    const data = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i]; if (!row) continue;
+      const rowCode = (row[1] || '').trim();
+      const rowKey = nk(row[4]) + '|' + nk(row[2]) + '|' + nk(row[3]); // name|date|time
+      const match = (code && rowCode) ? (rowCode === code) : (rowKey === targetKey);
+      if (!match) continue;
+      if (String(row[13] || '').toLowerCase() === status) continue; // already set
+      data.push({ range: '예약로그!N' + (i + 1), values: [[status]] });
+    }
+    if (!data.length) { console.log('🚫 [SHEET STATUS] no matching log row for ' + (r.name || '?')); return; }
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+      requestBody: { valueInputOption: 'RAW', data },
+    });
+    console.log('🚫 [SHEET STATUS] ' + status + ' → ' + data.length + ' row(s): ' + (r.name || '?'));
+  } catch (e) { console.error('🚫 [SHEET STATUS] Error:', e.message); }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Sheet → Server sync: hourly job that recovers reservations present in the
 // spreadsheet but missing from the server DB (e.g. after a disk wipe or
@@ -415,7 +459,8 @@ async function syncReservationsFromSheet() {
       if (!row || row.length < 5) continue;
       const [ts, confirmCode, date, time, name, partySize, phone, email, instagram, zone, seats, source, notes, status] = row;
       if (!date || !time || !name) continue;
-      if (status && status.toLowerCase() === 'cancelled') continue;
+      // Don't resurrect reservations the app has already ended.
+      if (status && ['cancelled', 'noshow'].includes(status.toLowerCase())) continue;
 
       const code = confirmCode || '';
       const key = (name || '') + '|' + (date || '') + '|' + (time || '') + '|' + (phone || '');
@@ -2019,7 +2064,7 @@ app.patch('/api/reservations/:id', (req, res) => {
   const r = reservations.find(x => x.id===req.params.id);
   if (!r) return res.status(404).json({ error: 'Not found' });
   const ch = [];
-  if (req.body.status && req.body.status!==r.status) { ch.push('status:'+r.status+'→'+req.body.status); r.status=req.body.status; if(r.status==='seated') recordVisit(r); }
+  if (req.body.status && req.body.status!==r.status) { ch.push('status:'+r.status+'→'+req.body.status); r.status=req.body.status; if(r.status==='seated') recordVisit(r); if(r.status==='cancelled'||r.status==='noshow') markStatusInSheet(r, r.status).catch(()=>{}); }
   if (req.body.notes!==undefined && req.body.notes!==r.notes) { ch.push('notes updated'); r.notes=req.body.notes; }
   if (req.body.source && req.body.source!==r.source) { ch.push('source:'+r.source+'→'+req.body.source); r.source=req.body.source; }
   if (req.body.time   && req.body.time!==r.time)     { ch.push('time:'+r.time+'→'+req.body.time); r.time=req.body.time; }
@@ -2086,9 +2131,12 @@ app.post('/api/walkin', (req, res) => {
 
 // Delete reservation
 app.delete('/api/reservations/:id', (req, res) => {
-  reservations = reservations.filter(r => r.id!==req.params.id);
+  const r = reservations.find(x => x.id === req.params.id);
+  reservations = reservations.filter(x => x.id !== req.params.id);
   saveRes();
   broadcastReservations();
+  // Mark cancelled in the sheet so the hourly sync doesn't resurrect it.
+  if (r) markStatusInSheet(r, 'cancelled').catch(() => {});
   res.json({ ok: true });
 });
 
