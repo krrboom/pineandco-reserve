@@ -461,6 +461,9 @@ async function syncReservationsFromSheet() {
       if (!date || !time || !name) continue;
       // Don't resurrect reservations the app has already ended.
       if (status && ['cancelled', 'noshow'].includes(status.toLowerCase())) continue;
+      // Only recover today-or-future bookings. Past reservations never need
+      // "recovery" and resurrecting the whole log every hour bloats the server.
+      if (String(date) < kstToday()) continue;
 
       const code = confirmCode || '';
       const key = (name || '') + '|' + (date || '') + '|' + (time || '') + '|' + (phone || '');
