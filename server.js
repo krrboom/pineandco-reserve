@@ -380,6 +380,16 @@ async function logReservationCreation(r) {
   } catch (e) { console.error('📋 [LOG] Error:', e.message); }
 }
 
+// Normalize a cell for matching: strip whitespace, lowercase.
+function nk(s) { return String(s == null ? '' : s).replace(/\s/g, '').toLowerCase(); }
+// Canonicalize a date ("2026-08-15", "2026. 8. 15", "2026/8/15", Date cell) → "YYYY-MM-DD".
+function canonDate(x) {
+  const s = String(x == null ? '' : x).trim();
+  const m = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  if (m) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+  return s.toLowerCase();
+}
+
 // ── Mark a reservation's status in the 예약로그 sheet (cancelled / noshow) ──
 // CRITICAL: the hourly syncReservationsFromSheet() re-creates any 예약로그 row that
 // isn't cancelled/noshow and is missing from the server. Without writing the
@@ -401,17 +411,18 @@ async function markStatusInSheet(r, status) {
       spreadsheetId: CONFIG.GOOGLE_SHEET_ID, range: '예약로그!A:N',
     });
     const rows = resp.data.values || [];
-    const nk = s => String(s || '').replace(/\s/g, '').toLowerCase();
-    const code = (r.confirmCode || '').trim();
-    const targetKey = nk(r.name) + '|' + nk(r.date) + '|' + nk(r.time);
     // 예약로그 columns: A접수시간 B확인코드 C예약날짜 D시간 E이름 ... N상태
+    const code = (r.confirmCode || '').trim();
+    const rName = nk(r.name), rDate = canonDate(r.date), rTime = nk(r.time);
     const data = [];
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i]; if (!row) continue;
       const rowCode = (row[1] || '').trim();
-      const rowKey = nk(row[4]) + '|' + nk(row[2]) + '|' + nk(row[3]); // name|date|time
-      const match = (code && rowCode) ? (rowCode === code) : (rowKey === targetKey);
-      if (!match) continue;
+      // Match by confirmCode OR by name+date+time — either is enough, and dates are
+      // canonicalized so "2026-08-15" / "2026. 8. 15" / a Date cell all compare equal.
+      const codeMatch = !!(code && rowCode && rowCode === code);
+      const keyMatch  = !!(rName && nk(row[4]) === rName && canonDate(row[2]) === rDate && nk(row[3]) === rTime);
+      if (!codeMatch && !keyMatch) continue;
       if (String(row[13] || '').toLowerCase() === status) continue; // already set
       data.push({ range: '예약로그!N' + (i + 1), values: [[status]] });
     }
@@ -2063,6 +2074,62 @@ app.post('/api/sheet-sync', async (req, res) => {
   } catch (e) {
     res.json({ ok: false, error: e.message });
   }
+});
+
+// ── Diagnostic + cleanup for the 예약로그 resurrection backlog ──
+// Reads a JWT-authed view of 예약로그 and reports "stale" future rows: rows that
+// aren't cancelled/noshow and don't correspond to any live (non-sync) reservation
+// — exactly the rows the hourly sync keeps resurrecting.
+async function scanReservationLog(markStale) {
+  const { google } = require('googleapis');
+  const scope = markStale ? 'https://www.googleapis.com/auth/spreadsheets' : 'https://www.googleapis.com/auth/spreadsheets.readonly';
+  const auth = new google.auth.JWT(CONFIG.GOOGLE_CLIENT_EMAIL, null, CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'), [scope]);
+  const sheets = google.sheets({ version: 'v4', auth });
+  const resp = await sheets.spreadsheets.values.get({ spreadsheetId: CONFIG.GOOGLE_SHEET_ID, range: '예약로그!A:N' });
+  const rows = resp.data.values || [];
+  const today = kstToday();
+  // "Live" = a real reservation currently held by the app that did NOT come from the
+  // sheet sync. Sync-created ghosts (_syncedFromSheet) are excluded so they count as stale.
+  const liveCodes = new Set(), liveKeys = new Set();
+  reservations.filter(r => r.status !== 'cancelled' && r.status !== 'noshow' && !r._syncedFromSheet).forEach(r => {
+    if (r.confirmCode) liveCodes.add(String(r.confirmCode).trim());
+    liveKeys.add(nk(r.name) + '|' + canonDate(r.date) + '|' + nk(r.time));
+  });
+  let total = 0, cancelled = 0, noshow = 0, noCode = 0;
+  const stale = [], data = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i]; if (!row || !row[2]) continue; total++;
+    const st = String(row[13] || '').toLowerCase();
+    if (st === 'cancelled') { cancelled++; continue; }
+    if (st === 'noshow') { noshow++; continue; }
+    if (!(row[1] || '').trim()) noCode++;
+    const d = canonDate(row[2]);
+    if (d < today) continue; // past rows never resurrect (sync is date-filtered)
+    const rowCode = (row[1] || '').trim();
+    const isLive = (rowCode && liveCodes.has(rowCode)) || liveKeys.has(nk(row[4]) + '|' + d + '|' + nk(row[3]));
+    if (isLive) continue;
+    stale.push({ name: row[4], date: row[2], time: row[3], code: rowCode, status: row[13] || '' });
+    data.push({ range: '예약로그!N' + (i + 1), values: [['cancelled']] });
+  }
+  if (markStale && data.length) {
+    await sheets.spreadsheets.values.batchUpdate({ spreadsheetId: CONFIG.GOOGLE_SHEET_ID, requestBody: { valueInputOption: 'RAW', data } });
+  }
+  return { total, cancelled, noshow, noCode, staleCount: stale.length, sample: stale.slice(0, 25) };
+}
+
+app.get('/api/reservations-log', async (req, res) => {
+  if (req.query.pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  try { res.json(await scanReservationLog(false)); }
+  catch (e) { res.status(502).json({ error: e.message }); }
+});
+
+app.post('/api/reservations-log/cleanup', async (req, res) => {
+  if (req.body.pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  try {
+    const dryRun = !!req.body.dryRun;
+    const result = await scanReservationLog(!dryRun);
+    res.json({ ok: true, dryRun, markedCancelled: dryRun ? 0 : result.staleCount, ...result });
+  } catch (e) { res.status(502).json({ error: e.message }); }
 });
 
 // New reservations received today (not yet checked by staff)

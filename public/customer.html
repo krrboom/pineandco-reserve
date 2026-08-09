@@ -577,13 +577,12 @@ function render(){
         </p>
       </div>
       <div class="field">
-        <label>PHONE NUMBER / 手机号码 <span style="font-size:9px;color:var(--muted);letter-spacing:0;">(optional if email provided)</span></label>
+        <label>PHONE NUMBER · KOREA +82 / 한국 번호 <span style="font-size:9px;color:var(--muted);letter-spacing:0;">(optional if email provided)</span></label>
         <div class="phone-row">
-          <select id="cc" onchange="onCountryChange(this.value)">
-            ${COUNTRIES.map(c=>`<option value="${c.code}">${c.flag} ${c.code} ${c.name}</option>`).join('')}
-          </select>
+          <span style="display:flex;align-items:center;justify-content:center;padding:0 12px;border:1px solid rgba(184,147,90,.2);border-radius:8px;background:rgba(240,235,224,.05);color:var(--cream);white-space:nowrap;font-size:14px;">🇰🇷 +82</span>
           <input id="p" type="tel" placeholder="010 ···· ····"/>
         </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:5px;line-height:1.5;">Korean numbers only. International guests, please use email. / 문자는 한국 번호(+82)만 가능해요. 해외 번호는 이메일을 이용해 주세요.</div>
       </div>
       <div class="field">
         <label>PARTY SIZE / 人数</label>
@@ -594,7 +593,7 @@ function render(){
       </div>
       <button class="btn-primary" id="btn" onclick="register()">JOIN THE WAITING LIST</button>
     </div>
-    <p class="form-hint">Korean numbers will be notified by SMS · International guests by email</p>`;
+    <p class="form-hint">SMS to Korean (+82) numbers · International guests notified by email</p>`;
 
   document.getElementById('p').addEventListener('input',function(){this.value=fmt(this.value);});
   document.getElementById('n').addEventListener('keydown',e=>e.key==='Enter'&&register());
