@@ -1860,6 +1860,13 @@ app.post('/api/reserve', async (req, res) => {
   const slots = getSlots(date);
   if (!slots.includes(time)) return res.status(400).json({ error: 'Invalid time.' });
 
+  // Guests may book up to 2 months ahead only. (Staff /api/staff/reserve is unrestricted.)
+  {
+    const kk = new Date(Date.now() + 9 * 3600000);
+    const maxDate = new Date(Date.UTC(kk.getUTCFullYear(), kk.getUTCMonth() + 2, kk.getUTCDate())).toISOString().slice(0, 10);
+    if (date > maxDate) return res.status(400).json({ error: '예약은 오늘로부터 2개월 이내만 가능합니다. / Reservations are available up to 2 months ahead only.' });
+  }
+
   if (date === kstToday()) {
     const kstNow = new Date(Date.now() + 9 * 3600000);
     const nowHour = kstNow.getHours() + kstNow.getMinutes() / 60;

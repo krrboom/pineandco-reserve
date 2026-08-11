@@ -103,7 +103,7 @@ h+='<div class="cn2"><button onclick="shiftCal(-1)">&larr;</button><div class="m
 h+='<div class="cg">';
 DK.forEach(function(d){h+='<div class="ch">'+d+'</div>';});
 var first=new Date(calY,calM,1),sd=first.getDay(),dim=new Date(calY,calM+1,0).getDate(),pd=new Date(calY,calM,0).getDate();
-var today=td2(),maxD=new Date(kst().getTime()+62*86400000).toISOString().slice(0,10);
+var today=td2(),_km=kst(),maxD=new Date(Date.UTC(_km.getUTCFullYear(),_km.getUTCMonth()+2,_km.getUTCDate())).toISOString().slice(0,10);
 for(var i=sd-1;i>=0;i--)h+='<div class="cc om"><div class="dn">'+(pd-i)+'</div></div>';
 for(var d=1;d<=dim;d++){
   var iso=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
