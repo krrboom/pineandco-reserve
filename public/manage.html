@@ -650,7 +650,9 @@ function renderTodayWaitingMini(){
   // Compact card rendering
   if(called.length){
     called.forEach(function(e){
-      h+='<div class="wc called" style="margin-bottom:6px;">';
+      h+='<div class="wc called" style="margin-bottom:6px;'+(e.guestComing?'border:1px solid #4a7c59;background:rgba(74,124,89,.08);':(e.guestCantCome?'border:1px solid #c0392b;background:rgba(192,57,43,.06);':''))+'">';
+      if(e.guestComing)h+='<div style="font-size:11px;font-weight:700;color:#2e7d46;margin-bottom:4px;">✅ 온다고 함 · '+hm(e.guestComing)+'</div>';
+      else if(e.guestCantCome)h+='<div style="font-size:11px;font-weight:700;color:#c0392b;margin-bottom:4px;">🚫 못 온다고 함 · '+hm(e.guestCantCome)+'</div>';
       h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
       h+='<div style="flex:1;"><span class="wc-num">#'+e.number+'</span> <span class="wc-name">'+esc(e.name)+'</span>';
       h+='<div class="wc-meta">'+(e.partySize||2)+'명 · '+(e.phone?esc(e.phone):'no phone');
