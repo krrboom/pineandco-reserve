@@ -1094,6 +1094,50 @@ function sendReserveConfirmation(r) {
   }
 }
 
+// ── Cancellation notice (STAFF cancelled / no-show) → SMS + email ──
+// Fired only when staff cancel or mark no-show — NOT when the guest declined.
+// Friendly "see you next time", explains we waited but couldn't reach them,
+// includes the reservation link. Works for both reservations (kind='예약') and
+// waiting (kind='웨이팅'). No-op if the person has no phone/email.
+function buildCancelledEmailHTML(name, kind, reserveUrl) {
+  const biz = CONFIG.BUSINESS_PHONE;
+  const kindEn = kind === '예약' ? 'reservation' : 'spot on the waitlist';
+  return `<div style="background:#0f0a06;padding:32px 16px;font-family:Georgia,serif;">
+    <div style="max-width:520px;margin:0 auto;background:#1e1208;color:#f0ebe0;padding:48px 32px;text-align:center;border-radius:14px;border:1px solid rgba(184,147,90,.15);box-shadow:0 8px 32px rgba(0,0,0,.4);">
+      <div style="font-family:Georgia,serif;font-size:14px;letter-spacing:5px;color:#b8935a;margin-bottom:8px;font-weight:300;">PINE &amp; CO</div>
+      <div style="font-family:Georgia,serif;font-size:9px;letter-spacing:3px;color:#7a6550;margin-bottom:36px;">SEOUL · COCKTAIL BAR</div>
+      <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 20px;">${kind === '예약' ? 'RESERVATION RELEASED' : 'WAITLIST RELEASED'}</p>
+      <div style="font-family:Georgia,serif;font-size:28px;color:#b8935a;font-weight:300;margin:0 0 24px;line-height:1.3;">See you next time,<br>${name}.</div>
+      <p style="color:#f0ebe0;font-size:15px;line-height:1.8;margin:0 0 10px;">We held your ${kindEn} and waited, but couldn't reach you — so it's been released for now.</p>
+      <p style="color:#a89478;font-size:13px;line-height:1.8;margin:0 0 28px;">자리를 마련해두고 기다렸는데 연락이 닿지 않아, 이번 ${kind}은 아쉽게 취소되었어요.<br>다음엔 꼭 편하게 모시고 싶어요.</p>
+      <p style="margin:28px 0;"><a href="${reserveUrl}" style="display:inline-block;padding:16px 44px;background:#b8935a;color:#1e1208;text-decoration:none;border-radius:8px;font-family:Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">Reserve a Table · 예약하기</a></p>
+      <hr style="border:none;border-top:1px solid rgba(184,147,90,.25);margin:28px auto;width:60px;"/>
+      <p style="color:#c9a96e;font-size:14px;line-height:1.8;margin:0;">다음에 꼭 뵙겠습니다. / We'd love to see you soon.</p>
+      <p style="color:#7a6550;font-size:13px;font-style:italic;margin:12px 0 0;">— Pine &amp; Co Seoul</p>
+      <hr style="border:none;border-top:1px solid rgba(184,147,90,.15);margin:36px 0 16px;"/>
+      <p style="font-size:10px;color:#5a4530;letter-spacing:1px;margin:0;line-height:1.6;">Pine &amp; Co Seoul · ${biz}</p>
+    </div>
+  </div>`;
+}
+
+function sendCancellationNotice(p, kind) {
+  if (!p) return;
+  const reserveUrl = `${CONFIG.PUBLIC_URL}/reserve.html`;
+  const name = p.name || '';
+  const kindEn = kind === '예약' ? 'reservation' : 'waitlist spot';
+  try {
+    if (p.phone) {
+      const smsKr = `[PINE&CO]\n${name}님, ${kind}이 취소되었어요.\n자리를 준비하고 기다렸지만 연락이 닿지 않아 아쉽게 정리했어요.\n다음엔 꼭 편하게 모실게요. 아래에서 예약하고 와주세요.\n${reserveUrl}\nTel: ${CONFIG.BUSINESS_PHONE}`;
+      const smsEn = `PINE&CO: ${asciiName(name)}, your ${kindEn} was released — we held it and waited but couldn't reach you. We'd love to see you next time. Reserve: ${reserveUrl}`;
+      sendSMS(p.phone, isKoreanNumber(p.phone) ? smsKr : smsEn);
+    }
+    if (p.email && IS_EMAIL_READY) {
+      sendEmail(p.email, `Pine & Co — ${kind} 취소 안내 / See you next time`, buildCancelledEmailHTML(name, kind, reserveUrl)).catch(() => {});
+    }
+    console.log(`✉️ [CANCEL NOTICE] ${kind} → ${name} (${p.phone || p.email || 'no contact'})`);
+  } catch (e) { console.error('CANCEL NOTICE error:', e.message); }
+}
+
 // ── Reminders (D-1, D-0) ──
 function sendReminders() {
   const today = kstToday();
@@ -1636,13 +1680,13 @@ app.post('/api/queue/decline/:id', async (req, res) => {
 });
 
 // ── Staff: cancel a called guest who never showed → logged as NO-SHOW (노쇼) ──
-// Used by the "취소" button on a notified guest. Quiet removal (no SMS/email).
+// Used by the "취소" button on a notified guest. Sends a friendly cancellation notice.
 app.post('/api/queue/noshow/:id', async (req, res) => {
   try {
     await withQueueLock(async () => {
       if (cancelTimers[req.params.id]) { clearTimeout(cancelTimers[req.params.id]); delete cancelTimers[req.params.id]; }
       const entry = queue.find(q => q.id === req.params.id);
-      if (entry) moveToWaitHistory(entry, 'auto_cancelled'); // 'auto_cancelled' maps to 노쇼 in the sheet
+      if (entry) { sendCancellationNotice(entry, '웨이팅'); moveToWaitHistory(entry, 'auto_cancelled'); } // 노쇼
       queue = queue.filter(q => q.id !== req.params.id);
       broadcastQueue();
     });
@@ -1683,7 +1727,7 @@ app.delete('/api/queue/:id', async (req, res) => {
     await withQueueLock(async () => {
       if (cancelTimers[req.params.id]) { clearTimeout(cancelTimers[req.params.id]); delete cancelTimers[req.params.id]; }
       const entry = queue.find(q => q.id === req.params.id);
-      if (entry) moveToWaitHistory(entry, 'cancelled');
+      if (entry) { sendCancellationNotice(entry, '웨이팅'); moveToWaitHistory(entry, 'cancelled'); }
       queue = queue.filter(q => q.id !== req.params.id);
       broadcastQueue();
     });
@@ -2163,7 +2207,7 @@ app.patch('/api/reservations/:id', (req, res) => {
   const r = reservations.find(x => x.id===req.params.id);
   if (!r) return res.status(404).json({ error: 'Not found' });
   const ch = [];
-  if (req.body.status && req.body.status!==r.status) { ch.push('status:'+r.status+'→'+req.body.status); r.status=req.body.status; if(r.status==='seated') recordVisit(r); if(r.status==='cancelled'||r.status==='noshow') markStatusInSheet(r, r.status).catch(()=>{}); }
+  if (req.body.status && req.body.status!==r.status) { ch.push('status:'+r.status+'→'+req.body.status); r.status=req.body.status; if(r.status==='seated') recordVisit(r); if(r.status==='cancelled'||r.status==='noshow'){ markStatusInSheet(r, r.status).catch(()=>{}); sendCancellationNotice(r, '예약'); } }
   if (req.body.notes!==undefined && req.body.notes!==r.notes) { ch.push('notes updated'); r.notes=req.body.notes; }
   if (req.body.source && req.body.source!==r.source) { ch.push('source:'+r.source+'→'+req.body.source); r.source=req.body.source; }
   if (req.body.time   && req.body.time!==r.time)     { ch.push('time:'+r.time+'→'+req.body.time); r.time=req.body.time; }
@@ -2235,7 +2279,7 @@ app.delete('/api/reservations/:id', (req, res) => {
   saveRes();
   broadcastReservations();
   // Mark cancelled in the sheet so the hourly sync doesn't resurrect it.
-  if (r) markStatusInSheet(r, 'cancelled').catch(() => {});
+  if (r) { markStatusInSheet(r, 'cancelled').catch(() => {}); sendCancellationNotice(r, '예약'); }
   res.json({ ok: true });
 });
 
