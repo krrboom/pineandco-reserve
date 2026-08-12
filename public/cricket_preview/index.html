@@ -28,6 +28,7 @@ html{scroll-behavior:smooth}
 b,strong,.b-reg,.maphint,.flag{font-family:var(--f-penr)}
 /* 을지로체: 지역 도/시 라벨 + 호버 버튼(내비/칩) */
 .reglabel,.nav-b,.nav-b .kr,.splash-enter,.langsel .langbtn{font-family:var(--f-eul) !important}
+.langsel .langbtn[data-l="zh"],.langsel .langbtn[data-l="ja"]{font-family:'Apple SD Gothic Neo','Malgun Gothic','PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Hiragino Sans',sans-serif !important}
 .lang-pop .langbtn{font-family:'Apple SD Gothic Neo','Malgun Gothic','Hiragino Sans','Noto Sans CJK KR',system-ui,sans-serif !important}  /* 일/중 표현되는 시스템 폰트 */
 body{background:var(--paper);color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.12);font-family:var(--serif);line-height:1.6;padding-bottom:74px;overflow-x:hidden}
 /* 크리켓 로고 반복 패턴 배경(입장 후 fade in). 마스크+--ink라 낮/밤 색 자동 반전 */
@@ -451,6 +452,7 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
   <div class="langsel" id="langsel">
     <button class="langbtn on" data-l="ko">한국어</button>
     <button class="langbtn" data-l="en">English</button>
+    <button class="langbtn" data-l="zh">中文</button>
   </div>
   <button class="splash-enter" id="enterBtn" data-i18n="splash.enter">터치하여 입장</button>
 </div>
