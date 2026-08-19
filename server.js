@@ -1127,7 +1127,7 @@ function sendCancellationNotice(p, kind) {
   const kindEn = kind === '예약' ? 'reservation' : 'waitlist spot';
   try {
     if (p.phone) {
-      const smsKr = `[PINE&CO]\n${name}님, ${kind}이 취소되었어요.\n자리를 준비하고 기다렸지만 연락이 닿지 않아 아쉽게 정리했어요.\n다음엔 꼭 편하게 모실게요. 아래에서 예약하고 와주세요.\n${reserveUrl}\nTel: ${CONFIG.BUSINESS_PHONE}`;
+      const smsKr = `[PINE&CO]\n${name}님, ${kind}이 취소되었어요.\n자리를 준비하고 기다렸지만 연락이 닿지 않아 아쉽게 정리했어요.\n다음엔 꼭 편하게 모실게요. 아래에서 예약하고 와주세요.\n\n${name}, your ${kindEn} was released — we held it and waited but couldn't reach you. We'd love to see you next time. Reserve below.\n${reserveUrl}\nTel: ${CONFIG.BUSINESS_PHONE}`;
       const smsEn = `PINE&CO: ${asciiName(name)}, your ${kindEn} was released — we held it and waited but couldn't reach you. We'd love to see you next time. Reserve: ${reserveUrl}`;
       sendSMS(p.phone, isKoreanNumber(p.phone) ? smsKr : smsEn);
     }
