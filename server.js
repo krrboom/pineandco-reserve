@@ -87,6 +87,16 @@ const CONFIG = {
   LATE_SLOT       : '23:00',
   LATE_BAR_MAX    : 4,
   LATE_TABLE_MAX  : 2,
+  // ── 9PM+ restriction (21:00 onward): fewer reservations, hold seats for walk-ins ──
+  // Many no-shows after 9PM, so guest reservations are capped from 21:00:
+  //   · Tables: max 2 (≤5 party = 1 table; 6~9 party = 2 combined tables)
+  //   · Bar: max 2 teams (each ≤2 people → max 4 seats)
+  //   · High tables (H1/H2): not offered
+  //   · Room: unchanged (6~10, 300k min charge)
+  RESTRICT_FROM        : '21:00',
+  RESTRICT_BAR_TEAMS   : 2,
+  RESTRICT_TABLES      : 2,
+  RESTRICT_COMBINE_MAX : 9,
 };
 
 const IS_DEV          = !CONFIG.ALIGO_KEY || CONFIG.ALIGO_KEY === 'YOUR_API_KEY';
@@ -1310,38 +1320,54 @@ function autoAssign(date, time, partySize, preference) {
   const freeTables = CONFIG.SEATS.tables.filter(free);
   const freeRoom  = free('ROOM');
 
-  // 1명: 바 → 하이
+  // ── 9PM+ restriction (21:00 onward): cap bar teams + tables, no high tables ──
+  const restricted = time >= CONFIG.RESTRICT_FROM;
+  let barTeamsUsed = 0, tablesUsed = 0;
+  if (restricted) {
+    const ex = getResFor(date, time); // reservations AT this slot (the cap counter)
+    barTeamsUsed = ex.filter(r => r.zone === 'bar').length;
+    tablesUsed   = ex.filter(r => r.zone === 'table').reduce((s, r) => s + ((r.seats && r.seats.length) || 1), 0);
+  }
+  const barOK      = !restricted || barTeamsUsed < CONFIG.RESTRICT_BAR_TEAMS;      // ≤2 bar teams
+  const tablesLeft = restricted ? Math.max(0, CONFIG.RESTRICT_TABLES - tablesUsed) : 99;
+
+  // 1명: 바 → (제한 아닐 때만) 하이
   if (partySize === 1) {
-    for (const s of CONFIG.BAR_EDGE_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
-    for (const s of CONFIG.BAR_U_SEATS)    if (free(s)) return { zone:'bar', seats:[s] };
-    for (const s of CONFIG.BAR_MID_SEATS)  if (free(s)) return { zone:'bar', seats:[s] };
-    if (freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
+    if (barOK) {
+      for (const s of CONFIG.BAR_EDGE_SEATS) if (free(s)) return { zone:'bar', seats:[s] };
+      for (const s of CONFIG.BAR_U_SEATS)    if (free(s)) return { zone:'bar', seats:[s] };
+      for (const s of CONFIG.BAR_MID_SEATS)  if (free(s)) return { zone:'bar', seats:[s] };
+    }
+    if (!restricted && freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
     return null;
   }
-  // 2명: 인접한 바 페어만 (떨어진 좌석 절대 금지) → 하이테이블 → 없으면 null
-  // 바 구조:
-  //   백바: B1-B2-B3 한 블록 · B4-B5-B6 한 블록 (B3-B4 떨어짐)
-  //   ㄷ자: B7-B8-B9-B10-B11-B12-B13-B14 (코너 포함 전부 인접)
+  // 2명: 인접한 바 페어만 (떨어진 좌석 절대 금지) → (제한 아닐 때만) 하이테이블
+  // 바 구조: 백바 B1-B2-B3 / B4-B5-B6 (B3-B4 끊김) · ㄷ자 B7~B14 전부 인접
   if (partySize === 2) {
-    const barPairs = [
-      ['B1','B2'], ['B2','B3'],                          // 백바 좌측 블록
-      ['B4','B5'], ['B5','B6'],                          // 백바 우측 블록 (B3-B4 끊김)
-      ['B7','B8'], ['B8','B9'], ['B9','B10'],            // ㄷ자 좌측 + 코너
-      ['B10','B11'],                                     // ㄷ자 아래
-      ['B11','B12'], ['B12','B13'], ['B13','B14'],       // ㄷ자 우측 + 코너
-    ];
-    for (const p of barPairs) if (p.every(free)) return { zone:'bar', seats:p };
-    if (freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
-    // ⛔ NO fallback: never assign non-adjacent bar seats to a 2-person party
-    return null;
+    if (barOK) {
+      const barPairs = [
+        ['B1','B2'], ['B2','B3'],
+        ['B4','B5'], ['B5','B6'],
+        ['B7','B8'], ['B8','B9'], ['B9','B10'],
+        ['B10','B11'],
+        ['B11','B12'], ['B12','B13'], ['B13','B14'],
+      ];
+      for (const p of barPairs) if (p.every(free)) return { zone:'bar', seats:p };
+    }
+    if (!restricted && freeHigh.length > 0) return { zone:'highTable', seats:[freeHigh[0]] };
+    return null; // ⛔ never assign non-adjacent bar seats to a 2-person party
   }
-  // 3~5: 테이블만
+  // 3~5: 테이블 1개 (제한 시 남은 테이블 슬롯 확인)
   if (partySize >= 3 && partySize <= 5) {
+    if (restricted && tablesLeft < 1) return null;
     for (const s of freeTables) return { zone:'table', seats:[s] };
     return null;
   }
-  // 6~10: 룸만
+  // 6~10: 제한 시 6~9는 테이블 2개 붙이기 우선 → 룸. 그 외엔 룸만.
   if (partySize >= 6 && partySize <= 10) {
+    if (restricted && partySize <= CONFIG.RESTRICT_COMBINE_MAX && tablesLeft >= 2 && freeTables.length >= 2) {
+      return { zone:'table', seats: [freeTables[0], freeTables[1]] };
+    }
     if (freeRoom) return { zone:'room', seats:['ROOM'], note: '30만원 minimum charge' };
     return null;
   }
@@ -1876,21 +1902,23 @@ app.get('/api/availability/:date', (req, res) => {
     const highFree   = CONFIG.SEATS.highTables.filter(s => !occ.includes(s)).length;
     const roomFree   = !occ.includes('ROOM') ? 1 : 0;
 
-    const isLate = time === CONFIG.LATE_SLOT && !isWeekend(date);
-    let eBar = barFree, eTbl = tablesFree;
-    if (isLate) {
+    // 9PM+ restriction (21:00 onward): cap bar teams + tables, hide high tables.
+    const restricted = time >= CONFIG.RESTRICT_FROM;
+    let eBar = barFree, eTbl = tablesFree, eHigh = highFree;
+    if (restricted) {
       const ex = getResFor(date, time);
-      const ub = ex.filter(r => r.zone==='bar').reduce((s,r) => s + r.partySize, 0);
-      const ut = ex.filter(r => r.zone==='table' || r.zone==='highTable').length;
-      eBar = Math.max(0, CONFIG.LATE_BAR_MAX - ub);
-      eTbl = Math.max(0, CONFIG.LATE_TABLE_MAX - ut);
+      const barTeams   = ex.filter(r => r.zone === 'bar').length;
+      const tablesUsed = ex.filter(r => r.zone === 'table').reduce((s, r) => s + ((r.seats && r.seats.length) || 1), 0);
+      eBar  = Math.min(barFree, Math.max(0, CONFIG.RESTRICT_BAR_TEAMS - barTeams) * 2); // ≤2 teams × 2 seats
+      eTbl  = Math.min(tablesFree, Math.max(0, CONFIG.RESTRICT_TABLES - tablesUsed));
+      eHigh = 0; // high tables not offered after 9PM
     }
     const closed = isToday && nowHour >= 17;
     const availPax = [];
     for (let ps = 1; ps <= 10; ps++) {
       if (autoAssign(date, time, ps, null)) availPax.push(ps);
     }
-    result[time] = { bar:eBar, tables:eTbl, highTables:highFree, room:roomFree, isLate, closed, occupiedSeats:occ, availPax };
+    result[time] = { bar:eBar, tables:eTbl, highTables:eHigh, room:roomFree, isLate:restricted, closed, occupiedSeats:occ, availPax };
   });
   res.json(result);
 });
