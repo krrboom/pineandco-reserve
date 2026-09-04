@@ -1984,6 +1984,22 @@ app.post('/api/queue/noshow/:id', async (req, res) => {
   } catch (e) { console.error('NOSHOW error:', e); res.status(500).json({ error: 'Server error.' }); }
 });
 
+// ── Staff: quietly cancel a waiting guest (NO no-show notice) ──
+// Used by the "취소" button. Unlike /noshow, this sends no message — the guest's
+// page simply shows "your waiting has been completed". Logged as 취소 (cancelled).
+app.post('/api/queue/staff-cancel/:id', async (req, res) => {
+  try {
+    await withQueueLock(async () => {
+      if (cancelTimers[req.params.id]) { clearTimeout(cancelTimers[req.params.id]); delete cancelTimers[req.params.id]; }
+      const entry = queue.find(q => q.id === req.params.id);
+      if (entry) moveToWaitHistory(entry, 'cancelled');
+      queue = queue.filter(q => q.id !== req.params.id);
+      broadcastQueue();
+    });
+    res.json({ ok: true });
+  } catch (e) { console.error('STAFF-CANCEL error:', e); res.status(500).json({ error: 'Server error.' }); }
+});
+
 // ── Staff: guest checked in (seated) ──
 app.post('/api/queue/done/:id', async (req, res) => {
   try {

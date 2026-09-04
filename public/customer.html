@@ -173,7 +173,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cre
 
 <script>
 /* ─── App Logic ─── */
-let cfg={},queue=[],myId=new URLSearchParams(location.search).get('id'),submitted=false,partySize=2;
+let cfg={},queue=[],waitHist=[],myId=new URLSearchParams(location.search).get('id'),submitted=false,partySize=2;
 // Deep-link from the "Can't go this time" email button → show a focused confirm screen
 let cantMode=new URLSearchParams(location.search).get('cant')==='1';
 let comingMode=new URLSearchParams(location.search).get('coming')==='1';
@@ -300,6 +300,7 @@ function connectSSE(){
       const d=JSON.parse(e.data);
       if(d&&d.queue){queue=d.queue;}
       else if(Array.isArray(d)){queue=d;}
+      if(d&&Array.isArray(d.history))waitHist=d.history;
       render();
     }catch{}};
     es.onerror=()=>{es.close();setTimeout(connectSSE,3000);};
@@ -612,8 +613,27 @@ function render(){
     return;
   }
 
+  // 노쇼 처리됨 — 직원이 "노쇼" 버튼을 누른 경우(히스토리 outcome=auto_cancelled)
+  if(myId&&!me){
+    const past=(waitHist||[]).find(h=>h.id===myId);
+    if(past&&past.outcome==='auto_cancelled'){
+      app.innerHTML=`
+        <div class="my-card">
+          <p class="my-pos" style="color:#c9a96e;">No-show</p>
+          <p style="font-size:14px;color:var(--muted);margin-top:8px;line-height:1.7;">
+            We waited 5 minutes but didn't hear from you, so your waiting has been cancelled.<br>
+            <span style="color:#a89478;">5분을 기다렸으나 연락이 없어 웨이팅이 취소되었습니다.</span><br>
+            We'd love to see you next time. / 다음에 꼭 뵙길 바랍니다.
+          </p>
+          <div style="text-align:center;margin-top:14px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>
+          <button class="btn-new" style="margin-top:16px;" onclick="reset()">NEW REGISTRATION</button>
+        </div>`;
+      return;
+    }
+  }
+
   // 이미 처리됨 (취소/입장 완료)
-  if(myId&&!me&&submitted){
+  if(myId&&!me&&(submitted||(waitHist||[]).some(h=>h.id===myId))){
     app.innerHTML=`
       <div class="my-card">
         <p class="my-pos">Your waiting has been completed.</p>

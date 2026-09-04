@@ -664,7 +664,8 @@ function renderTodayWaitingMini(){
       h+='<div class="wc-ax">';
       h+='<button class="btn-done" onclick="wDone(\''+e.id+'\')">CHECK-IN</button>';
       h+='<button class="btn-undo" onclick="wUndo(\''+e.id+'\')">UNDO</button>';
-      h+='<button class="btn-decline" onclick="wNoShow(\''+e.id+'\')">취소</button>';
+      h+='<button class="btn-decline" onclick="wNoShow(\''+e.id+'\')">노쇼</button>';
+      h+='<button class="btn-undo" onclick="wCancel(\''+e.id+'\')">취소</button>';
       h+='</div></div>';
     });
   }
@@ -677,7 +678,8 @@ function renderTodayWaitingMini(){
       h+=' · '+timeAgo(e.joinedAt)+' 대기</div></div>';
       h+='<div class="wc-ax">';
       h+='<button class="btn-notify" onclick="wNotify(\''+e.id+'\')">NOTIFY</button>';
-      h+='<button class="btn-del" onclick="wDelete(\''+e.id+'\')">✕</button>';
+      h+='<button class="btn-decline" onclick="wNoShow(\''+e.id+'\')">노쇼</button>';
+      h+='<button class="btn-undo" onclick="wCancel(\''+e.id+'\')">취소</button>';
       h+='</div></div>';
     });
   }
@@ -1407,13 +1409,15 @@ function waitCard(e,called){
     h+='<div class="wc-ax">';
     h+='<button class="btn-done" onclick="wDone(\''+e.id+'\')">CHECK-IN</button>';
     h+='<button class="btn-undo" onclick="wUndo(\''+e.id+'\')">UNDO</button>';
-    h+='<button class="btn-decline" onclick="wNoShow(\''+e.id+'\')">취소</button>';
+    h+='<button class="btn-decline" onclick="wNoShow(\''+e.id+'\')">노쇼</button>';
+    h+='<button class="btn-undo" onclick="wCancel(\''+e.id+'\')">취소</button>';
     h+='</div>';
   }else{
     h+='<div class="wc-meta">'+timeAgo(e.joinedAt)+' 전 등록</div>';
     h+='<div class="wc-ax">';
     h+='<button class="btn-notify" onclick="wNotify(\''+e.id+'\')">NOTIFY</button>';
-    h+='<button class="btn-del" onclick="wDelete(\''+e.id+'\')">✕</button>';
+    h+='<button class="btn-decline" onclick="wNoShow(\''+e.id+'\')">노쇼</button>';
+    h+='<button class="btn-undo" onclick="wCancel(\''+e.id+'\')">취소</button>';
     h+='</div>';
   }
   h+=staffChat(e);
@@ -1506,6 +1510,14 @@ async function wNoShow(id){
   if(!confirm(e.name+'님을 노쇼 처리할까요?\n5분 기다렸으나 연락이 닿지 않아 취소되었다는 안내가 손님 언어로 문자·이메일 발송됩니다.'))return;
   await fetch('/api/queue/noshow/'+id,{method:'POST'});
   fl('노쇼 처리됨: '+e.name+' · 취소 안내 발송');
+}
+// 직원이 조용히 웨이팅 취소 → 알림 없음, 손님 화면은 "waiting completed"
+async function wCancel(id){
+  var e=(wQueue||[]).find(function(q){return q.id===id;});
+  if(!e)return;
+  if(!confirm(e.name+'님의 웨이팅을 취소할까요?\n손님에게 알림은 가지 않고, 손님 화면은 "waiting completed"로 표시됩니다.'))return;
+  await fetch('/api/queue/staff-cancel/'+id,{method:'POST'});
+  fl('취소됨: '+e.name);
 }
 
 // ═══════════ 공용 모달 헬퍼 ═══════════
