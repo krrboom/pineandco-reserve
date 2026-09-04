@@ -595,38 +595,53 @@ function logWaitingEvent(entry) {
   postWithRedirect(CONFIG.SHEETS_WEBHOOK, payload);
 }
 
-// Staff → guest chat message → Apps Script webhook (채팅로그 tab).
-// Kept for complaint-prevention: every notice we push to a guest is archived
-// with who/when/what. Fire-and-forget; never blocks the reply to staff.
-function logChatMessage(entry, text) {
+// Staff → guest notice → 채팅로그 tab (via googleapis service account).
+// Written the moment staff send, for complaint-prevention review. Same direct
+// service-account path the reservation log uses (no Apps Script redeploy). The
+// 채팅로그 tab is auto-created on first use. Fire-and-forget; never blocks staff.
+let _chatSheetReady = false; // cache: don't re-check/create the tab every message
+async function logChatMessage(entry, text) {
+  if (!CONFIG.GOOGLE_SHEET_ID || !CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY) return;
   try {
-    const atMs = Date.now();
-    const kst = new Date(atMs + 9 * 60 * 60 * 1000);
-    const payload = JSON.stringify({
-      type: 'chat',
-      direction: 'staff→guest',
-      name: entry.name || '',
-      number: entry.number,
-      phone: entry.phone ? toE164(entry.phone) : '',
-      text: text,
-      at: atMs,
-      date: kst.toISOString().split('T')[0],
-      time: kst.toISOString().split('T')[1].slice(0, 8),
+    const { google } = require('googleapis');
+    const auth = new google.auth.JWT(
+      CONFIG.GOOGLE_CLIENT_EMAIL, null,
+      CONFIG.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      ['https://www.googleapis.com/auth/spreadsheets']
+    );
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    // Ensure the 채팅로그 tab exists (once per process).
+    if (!_chatSheetReady) {
+      const meta = await sheets.spreadsheets.get({ spreadsheetId: CONFIG.GOOGLE_SHEET_ID });
+      const exists = (meta.data.sheets || []).some(s => s.properties && s.properties.title === '채팅로그');
+      if (!exists) {
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId: CONFIG.GOOGLE_SHEET_ID,
+          requestBody: { requests: [{ addSheet: { properties: { title: '채팅로그' } } }] },
+        });
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: CONFIG.GOOGLE_SHEET_ID, range: '채팅로그!A:G',
+          valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS',
+          requestBody: { values: [['보낸시각', '번호', '이름', '전화', '인원', '방향', '메시지']] },
+        });
+      }
+      _chatSheetReady = true;
+    }
+
+    const now = new Date(Date.now() + 9 * 3600000);
+    const row = [
+      now.toISOString().slice(0, 19).replace('T', ' '),
+      entry.number, entry.name || '', entry.phone ? toE164(entry.phone) : '',
+      entry.partySize || '', 'staff→guest', text,
+    ];
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: CONFIG.GOOGLE_SHEET_ID, range: '채팅로그!A:G',
+      valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [row] },
     });
-    const u = new URL(CONFIG.SHEETS_WEBHOOK);
-    const opts = {
-      hostname: u.hostname, path: u.pathname + u.search, method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
-    };
-    const rq = https.request(opts, (res) => {
-      if (res.statusCode === 302 || res.statusCode === 301) {
-        https.get(res.headers.location, (r2) => { r2.on('data', () => {}); r2.on('end', () => {}); })
-          .on('error', e => console.error('Chat-log redirect error:', e.message));
-      } else { res.on('data', () => {}); res.on('end', () => {}); }
-    });
-    rq.on('error', e => console.error('Chat-log sheet error:', e.message));
-    rq.write(payload); rq.end();
-  } catch (e) { console.error('logChatMessage error:', e.message); }
+    console.log('💬 [CHAT LOG] #' + entry.number + ' ' + (entry.name || '') + ' → sheet');
+  } catch (e) { console.error('💬 [CHAT LOG] Error:', e.message); }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1807,7 +1822,7 @@ app.post('/api/queue/message/:id', async (req, res) => {
       // Cap history so a long thread can't bloat the entry.
       if (entry.messages.length > 50) entry.messages = entry.messages.slice(-50);
       broadcastQueue();
-      logChatMessage(entry, text); // archive to sheet for complaint prevention
+      logChatMessage(entry, text).catch(() => {}); // archive to sheet for complaint prevention
       console.log(`💬 [NOTICE staff→guest] #${entry.number} ${entry.name}: ${text}`);
       return { status: 200, body: { ok: true, messages: entry.messages } };
     });

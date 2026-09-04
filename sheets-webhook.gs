@@ -23,10 +23,7 @@ var SHEETS = {
   NOSHOW:  '안온손님',
   IN:      '들어온손님',
   STATS:   '월간통계',
-  CHAT:    '채팅로그',
 };
-
-var CHAT_HEADERS = ['보낸시각','영업일','번호','이름','전화','방향','메시지'];
 
 var HEADERS = ['기록시각','영업일','요일','등록시각','대기(분)','번호','이름','인원','전화','이메일','결과','구분','좌석'];
 
@@ -46,18 +43,6 @@ var HOUR_COLS = [19, 20, 21, 22, 23, 0, 1];
 function doPost(e) {
   try {
     var d = JSON.parse(e.postData.contents);
-
-    // 스태프→손님 채팅 로그 (컴플레인 방지용 열람). 웨이팅 원장과 별도 탭.
-    if (d.type === 'chat') {
-      var k = kst(d.at || Date.now());
-      var biz = businessDate(k).dateStr;
-      appendChatRow([
-        fmtDateTime(k), biz, d.number || '', d.name || '',
-        "'" + String(d.phone || ''), d.direction || 'staff→guest', d.text || '',
-      ]);
-      return json({ ok: true });
-    }
-
     var row = buildRow(d);
 
     appendRow(SHEETS.ALL, row);
@@ -303,18 +288,6 @@ function appendRow(name, row) {
     sh = ss.insertSheet(name);
     sh.appendRow(HEADERS);
     sh.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
-    sh.setFrozenRows(1);
-  }
-  sh.appendRow(row);
-}
-
-function appendChatRow(row) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(SHEETS.CHAT);
-  if (!sh) {
-    sh = ss.insertSheet(SHEETS.CHAT);
-    sh.appendRow(CHAT_HEADERS);
-    sh.getRange(1, 1, 1, CHAT_HEADERS.length).setFontWeight('bold');
     sh.setFrozenRows(1);
   }
   sh.appendRow(row);
