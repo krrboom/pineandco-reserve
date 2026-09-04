@@ -600,8 +600,12 @@ function logWaitingEvent(entry) {
 // service-account path the reservation log uses (no Apps Script redeploy). The
 // 채팅로그 tab is auto-created on first use. Fire-and-forget; never blocks staff.
 let _chatSheetReady = false; // cache: don't re-check/create the tab every message
+// Returns a result object so callers (incl. the self-test endpoint) can see the
+// outcome. Never throws — the message path fires it and ignores the result.
 async function logChatMessage(entry, text) {
-  if (!CONFIG.GOOGLE_SHEET_ID || !CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY) return;
+  if (!CONFIG.GOOGLE_SHEET_ID || !CONFIG.GOOGLE_CLIENT_EMAIL || !CONFIG.GOOGLE_PRIVATE_KEY) {
+    return { ok: false, reason: 'no-credentials' };
+  }
   try {
     const { google } = require('googleapis');
     const auth = new google.auth.JWT(
@@ -612,6 +616,7 @@ async function logChatMessage(entry, text) {
     const sheets = google.sheets({ version: 'v4', auth });
 
     // Ensure the 채팅로그 tab exists (once per process).
+    let created = false;
     if (!_chatSheetReady) {
       const meta = await sheets.spreadsheets.get({ spreadsheetId: CONFIG.GOOGLE_SHEET_ID });
       const exists = (meta.data.sheets || []).some(s => s.properties && s.properties.title === '채팅로그');
@@ -625,6 +630,7 @@ async function logChatMessage(entry, text) {
           valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS',
           requestBody: { values: [['보낸시각', '번호', '이름', '전화', '인원', '방향', '메시지']] },
         });
+        created = true;
       }
       _chatSheetReady = true;
     }
@@ -635,13 +641,18 @@ async function logChatMessage(entry, text) {
       entry.number, entry.name || '', entry.phone ? toE164(entry.phone) : '',
       entry.partySize || '', 'staff→guest', text,
     ];
-    await sheets.spreadsheets.values.append({
+    const resp = await sheets.spreadsheets.values.append({
       spreadsheetId: CONFIG.GOOGLE_SHEET_ID, range: '채팅로그!A:G',
       valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [row] },
     });
-    console.log('💬 [CHAT LOG] #' + entry.number + ' ' + (entry.name || '') + ' → sheet');
-  } catch (e) { console.error('💬 [CHAT LOG] Error:', e.message); }
+    const updatedRange = resp && resp.data && resp.data.updates ? resp.data.updates.updatedRange : '';
+    console.log('💬 [CHAT LOG] #' + entry.number + ' ' + (entry.name || '') + ' → ' + updatedRange);
+    return { ok: true, tabCreated: created, updatedRange };
+  } catch (e) {
+    console.error('💬 [CHAT LOG] Error:', e.message);
+    return { ok: false, error: e.message };
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1828,6 +1839,20 @@ app.post('/api/queue/message/:id', async (req, res) => {
     });
     res.status(result.status).json(result.body);
   } catch (e) { console.error('CHAT error:', e); res.status(500).json({ error: 'Server error.' }); }
+});
+
+// ── Diagnostic: prove the chat→sheet write works end-to-end ──
+// GET /api/queue/chatlog-selftest?pin=####  → performs a real append to the
+// 채팅로그 tab (auto-creating it) and returns the API result, so we can confirm
+// the service-account write succeeds in production. Writes one clearly-labelled
+// test row. Safe to leave in place (pin-gated).
+app.get('/api/queue/chatlog-selftest', async (req, res) => {
+  if (req.query.pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+  const result = await logChatMessage(
+    { number: 'TEST', name: '[시트 셀프테스트]', phone: '', partySize: '' },
+    'chatlog self-test — 이 줄은 삭제해도 됩니다 (' + new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 19).replace('T', ' ') + ' KST)'
+  );
+  res.json(result);
 });
 
 // ── Guest: acknowledge / close the notice panel ──

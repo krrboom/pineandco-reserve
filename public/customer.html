@@ -236,10 +236,13 @@ const CHATTR={
 };
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function chatVisible(me){
-  return !!me && me.chatEnabled!==false
+  // Show whenever there's an unread notice — even if staff turned chat OFF, so the
+  // guest can still read it. It disappears only after they confirm (닫기 → ack).
+  // chatEnabled only controls whether staff can send more, not visibility.
+  return !!me
     && (me.status==='waiting'||me.status==='called')
     && Array.isArray(me.messages)
-    && me.messages.some(m=>(m.at||0)>(me.chatAckAt||0)); // hide once guest closed, until a newer notice
+    && me.messages.some(m=>(m.at||0)>(me.chatAckAt||0));
 }
 function chatPanel(me){
   if(!chatVisible(me))return '';

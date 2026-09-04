@@ -1428,7 +1428,7 @@ function staffChat(e){
   h+='<button onclick="toggleChat(\''+e.id+'\','+(enabled?'false':'true')+')" style="padding:2px 8px;border:1px solid '+(enabled?'#a05050':'#4a7c59')+';border-radius:5px;background:none;color:'+(enabled?'#a05050':'#4a7c59')+';font-size:10px;cursor:pointer;">'+(enabled?'채팅 끄기':'채팅 켜기')+'</button>';
   h+='</div>';
   if(!enabled){
-    h+='<div style="font-size:11px;color:var(--mu);padding:4px 0;">채팅 꺼짐 · 손님 화면에서 사라짐 (전화로만 소통)</div>';
+    h+='<div style="font-size:11px;color:var(--mu);padding:4px 0;">채팅 꺼짐 · 더는 발신 불가. 손님이 확인하면 손님 화면에서 사라짐'+(seen?' (확인함 ✓)':(msgs.length?' (아직 미확인)':''))+'</div>';
     h+='</div>';
     return h;
   }
