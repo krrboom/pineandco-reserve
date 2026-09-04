@@ -70,7 +70,7 @@ textarea{resize:vertical;min-height:60px;font-size:14px;}
 <div class="toast" id="toast"></div>
 <script>
 var DK=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
-var step=1,selDate='',selTime='',partySize=0,confirmed=null,avail={},evts={},calY,calM,savedSR='',fullDates=[];
+var step=1,selDate='',selTime='',partySize=0,confirmed=null,avail={},evts={},calY,calM,savedSR='',savedLang='en',fullDates=[];
 
 function kst(){return new Date(Date.now()+9*3600000);}
 function td2(){return kst().toISOString().slice(0,10);}
@@ -233,6 +233,13 @@ h+='<div class="ilbl">Email</div>';
 h+='<input type="email" id="re" placeholder="you@email.com" autocomplete="email"/>';
 h+='<div class="ilbl">Instagram (optional)</div>';
 h+='<input type="text" id="ri" placeholder="@your_handle"/>';
+h+='<div class="ilbl">Confirmation language / 确认语言 / 確認言語 / 확인 언어</div>';
+h+='<select id="rlang">';
+h+='<option value="en">English</option>';
+h+='<option value="ko">한국어</option>';
+h+='<option value="zh">中文</option>';
+h+='<option value="ja">日本語</option>';
+h+='</select>';
 h+='<button class="nbtn" id="sbtn" onclick="doSubmit()">RESERVE</button>';
 h+='<div class="note" style="margin-top:12px;text-align:center">Cancellation by phone only.</div>';
 }
@@ -327,6 +334,7 @@ var cc=(document.getElementById('rcc')||{}).value||'+82';
 if(phone){phone=cc+phone.replace(/^0/,'');}
 var email=(document.getElementById('re')||{}).value;if(email)email=email.trim();
 var ig=(document.getElementById('ri')||{}).value;if(ig)ig=ig.trim();
+savedLang=(document.getElementById('rlang')||{}).value||'en';
 if(!name){flash('Please enter your name.');return;}
 if(!phone&&!email){flash('Please provide your email or phone number.');return;}
 
@@ -340,7 +348,7 @@ doSubmitConfirmed(name,phone,email,ig);
 
 async function doSubmitConfirmed(name,phone,email,ig){
 var btn=document.getElementById('sbtn');if(btn){btn.disabled=true;btn.textContent='RESERVING...';}
-var body={name:name,phone:phone||'',email:email||'',instagram:ig||'',partySize:partySize,date:selDate,time:selTime,specialRequest:savedSR};
+var body={name:name,phone:phone||'',email:email||'',instagram:ig||'',partySize:partySize,date:selDate,time:selTime,specialRequest:savedSR,lang:savedLang};
 try{
   var resp=await fetch('/api/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   var data=await resp.json();

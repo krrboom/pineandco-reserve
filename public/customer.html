@@ -54,6 +54,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cre
   font-size:18px;cursor:pointer;transition:all .15s;}
 .sz-btn:hover{background:rgba(184,147,90,.12);}
 .sz-btn.active{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600;}
+.lang-row{display:flex;gap:8px;flex-wrap:wrap;}
+.lang-btn{flex:1;min-width:70px;padding:10px 8px;border:1px solid rgba(184,147,90,.25);border-radius:8px;
+  background:rgba(240,235,224,.06);color:var(--cream);font-family:'Cormorant Garamond',serif;
+  font-size:15px;cursor:pointer;transition:all .15s;}
+.lang-btn:hover{background:rgba(184,147,90,.12);}
+.lang-btn.active{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600;}
 
 /* 등록 후 화면 */
 .my-card{width:100%;text-align:center;padding:24px 0;}
@@ -211,6 +217,11 @@ const COUNTRIES=[
 ];
 
 let selectedCountry='+82';
+let guestLang='en'; // notification language for SMS/email (en default, or ko/zh/ja)
+function pickLang(l){
+  guestLang=l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active', b.dataset.lang===l));
+}
 
 // safeFetch: returns {ok, data} — never crashes
 async function safeFetch(url,opts){
@@ -326,7 +337,7 @@ async function register(){
 
   const btn=document.getElementById('btn');if(btn){btn.disabled=true;btn.textContent='REGISTERING ...';}
   try{
-    const res=await safeFetch('/api/queue/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,phone,partySize,email})});
+    const res=await safeFetch('/api/queue/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,phone,partySize,email,lang:guestLang})});
     if(!res.ok){
       if(res.data?.existing){
         myId=res.data.existing.id;submitted=true;history.replaceState(null,'',`?id=${myId}`);
@@ -590,6 +601,15 @@ function render(){
         <div class="size-row" id="sz">
           ${[1,2,3,4,5,6].map(n=>`<button class="sz-btn${n===2?' active':''}" onclick="pickSize(${n})">${n}</button>`).join('')}
           <button class="sz-btn" onclick="pickSize(7)">7+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>NOTIFICATION LANGUAGE / 通知语言 / 通知言語 / 알림 언어</label>
+        <div class="lang-row">
+          <button class="lang-btn active" data-lang="en" onclick="pickLang('en')">English</button>
+          <button class="lang-btn" data-lang="ko" onclick="pickLang('ko')">한국어</button>
+          <button class="lang-btn" data-lang="zh" onclick="pickLang('zh')">中文</button>
+          <button class="lang-btn" data-lang="ja" onclick="pickLang('ja')">日本語</button>
         </div>
       </div>
       <button class="btn-primary" id="btn" onclick="register()">JOIN THE WAITING LIST</button>

@@ -266,6 +266,7 @@ function loadQueue() {
       notifiedVia: e.notifiedVia || null,
       guestCantCome: typeof e.guestCantCome === 'number' ? e.guestCantCome : null,
       guestComing:   typeof e.guestComing   === 'number' ? e.guestComing   : null,
+      lang: typeof e.lang === 'string' ? e.lang : 'en',
     }));
     if (queue.length !== parsed.length) {
       console.warn(`⚠️  Removed ${parsed.length - queue.length} invalid entries from queue`);
@@ -780,56 +781,158 @@ async function sendEmail(toEmail, subject, htmlBody) {
   }
 }
 
+// ═════════════════════════════════════════════════════════════
+//  i18n — guest messages in EN (default) / KO / ZH / JA
+//  Each reservation & waiting entry stores `lang`; builders localize by it.
+// ═════════════════════════════════════════════════════════════
+function P() { return CONFIG.BUSINESS_PHONE; }
+const TR = {
+  en: {
+    rConfirmSubj: r => `Pine & Co — Reservation Confirmed (${r.date} ${r.time})`,
+    rRem24Subj:  r => `Pine & Co — Reservation reminder (${r.date} ${r.time})`,
+    rRem1hSubj:  r => `Pine & Co — Your reservation is coming up (${r.time})`,
+    rConfirmSms: r => `PINE&CO: Hi ${asciiName(r.name)}, your reservation is confirmed — ${r.date} ${r.time} for ${r.partySize}. Please arrive on time; tables 5+ min late may be released as a no-show. Late or can't find the entrance? Call ${P()}`,
+    rRem24Sms:   r => `PINE&CO: Hi ${asciiName(r.name)}, a friendly reminder — your reservation is on ${r.date} at ${r.time} for ${r.partySize}. Please arrive on time; 5+ min late may be released as a no-show. Late or can't find the entrance? Call ${P()}`,
+    rRem1hSms:   r => `PINE&CO: Hi ${asciiName(r.name)}, your reservation is coming up at ${r.time} today for ${r.partySize}. See you soon! 5+ min late may be released as a no-show. Late or can't find the entrance? Call ${P()}`,
+    rTitle: 'YOUR RESERVATION',
+    rLabels: { date:'Date', time:'Time', name:'Name', party:'Party', seat:'Seat' },
+    rPolicy: `<p style="margin:0 0 8px;">Please arrive on time. As a courtesy to all our guests, tables more than <strong style="color:#c9a96e;">5 minutes late</strong> may be released as a no-show.</p><p style="margin:0 0 8px;">Running a little late, or having trouble finding the entrance? Please give us a call — we'd be glad to help you in.</p><p style="margin:0;">To change or cancel, kindly call us at <strong style="color:#b8935a;">${CONFIG.BUSINESS_PHONE}</strong>.</p>`,
+    zone: { bar:'Bar', table:'Table', highTable:'High table', room:'Private room' },
+    cSubj: `Pine & Co — See you next time`,
+    cKind: kind => kind === '예약' ? 'reservation' : 'waitlist spot',
+    cSms:  (name, kindW, url) => `PINE&CO: ${asciiName(name)}, we held your ${kindW} for 5 min and tried to reach you but couldn't, so per our policy it's marked a no-show. We're sorry — we'd love to see you next time. Reserve: ${url}`,
+    cHeading: kind => kind === '예약' ? 'RESERVATION RELEASED' : 'WAITLIST RELEASED',
+    cGreeting: name => `See you next time,<br>${name}.`,
+    cBody: kindW => `We held your ${kindW} for 5 minutes and tried to reach you, but couldn't — so, per our policy, it has been marked a no-show. We're truly sorry, and we'd love to welcome you next time.`,
+    cBtn: 'Reserve a Table',
+    cClose: `We'd love to see you soon.`,
+    wJoinSms: (e, ahead, url) => `PINE&CO: Hi ${asciiName(e.name)}, you're on the waitlist — #${e.number} (${e.partySize||2}). ${ahead}. We'll text you when your table is ready. Track: ${url}`,
+    wCallSms: (e, url) => `PINE&CO: Hi ${asciiName(e.name)}, your table is ready! Please tap and let us know — Coming or Can't make it: ${url}`,
+    wCancelSms: (e, url) => `PINE&CO: Hi ${asciiName(e.name)}, we held your spot on the waitlist and tried to reach you but couldn't, so it's been released. We'd love to see you next time. Reserve: ${url}`,
+    wJoinTitle: `YOU'RE ON THE LIST`, wJoinLine: `We'll let you know the moment your table is ready.`,
+    wCallTitle: `YOUR TABLE IS READY`, wCallLine: `Please arrive within 5 minutes. If you can't make it in time, your spot may be released — running late? Please call us.`,
+    wComingBtn: `On my way`, wCantBtn: `Can't go this time`, wAhead: n => n <= 0 ? `You're next` : `${n} group(s) ahead of you`,
+  },
+  ko: {
+    rConfirmSubj: r => `Pine & Co — 예약 확정 (${r.date} ${r.time})`,
+    rRem24Subj:  r => `Pine & Co — 예약 리마인더 (${r.date} ${r.time})`,
+    rRem1hSubj:  r => `Pine & Co — 곧 예약 시간입니다 (${r.time})`,
+    rConfirmSms: r => `[PINE&CO] ${r.name}님, 예약이 확정되었습니다 — ${r.date} ${r.time}, ${r.partySize}명. 정시 도착 부탁드려요. 5분 이상 늦으면 노쇼 처리될 수 있어요. 늦거나 입구를 못 찾으시면 전화 주세요: ${P()}`,
+    rRem24Sms:   r => `[PINE&CO] ${r.name}님, 예약 안내 — ${r.date} ${r.time}, ${r.partySize}명. 정시 도착 부탁드려요. 5분 이상 늦으면 노쇼 처리될 수 있어요. 늦거나 입구 못 찾으시면 전화: ${P()}`,
+    rRem1hSms:   r => `[PINE&CO] ${r.name}님, 곧 예약 시간이에요 — 오늘 ${r.time}, ${r.partySize}명. 5분 이상 늦으면 노쇼 처리될 수 있어요. 늦거나 입구 못 찾으시면 전화: ${P()}`,
+    rTitle: '예약 안내',
+    rLabels: { date:'날짜', time:'시간', name:'이름', party:'인원', seat:'좌석' },
+    rPolicy: `<p style="margin:0 0 8px;">정시 도착 부탁드립니다. 다른 손님을 위해 예약 시간보다 <strong style="color:#c9a96e;">5분 이상</strong> 늦으시면 노쇼로 처리될 수 있어요.</p><p style="margin:0 0 8px;">조금 늦으시거나 입구를 못 찾으시면 전화 주세요 — 기꺼이 안내해 드릴게요.</p><p style="margin:0;">변경·취소는 <strong style="color:#b8935a;">${CONFIG.BUSINESS_PHONE}</strong> 로 전화 부탁드립니다.</p>`,
+    zone: { bar:'바 좌석', table:'테이블', highTable:'하이테이블', room:'프라이빗 룸' },
+    cSubj: `Pine & Co — 다음에 또 뵐게요`,
+    cKind: kind => kind === '예약' ? '예약' : '웨이팅',
+    cSms:  (name, kindW, url) => `[PINE&CO] ${name}님, ${kindW}이(가) 노쇼 처리되었습니다. 5분간 기다리고 연락도 시도했지만 닿지 않아 정책상 부득이하게 취소되었어요. 다음엔 꼭 편하게 모실게요. 예약: ${url}`,
+    cHeading: kind => kind === '예약' ? '예약이 취소되었습니다' : '웨이팅이 취소되었습니다',
+    cGreeting: name => `${name}님,<br>다음에 또 뵐게요.`,
+    cBody: kindW => `5분간 기다리고 연락도 드렸지만 닿지 않아, 정책상 부득이하게 ${kindW}이(가) 노쇼 처리되었어요. 진심으로 죄송하며, 다음엔 꼭 편하게 모시고 싶어요.`,
+    cBtn: '예약하기',
+    cClose: `다음에 꼭 뵙겠습니다.`,
+    wJoinSms: (e, ahead, url) => `[PINE&CO] ${e.name}님, 웨이팅 등록됐어요 — ${e.number}번 (${e.partySize||2}명). ${ahead}. 자리가 나면 문자로 알려드릴게요. 확인: ${url}`,
+    wCallSms: (e, url) => `[PINE&CO] ${e.name}님, 자리가 준비됐어요! 아래에서 온다/못온다 눌러 알려주세요: ${url}`,
+    wCancelSms: (e, url) => `[PINE&CO] ${e.name}님, 웨이팅 자리를 준비하고 기다렸지만 연락이 닿지 않아 취소되었어요. 다음엔 꼭 모실게요. 예약: ${url}`,
+    wJoinTitle: `웨이팅 등록 완료`, wJoinLine: `자리가 준비되면 바로 문자로 알려드릴게요.`,
+    wCallTitle: `자리가 준비되었습니다`, wCallLine: `5분 내로 방문 부탁드려요. 시간 내 못 오시면 자리가 취소될 수 있으니, 늦으시면 전화 주세요.`,
+    wComingBtn: `갈게요`, wCantBtn: `못 갈 것 같아요`, wAhead: n => n <= 0 ? `다음 차례예요` : `앞에 ${n}팀 있어요`,
+  },
+  zh: {
+    rConfirmSubj: r => `Pine & Co — 预订已确认 (${r.date} ${r.time})`,
+    rRem24Subj:  r => `Pine & Co — 预订提醒 (${r.date} ${r.time})`,
+    rRem1hSubj:  r => `Pine & Co — 预订即将开始 (${r.time})`,
+    rConfirmSms: r => `[PINE&CO] ${r.name}，您的预订已确认 — ${r.date} ${r.time}，${r.partySize}位。请准时到达；迟到超过5分钟可能视为爽约。迟到或找不到入口请致电：${P()}`,
+    rRem24Sms:   r => `[PINE&CO] ${r.name}，预订提醒 — ${r.date} ${r.time}，${r.partySize}位。请准时到达；迟到超过5分钟可能视为爽约。迟到或找不到入口请致电：${P()}`,
+    rRem1hSms:   r => `[PINE&CO] ${r.name}，您的预订即将开始 — 今天 ${r.time}，${r.partySize}位。迟到超过5分钟可能视为爽约。迟到或找不到入口请致电：${P()}`,
+    rTitle: '您的预订',
+    rLabels: { date:'日期', time:'时间', name:'姓名', party:'人数', seat:'座位' },
+    rPolicy: `<p style="margin:0 0 8px;">请准时到达。为照顾所有客人，迟到超过 <strong style="color:#c9a96e;">5 分钟</strong> 的座位可能被视为爽约并释放。</p><p style="margin:0 0 8px;">稍有迟到，或找不到入口？请致电，我们乐意为您引导入内。</p><p style="margin:0;">如需更改或取消，请致电 <strong style="color:#b8935a;">${CONFIG.BUSINESS_PHONE}</strong>。</p>`,
+    zone: { bar:'吧台', table:'餐桌', highTable:'高桌', room:'包间' },
+    cSubj: `Pine & Co — 期待下次光临`,
+    cKind: kind => kind === '예약' ? '预订' : '候位',
+    cSms:  (name, kindW, url) => `[PINE&CO] ${name}，您的${kindW}已按爽约处理。我们等候了5分钟并尝试联系，但未能接通，按规定只能取消。非常抱歉，期待下次光临。预订：${url}`,
+    cHeading: kind => kind === '예약' ? '预订已取消' : '候位已取消',
+    cGreeting: name => `${name}，<br>期待下次光临。`,
+    cBody: kindW => `我们为您保留并等候了5分钟，也尝试联系您但未能接通，按照规定，您的${kindW}只能按爽约处理。非常抱歉，期待下次能为您服务。`,
+    cBtn: '立即预订',
+    cClose: `期待与您再次相见。`,
+    wJoinSms: (e, ahead, url) => `[PINE&CO] ${e.name}，已为您登记候位 — ${e.number}号（${e.partySize||2}位）。${ahead}。有位时将短信通知您。查看：${url}`,
+    wCallSms: (e, url) => `[PINE&CO] ${e.name}，您的座位准备好了！请点击告诉我们 会来/不能来：${url}`,
+    wCancelSms: (e, url) => `[PINE&CO] ${e.name}，我们保留座位并等候，但未能联系上您，候位已释放。期待下次光临。预订：${url}`,
+    wJoinTitle: `候位登记完成`, wJoinLine: `有空位时我们会立即短信通知您。`,
+    wCallTitle: `您的座位已准备好`, wCallLine: `请在5分钟内到达。若未能及时到达，座位可能被释放；如会迟到，请致电我们。`,
+    wComingBtn: `我会来`, wCantBtn: `这次来不了`, wAhead: n => n <= 0 ? `马上轮到您` : `前面还有 ${n} 组`,
+  },
+  ja: {
+    rConfirmSubj: r => `Pine & Co — ご予約確定 (${r.date} ${r.time})`,
+    rRem24Subj:  r => `Pine & Co — ご予約リマインダー (${r.date} ${r.time})`,
+    rRem1hSubj:  r => `Pine & Co — まもなくご予約 (${r.time})`,
+    rConfirmSms: r => `[PINE&CO] ${r.name}様、ご予約が確定しました — ${r.date} ${r.time}、${r.partySize}名様。時間どおりのご来店をお願いします。5分以上遅れるとキャンセル扱いになる場合があります。遅れる・入口が分からない場合はお電話ください：${P()}`,
+    rRem24Sms:   r => `[PINE&CO] ${r.name}様、ご予約のリマインダー — ${r.date} ${r.time}、${r.partySize}名様。時間どおりのご来店を。5分以上遅れるとキャンセル扱いの場合があります。遅れる・入口が分からない時はお電話：${P()}`,
+    rRem1hSms:   r => `[PINE&CO] ${r.name}様、まもなくご予約のお時間です — 本日 ${r.time}、${r.partySize}名様。5分以上遅れるとキャンセル扱いの場合があります。遅れる・入口が分からない時はお電話：${P()}`,
+    rTitle: 'ご予約',
+    rLabels: { date:'日付', time:'時間', name:'お名前', party:'人数', seat:'お席' },
+    rPolicy: `<p style="margin:0 0 8px;">時間どおりのご来店をお願いします。他のお客様への配慮のため、ご予約時間より <strong style="color:#c9a96e;">5分以上</strong> 遅れるとキャンセル扱いとなる場合があります。</p><p style="margin:0 0 8px;">少し遅れる、または入口が分からない場合はお電話ください。喜んでご案内します。</p><p style="margin:0;">変更・キャンセルは <strong style="color:#b8935a;">${CONFIG.BUSINESS_PHONE}</strong> までお電話ください。</p>`,
+    zone: { bar:'バー', table:'テーブル', highTable:'ハイテーブル', room:'個室' },
+    cSubj: `Pine & Co — またのお越しを`,
+    cKind: kind => kind === '예약' ? 'ご予約' : 'ウェイティング',
+    cSms:  (name, kindW, url) => `[PINE&CO] ${name}様、${kindW}はキャンセル（ノーショー）となりました。5分お待ちしご連絡も試みましたが繋がらず、規定によりやむを得ず取消しました。次回のご来店をお待ちしています。ご予約：${url}`,
+    cHeading: kind => kind === '예약' ? 'ご予約はキャンセルされました' : 'ウェイティングはキャンセルされました',
+    cGreeting: name => `${name}様、<br>またのお越しをお待ちしています。`,
+    cBody: kindW => `お席をご用意し5分お待ちし、ご連絡も試みましたが繋がらず、規定により${kindW}はやむを得ずノーショー扱いとなりました。誠に申し訳ございません。次回ぜひお待ちしております。`,
+    cBtn: '予約する',
+    cClose: `またのお越しを心よりお待ちしています。`,
+    wJoinSms: (e, ahead, url) => `[PINE&CO] ${e.name}様、ウェイティングを承りました — ${e.number}番（${e.partySize||2}名様）。${ahead}。お席が空き次第ご連絡します。確認：${url}`,
+    wCallSms: (e, url) => `[PINE&CO] ${e.name}様、お席のご用意ができました！行く／行けない をタップでお知らせください：${url}`,
+    wCancelSms: (e, url) => `[PINE&CO] ${e.name}様、お席をご用意しお待ちしましたが、ご連絡が繋がらずキャンセルとなりました。次回ぜひお待ちしています。ご予約：${url}`,
+    wJoinTitle: `ウェイティング受付完了`, wJoinLine: `お席が空き次第、すぐにSMSでお知らせします。`,
+    wCallTitle: `お席のご用意ができました`, wCallLine: `5分以内のご来店をお願いします。間に合わない場合はお席を解放することがあります。遅れる場合はお電話ください。`,
+    wComingBtn: `向かいます`, wCantBtn: `行けません`, wAhead: n => n <= 0 ? `次はあなたの番です` : `前に ${n} 組`,
+  },
+};
+function L(lang) { return TR[lang] || TR.en; }
+
 // ─────────────────────────────────────────────────────────────
 //  WAITING SYSTEM: Email templates + notification routing
 // ─────────────────────────────────────────────────────────────
 function buildWaitEmailHTML(type, entry, url, extra) {
   const min = CONFIG.AUTO_CANCEL_MIN;
   const biz = CONFIG.BUSINESS_PHONE;
+  const t = L(entry.lang);
   const btnStyle = 'display:inline-block;padding:16px 44px;background:#b8935a;color:#1e1208;text-decoration:none;border-radius:8px;font-family:Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;';
-  // Secondary / "can't go" button — muted so it never competes with the primary CTA
   const btn2Style = 'display:inline-block;padding:12px 32px;background:transparent;color:#a89478;text-decoration:none;border:1px solid rgba(184,147,90,.35);border-radius:8px;font-family:Georgia,serif;font-size:12px;font-weight:500;letter-spacing:1px;';
-  const cantBtn = `<p style="margin:8px 0 4px;"><a href="${url}?cant=1" style="${btn2Style}">Can't go this time / 못 갈 것 같아요</a></p>`;
-  // Green "I'm coming" primary button (call email only)
+  const cantBtn = `<p style="margin:8px 0 4px;"><a href="${url}?cant=1" style="${btn2Style}">${t.wCantBtn}</a></p>`;
   const comingBtnStyle = 'display:inline-block;padding:16px 44px;background:#4a7c59;color:#f0ebe0;text-decoration:none;border-radius:8px;font-family:Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;';
-  const comingBtn = `<p style="margin:28px 0 8px;"><a href="${url}?coming=1" style="${comingBtnStyle}">On my way / 갈게요</a></p>`;
+  const comingBtn = `<p style="margin:28px 0 8px;"><a href="${url}?coming=1" style="${comingBtnStyle}">${t.wComingBtn}</a></p>`;
   const dividerStyle = 'border:none;border-top:1px solid rgba(184,147,90,.25);margin:28px auto;width:60px;';
 
   const templates = {
     join: {
-      subject: `🌲 Pine & Co — You're on the waitlist (#${entry.number})`,
+      subject: `🌲 Pine & Co — ${t.wJoinTitle} (#${entry.number})`,
       body: `
-        <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 24px;">YOU'RE ON THE LIST</p>
-        <p style="color:#f0ebe0;font-size:15px;line-height:1.7;margin:0 0 8px;">Welcome, <strong style="color:#c9a96e;">${entry.name}</strong>.</p>
-        <p style="color:#a89478;font-size:13px;line-height:1.7;margin:0 0 24px;">Thank you for choosing Pine &amp; Co.<br>파인앤코를 찾아주셔서 감사합니다.</p>
+        <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 24px;">${t.wJoinTitle}</p>
+        <p style="color:#f0ebe0;font-size:15px;line-height:1.7;margin:0 0 8px;"><strong style="color:#c9a96e;">${entry.name}</strong></p>
 
         <div style="font-family:Georgia,serif;font-size:64px;color:#b8935a;font-weight:300;margin:24px 0 4px;letter-spacing:-2px;">#${entry.number}</div>
-        <p style="color:#a89478;font-size:12px;letter-spacing:2px;margin:0 0 8px;">YOUR NUMBER</p>
-        <p style="color:#c9a96e;font-size:13px;margin:8px 0 28px;">${entry.partySize||2} guest${(entry.partySize||2)>1?'s':''} · ${(extra.myPos||1)-1===0?'You\'re next!':`${(extra.myPos||1)-1} ahead of you / 앞에 ${(extra.myPos||1)-1}팀`}</p>
+        <p style="color:#c9a96e;font-size:13px;margin:8px 0 28px;">${entry.partySize||2} · ${t.wAhead((extra.myPos||1)-1)}</p>
 
-        <p style="margin:28px 0 4px;"><a href="${url}" style="${btnStyle}">Check Your Status</a></p>
+        <p style="margin:28px 0 4px;"><a href="${url}" style="${btnStyle}">${t.rTitle}</a></p>
         ${cantBtn}
 
         <hr style="${dividerStyle}"/>
 
-        <p style="color:#a89478;font-size:13px;line-height:1.7;margin:0;">
-          We'll let you know the moment your table is ready.<br>
-          <span style="color:#7a6550;font-size:12px;">자리가 준비되면 바로 안내드리겠습니다.</span>
-        </p>`,
+        <p style="color:#a89478;font-size:13px;line-height:1.7;margin:0;">${t.wJoinLine}</p>`,
     },
     call: {
-      subject: `🌲 Pine & Co — Your table is ready`,
+      subject: `🌲 Pine & Co — ${t.wCallTitle}`,
       body: `
-        <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 16px;">YOUR TABLE IS READY</p>
-        <div style="font-family:Georgia,serif;font-size:36px;color:#b8935a;font-weight:300;margin:8px 0 24px;letter-spacing:-1px;line-height:1.2;">Welcome,<br>${entry.name}.</div>
+        <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 16px;">${t.wCallTitle}</p>
+        <div style="font-family:Georgia,serif;font-size:36px;color:#b8935a;font-weight:300;margin:8px 0 24px;letter-spacing:-1px;line-height:1.2;">${entry.name}</div>
 
-        <p style="color:#f0ebe0;font-size:15px;line-height:1.7;margin:0 0 8px;">Your table is now ready.</p>
-        <p style="color:#a89478;font-size:13px;line-height:1.7;margin:0 0 28px;">
-          We kindly ask you to arrive soon.<br>
-          <span style="color:#7a6550;">곧 방문 부탁드리겠습니다.</span>
-        </p>
+        <p style="color:#a89478;font-size:13px;line-height:1.7;margin:0 0 28px;">${t.wCallLine}</p>
 
-        <p style="color:#c9a96e;font-size:12px;letter-spacing:1px;margin:0 0 4px;">Are you coming? / 오시나요?</p>
         ${comingBtn}
         ${cantBtn}
 
@@ -861,14 +964,14 @@ function buildWaitEmailHTML(type, entry, url, extra) {
         <p style="color:#c9a96e;font-size:16px;font-weight:500;margin:8px 0 0;">📞 ${biz}</p>`,
     },
   };
-  const t = templates[type];
+  const tpl = templates[type];
   return {
-    subject: t.subject,
+    subject: tpl.subject,
     html: `<div style="background:#0f0a06;padding:32px 16px;font-family:Georgia,serif;">
       <div style="max-width:520px;margin:0 auto;background:#1e1208;color:#f0ebe0;padding:48px 32px;text-align:center;border-radius:14px;border:1px solid rgba(184,147,90,.15);box-shadow:0 8px 32px rgba(0,0,0,.4);">
         <div style="font-family:Georgia,serif;font-size:14px;letter-spacing:5px;color:#b8935a;margin-bottom:8px;font-weight:300;">PINE &amp; CO</div>
         <div style="font-family:Georgia,serif;font-size:9px;letter-spacing:3px;color:#7a6550;margin-bottom:36px;">SEOUL · COCKTAIL BAR</div>
-        ${t.body}
+        ${tpl.body}
         <hr style="border:none;border-top:1px solid rgba(184,147,90,.15);margin:36px 0 16px;"/>
         <p style="font-size:10px;color:#5a4530;letter-spacing:1px;margin:0;line-height:1.6;">Pine &amp; Co Seoul · 010-6817-0406<br>You're receiving this because you joined our waiting list.</p>
       </div>
@@ -921,6 +1024,8 @@ async function sendWaitingMessage(entry, type, extra = {}) {
   const url = `${CONFIG.PUBLIC_URL}/t/${entry.id}`;
   const min = CONFIG.AUTO_CANCEL_MIN;
   const biz = CONFIG.BUSINESS_PHONE;
+  const t = L(entry.lang);                              // guest's chosen language
+  const ahead = t.wAhead((extra.myPos || 1) - 1);
 
   const messages = {
     join: {
@@ -928,36 +1033,15 @@ async function sendWaitingMessage(entry, type, extra = {}) {
       vars : { '#{이름}': entry.name, '#{번호}': String(entry.number),
                '#{순서}': String(extra.myPos || 1), '#{전체대기}': String(extra.total || 1),
                '#{링크}': url },
-      // Twilio (foreign): 1-segment English
-      sms  : `PINE&CO: Hi ${asciiName(entry.name)}, you are #${entry.number}. ${(extra.myPos||1)-1===0?"You're next!":`${(extra.myPos||1)-1} ahead of you.`} Track: ${url}`,
-      // Aligo (Korean LMS, no segment limit): full bilingual message
-      smsKr: `[PINE&CO]\n`
-           + `파인앤코에 방문해주셔서 감사합니다.\n`
-           + `웨이팅 ${entry.number}번 (${entry.partySize||2}명) 등록되었습니다.\n`
-           + `자리가 나면 문자로 알려드리겠습니다.\n`
-           + `\n`
-           + `Thank you for visiting Pine & Co.\n`
-           + `You are #${entry.number} (${entry.partySize||2} guests).\n`
-           + `We'll notify you when your table is ready.\n`
-           + `\n`
-           + `대기 / Waiting: ${(extra.myPos||1)-1===0?"다음 차례입니다 / You're next":`앞에 ${(extra.myPos||1)-1}팀 / ${(extra.myPos||1)-1} ahead`}\n`
-           + `${url}\n`
-           + `Tel: ${biz}`,
+      sms  : t.wJoinSms(entry, ahead, url),
+      smsKr: t.wJoinSms(entry, ahead, url),
     },
     call: {
       tpl  : CONFIG.TPL_CALL,
       vars : { '#{이름}': entry.name, '#{번호}': String(entry.number),
                '#{분}': String(min), '#{링크}': url },
-      sms  : `PINE&CO: #${entry.number} ${asciiName(entry.name)}, your table is ready! Tap here and let us know — Coming or Can't make it: ${url}`,
-      smsKr: `[PINE&CO]\n`
-           + `${entry.name}님, 자리가 준비되었습니다!\n`
-           + `웨이팅 ${entry.number}번\n`
-           + `\n`
-           + `아래를 눌러 오시는지 알려주세요.\n`
-           + `[온다 / 못온다] 버튼이 있어요.\n`
-           + `Tap below to tell us: Coming / Can't make it\n`
-           + `${url}\n`
-           + `Tel: ${biz}`,
+      sms  : t.wCallSms(entry, url),
+      smsKr: t.wCallSms(entry, url),
     },
     cancel: {
       tpl  : CONFIG.TPL_CANCEL,
@@ -1062,8 +1146,8 @@ async function sendWaitingMessage(entry, type, extra = {}) {
 //  RESERVATION SYSTEM: Email templates + confirmation
 // ─────────────────────────────────────────────────────────────
 function buildReserveConfirmHTML(r) {
-  const zoneKR = { bar:'바 좌석', table:'테이블', highTable:'하이테이블', room:'프라이빗 룸' };
-  const zoneName = zoneKR[r.zone] || r.zone;
+  const t = L(r.lang);
+  const zoneName = t.zone[r.zone] || r.zone;
   const roomNote = r.zone === 'room'
     ? `<div style="background:rgba(184,147,90,.12);border:1px solid rgba(184,147,90,.35);border-radius:8px;padding:16px;margin-top:14px;">
          <p style="font-size:13px;color:#c9a96e;font-weight:600;margin:0 0 8px;letter-spacing:.05em;">🎩 PRIVATE ROOM</p>
@@ -1086,21 +1170,19 @@ function buildReserveConfirmHTML(r) {
     <p style="font-family:Georgia,serif;font-size:10px;color:#c9a96e;letter-spacing:6px;margin:4px 0 0;">SEOUL</p>
   </div>
   <div style="width:40px;height:1px;background:#b8935a;margin:0 auto 24px;opacity:.5;"></div>
-  <h2 style="font-family:Georgia,serif;font-size:16px;color:#b8935a;text-align:center;font-weight:400;letter-spacing:2px;margin-bottom:20px;">RESERVATION CONFIRMED</h2>
+  <h2 style="font-family:Georgia,serif;font-size:16px;color:#b8935a;text-align:center;font-weight:400;letter-spacing:2px;margin-bottom:20px;">${t.rTitle}</h2>
   <div style="background:rgba(184,147,90,.08);border:1px solid rgba(184,147,90,.2);border-radius:8px;padding:20px;margin-bottom:20px;">
     <table style="width:100%;font-size:14px;color:#f0ebe0;border-collapse:collapse;">
-      <tr><td style="padding:6px 0;color:#c9a96e;width:80px;">Date</td><td style="padding:6px 0;font-weight:500;">${r.date}</td></tr>
-      <tr><td style="padding:6px 0;color:#c9a96e;">Time</td><td style="padding:6px 0;font-weight:500;">${r.time}</td></tr>
-      <tr><td style="padding:6px 0;color:#c9a96e;">Name</td><td style="padding:6px 0;">${r.name}</td></tr>
-      <tr><td style="padding:6px 0;color:#c9a96e;">Party</td><td style="padding:6px 0;">${r.partySize}명</td></tr>
-      <tr><td style="padding:6px 0;color:#c9a96e;">Seat</td><td style="padding:6px 0;">${zoneName}</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;width:80px;">${t.rLabels.date}</td><td style="padding:6px 0;font-weight:500;">${r.date}</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">${t.rLabels.time}</td><td style="padding:6px 0;font-weight:500;">${r.time}</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">${t.rLabels.name}</td><td style="padding:6px 0;">${r.name}</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">${t.rLabels.party}</td><td style="padding:6px 0;">${r.partySize}</td></tr>
+      <tr><td style="padding:6px 0;color:#c9a96e;">${t.rLabels.seat}</td><td style="padding:6px 0;">${zoneName}</td></tr>
     </table>
     ${roomNote}
   </div>
   <div style="font-size:12px;color:#f0ebe0;line-height:1.85;background:rgba(184,147,90,.06);border:1px solid rgba(184,147,90,.18);border-radius:8px;padding:16px;">
-    <p style="margin:0 0 8px;">Please arrive on time. As a courtesy to all our guests, tables more than <strong style="color:#c9a96e;">5 minutes late</strong> may be released as a no-show.</p>
-    <p style="margin:0 0 8px;">Running a little late, or having trouble finding the entrance? Please give us a call — we'd be glad to help you in.</p>
-    <p style="margin:0;">To change or cancel your reservation, kindly call us at <strong style="color:#b8935a;">${CONFIG.BUSINESS_PHONE}</strong>.</p>
+    ${t.rPolicy}
   </div>
   <div style="width:40px;height:1px;background:#b8935a;margin:24px auto;opacity:.3;"></div>
   <p style="text-align:center;font-size:10px;color:#c9a96e;opacity:.5;">Open 7PM — 2AM · 📞 ${CONFIG.BUSINESS_PHONE}</p>
@@ -1108,10 +1190,10 @@ function buildReserveConfirmHTML(r) {
 }
 
 function sendReserveConfirmation(r) {
-  const msg = `PINE&CO: Hi ${asciiName(r.name)}, your reservation is confirmed — ${r.date} ${r.time} for ${r.partySize}. Please arrive on time; tables 5+ min late may be released as a no-show. Late or can't find the entrance? Call ${CONFIG.BUSINESS_PHONE}`;
-  if (r.phone) sendSMS(r.phone, msg);
+  const t = L(r.lang);
+  if (r.phone) sendSMS(r.phone, t.rConfirmSms(r));
   if (r.email && IS_EMAIL_READY) {
-    sendEmail(r.email, `[PINE&CO] Reservation Confirmed — ${r.date} ${r.time}`, buildReserveConfirmHTML(r)).catch(()=>{});
+    sendEmail(r.email, t.rConfirmSubj(r), buildReserveConfirmHTML(r)).catch(()=>{});
   }
 }
 
@@ -1120,23 +1202,22 @@ function sendReserveConfirmation(r) {
 // Friendly "see you next time", explains we waited but couldn't reach them,
 // includes the reservation link. Works for both reservations (kind='예약') and
 // waiting (kind='웨이팅'). No-op if the person has no phone/email.
-function buildCancelledEmailHTML(name, kind, reserveUrl) {
-  const biz = CONFIG.BUSINESS_PHONE;
-  const kindEn = kind === '예약' ? 'reservation' : 'spot on the waitlist';
+function buildCancelledEmailHTML(name, kind, reserveUrl, lang) {
+  const t = L(lang);
+  const kindW = t.cKind(kind);
   return `<div style="background:#0f0a06;padding:32px 16px;font-family:Georgia,serif;">
     <div style="max-width:520px;margin:0 auto;background:#1e1208;color:#f0ebe0;padding:48px 32px;text-align:center;border-radius:14px;border:1px solid rgba(184,147,90,.15);box-shadow:0 8px 32px rgba(0,0,0,.4);">
       <div style="font-family:Georgia,serif;font-size:14px;letter-spacing:5px;color:#b8935a;margin-bottom:8px;font-weight:300;">PINE &amp; CO</div>
       <div style="font-family:Georgia,serif;font-size:9px;letter-spacing:3px;color:#7a6550;margin-bottom:36px;">SEOUL · COCKTAIL BAR</div>
-      <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 20px;">${kind === '예약' ? 'RESERVATION RELEASED' : 'WAITLIST RELEASED'}</p>
-      <div style="font-family:Georgia,serif;font-size:28px;color:#b8935a;font-weight:300;margin:0 0 24px;line-height:1.3;">See you next time,<br>${name}.</div>
-      <p style="color:#f0ebe0;font-size:15px;line-height:1.8;margin:0 0 10px;">We held your ${kindEn} for 5 minutes and tried to reach you, but couldn't — so, per our policy, it has been marked a no-show. We're truly sorry.</p>
-      <p style="color:#a89478;font-size:13px;line-height:1.8;margin:0 0 28px;">5분간 기다리고 연락도 드렸지만 닿지 않아, 정책상 부득이하게 노쇼 처리되었어요.<br>양해 부탁드리며, 다음엔 꼭 편하게 모시고 싶어요.</p>
-      <p style="margin:28px 0;"><a href="${reserveUrl}" style="display:inline-block;padding:16px 44px;background:#b8935a;color:#1e1208;text-decoration:none;border-radius:8px;font-family:Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">Reserve a Table · 예약하기</a></p>
+      <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 20px;">${t.cHeading(kind)}</p>
+      <div style="font-family:Georgia,serif;font-size:24px;color:#b8935a;font-weight:300;margin:0 0 24px;line-height:1.4;">${t.cGreeting(name)}</div>
+      <p style="color:#f0ebe0;font-size:14px;line-height:1.85;margin:0 0 28px;">${t.cBody(kindW)}</p>
+      <p style="margin:28px 0;"><a href="${reserveUrl}" style="display:inline-block;padding:16px 44px;background:#b8935a;color:#1e1208;text-decoration:none;border-radius:8px;font-family:Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">${t.cBtn}</a></p>
       <hr style="border:none;border-top:1px solid rgba(184,147,90,.25);margin:28px auto;width:60px;"/>
-      <p style="color:#c9a96e;font-size:14px;line-height:1.8;margin:0;">다음에 꼭 뵙겠습니다. / We'd love to see you soon.</p>
+      <p style="color:#c9a96e;font-size:14px;line-height:1.8;margin:0;">${t.cClose}</p>
       <p style="color:#7a6550;font-size:13px;font-style:italic;margin:12px 0 0;">— Pine &amp; Co Seoul</p>
       <hr style="border:none;border-top:1px solid rgba(184,147,90,.15);margin:36px 0 16px;"/>
-      <p style="font-size:10px;color:#5a4530;letter-spacing:1px;margin:0;line-height:1.6;">Pine &amp; Co Seoul · ${biz}</p>
+      <p style="font-size:10px;color:#5a4530;letter-spacing:1px;margin:0;line-height:1.6;">Pine &amp; Co Seoul · ${CONFIG.BUSINESS_PHONE}</p>
     </div>
   </div>`;
 }
@@ -1145,17 +1226,13 @@ function sendCancellationNotice(p, kind) {
   if (!p) return;
   const reserveUrl = `${CONFIG.PUBLIC_URL}/reserve.html`;
   const name = p.name || '';
-  const kindEn = kind === '예약' ? 'reservation' : 'waitlist spot';
+  const t = L(p.lang);
   try {
-    if (p.phone) {
-      const smsKr = `[PINE&CO]\n${name}님, ${kind}이(가) 노쇼 처리되었습니다.\n5분간 기다리고 연락도 시도했지만 닿지 않아, 정책상 부득이하게 취소되었어요. 양해 부탁드려요.\n다음엔 꼭 편하게 모실게요. 아래에서 예약해 주세요.\n\n${name}, we held your ${kindEn} for 5 minutes and tried to reach you but couldn't, so per our policy it's been marked a no-show. We're sorry — we'd love to welcome you next time. Reserve below.\n${reserveUrl}\nTel: ${CONFIG.BUSINESS_PHONE}`;
-      const smsEn = `PINE&CO: ${asciiName(name)}, we held your ${kindEn} for 5 min and tried to reach you but couldn't, so per our policy it's marked a no-show. We're sorry — we'd love to see you next time. Reserve: ${reserveUrl}`;
-      sendSMS(p.phone, isKoreanNumber(p.phone) ? smsKr : smsEn);
-    }
+    if (p.phone) sendSMS(p.phone, t.cSms(name, t.cKind(kind), reserveUrl));
     if (p.email && IS_EMAIL_READY) {
-      sendEmail(p.email, `Pine & Co — ${kind} 취소 안내 / See you next time`, buildCancelledEmailHTML(name, kind, reserveUrl)).catch(() => {});
+      sendEmail(p.email, t.cSubj, buildCancelledEmailHTML(name, kind, reserveUrl, p.lang)).catch(() => {});
     }
-    console.log(`✉️ [CANCEL NOTICE] ${kind} → ${name} (${p.phone || p.email || 'no contact'})`);
+    console.log(`✉️ [CANCEL NOTICE] ${kind} → ${name} · ${p.lang || 'en'} (${p.phone || p.email || 'no contact'})`);
   } catch (e) { console.error('CANCEL NOTICE error:', e.message); }
 }
 
@@ -1167,20 +1244,13 @@ function reservationTimeMs(r) {
 }
 // Polite English reminder (email + SMS) with the on-time / call policy.
 function sendReservationReminder(r, kind) {
-  const subj = kind === '24h'
-    ? `Pine & Co — Reservation reminder (${r.date} ${r.time})`
-    : `Pine & Co — Your reservation is coming up (${r.time})`;
-  if (r.phone) {
-    const lead = kind === '24h'
-      ? `a friendly reminder — your reservation is on ${r.date} at ${r.time} for ${r.partySize}.`
-      : `your reservation is coming up at ${r.time} today for ${r.partySize}. See you soon!`;
-    const sms = `PINE&CO: Hi ${asciiName(r.name)}, ${lead} Please arrive on time; tables 5+ min late may be released as a no-show. Running late or can't find the entrance? Call ${CONFIG.BUSINESS_PHONE}`;
-    sendSMS(r.phone, sms);
-  }
+  const t = L(r.lang);
+  const subj = kind === '24h' ? t.rRem24Subj(r) : t.rRem1hSubj(r);
+  if (r.phone) sendSMS(r.phone, kind === '24h' ? t.rRem24Sms(r) : t.rRem1hSms(r));
   if (r.email && IS_EMAIL_READY) {
     sendEmail(r.email, subj, buildReserveConfirmHTML(r)).catch(() => {});
   }
-  console.log(`⏰ [REMINDER ${kind}] ${r.name} · ${r.date} ${r.time}`);
+  console.log(`⏰ [REMINDER ${kind}] ${r.name} · ${r.date} ${r.time} · ${r.lang || 'en'}`);
 }
 // Fires 24h before and 1h before each confirmed reservation (checked every 30 min).
 function sendReminders() {
@@ -1512,7 +1582,7 @@ app.get('/api/queue', (_req, res) => res.json(queue));
 app.post('/api/queue/join', async (req, res) => {
   try {
     const result = await withQueueLock(async () => {
-      const { name, phone, partySize, email } = req.body;
+      const { name, phone, partySize, email, lang } = req.body;
       if (!name?.trim())
         return { status: 400, body: { error: 'Please enter your name.' } };
       if (!phone?.trim() && !email?.trim())
@@ -1563,6 +1633,7 @@ app.post('/api/queue/join', async (req, res) => {
         name: cleanName, phone: (phone || '').trim(),
         email: cleanEmail || null,
         partySize: size,
+        lang: ['en','ko','zh','ja'].includes(lang) ? lang : 'en',
         joinedAt: Date.now(), status: 'waiting',
       };
       queue.push(entry);
@@ -1949,7 +2020,7 @@ app.get('/api/availability/:date', (req, res) => {
 
 // Guest reservation creation
 app.post('/api/reserve', async (req, res) => {
-  const { name, phone, instagram, email, partySize, date, time, specialRequest } = req.body;
+  const { name, phone, instagram, email, partySize, date, time, specialRequest, lang } = req.body;
   if (!name || !partySize || !date || !time) return res.status(400).json({ error: 'Required fields missing.' });
   if (partySize < 1 || partySize > 10) return res.status(400).json({ error: 'Party size 1-10.' });
   if (events[date]) return res.status(400).json({ error: '이 날짜는 예약을 받지 않습니다 (EVENT). / This date is not available (event).' });
@@ -2020,6 +2091,7 @@ app.post('/api/reserve', async (req, res) => {
         confirmCode,
         name, phone: phone || '', instagram: instagram || '', email: email || '',
         partySize, date, time, preference: 'auto',
+        lang: ['en','ko','zh','ja'].includes(lang) ? lang : 'en',
         zone: a.zone, seats: a.seats, status: 'confirmed', source: 'online',
         notes: specialRequest || '', createdAt: new Date().toISOString(),
         _ip: ip, reminderD1: false, reminderD0: false, modLog: [],
@@ -2070,11 +2142,12 @@ app.get('/api/month/:year/:month', (req, res) => {
 
 // Staff-side reservation creation (manual entry)
 app.post('/api/staff/reserve', (req, res) => {
-  const { pin, name, phone, instagram, email, partySize, date, time, zone, seats, source, notes, staffName } = req.body;
+  const { pin, name, phone, instagram, email, partySize, date, time, zone, seats, source, notes, staffName, lang } = req.body;
   if (pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
   const r = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
     name, phone: phone || '', instagram: instagram || '', email: email || '',
+    lang: ['en','ko','zh','ja'].includes(lang) ? lang : 'en',
     partySize: partySize || 1, date, time, preference: '',
     zone: zone || 'bar', seats: seats || [], status: 'confirmed',
     source: source || 'staff', notes: notes || '',
