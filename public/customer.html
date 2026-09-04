@@ -229,20 +229,19 @@ function pickLang(l){
 // one message; the moment staff turn it off, this panel disappears entirely and
 // the guest communicates by phone only.
 const CHATTR={
-  en:{title:'MESSAGE FROM STAFF',phone:'For anything else, please call us.',close:'Close'},
-  ko:{title:'스태프 안내',phone:'그 외 문의는 전화로 부탁드려요.',close:'닫기'},
-  zh:{title:'门店通知',phone:'其他事宜请致电我们。',close:'关闭'},
-  ja:{title:'スタッフからのお知らせ',phone:'その他のご用件はお電話ください。',close:'閉じる'},
+  en:{title:'MESSAGE FROM STAFF',phone:'For anything else, please call us.'},
+  ko:{title:'스태프 안내',phone:'그 외 문의는 전화로 부탁드려요.'},
+  zh:{title:'门店通知',phone:'其他事宜请致电我们。'},
+  ja:{title:'スタッフからのお知らせ',phone:'その他のご用件はお電話ください。'},
 };
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function chatVisible(me){
-  // Show whenever there's an unread notice — even if staff turned chat OFF, so the
-  // guest can still read it. It disappears only after they confirm (닫기 → ack).
-  // chatEnabled only controls whether staff can send more, not visibility.
-  return !!me
-    && (me.status==='waiting'||me.status==='called')
-    && Array.isArray(me.messages)
-    && me.messages.some(m=>(m.at||0)>(me.chatAckAt||0));
+  // Guest can't dismiss a notice — while chat is ON it always shows (re-readable).
+  // When staff turn chat OFF it stays only until the guest has actually seen it
+  // (auto-marked read on render), then it's gone. chatEnabled gates staff sending.
+  if(!me || !(me.status==='waiting'||me.status==='called') || !Array.isArray(me.messages) || !me.messages.length) return false;
+  if(me.chatEnabled!==false) return true;                       // on → always show
+  return me.messages.some(m=>(m.at||0)>(me.chatAckAt||0));       // off → only until seen
 }
 function chatPanel(me){
   if(!chatVisible(me))return '';
@@ -256,17 +255,21 @@ function chatPanel(me){
     <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:.18em;color:var(--amber);margin-bottom:10px;">💬 ${t.title}</div>
     <div id="chatThread" style="max-height:200px;overflow-y:auto;">${bubbles}</div>
     <p style="font-size:11px;color:var(--muted);margin:12px 0 0;line-height:1.5;">${t.phone}<br><a href="tel:010-6817-0406" style="color:var(--gold);">📞 010-6817-0406</a></p>
-    <button onclick="ackChat()" style="width:100%;margin-top:12px;background:none;border:1px solid rgba(184,147,90,.3);border-radius:6px;padding:10px;color:var(--amber);font-family:'Cinzel',serif;font-size:11px;letter-spacing:.12em;cursor:pointer;">${t.close}</button>
   </div>`;
 }
-function restoreChat(){
+let _ackedUpTo=0;
+function restoreChat(me){
   const th=document.getElementById('chatThread');
   if(th)th.scrollTop=th.scrollHeight;
-}
-async function ackChat(){
-  if(!myId)return;
-  await safeFetch('/api/queue/ack/'+myId,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-  await reloadQueue();render();
+  // Auto read-receipt: once the guest's page has shown the newest notice, quietly
+  // mark it seen (no button, no re-render) so a later "chat off" can hide it.
+  if(me&&Array.isArray(me.messages)&&me.messages.length&&myId){
+    const newest=Math.max(...me.messages.map(m=>m.at||0));
+    if(newest>(me.chatAckAt||0)&&newest>_ackedUpTo){
+      _ackedUpTo=newest;
+      safeFetch('/api/queue/ack/'+myId,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).catch(()=>{});
+    }
+  }
 }
 
 // safeFetch: returns {ok, data} — never crashes
@@ -507,8 +510,9 @@ function render(){
       </div>
       <button class="btn-cancel" style="margin-top:12px;" onclick="cantCome()">앗, 못 가게 됐어요 / Actually, can't make it</button>
       <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>
-      ${chatPanel(me)}`;
-    restoreChat();
+`;
+    app.insertAdjacentHTML('afterbegin', chatPanel(me)); // staff notice right under the logo
+    restoreChat(me);
     return;
   }
 
@@ -558,8 +562,9 @@ function render(){
       <button class="btn-primary" style="margin-top:16px;background:#4a7c59;" onclick="coming()">ON MY WAY / 갈게요</button>
       <button class="btn-primary" style="margin-top:8px;background:rgba(160,80,80,.5);font-size:11px;" onclick="cantCome()">CAN'T MAKE IT / 못 갈 것 같아요</button>
       <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>
-      ${chatPanel(me)}`;
-    restoreChat();
+`;
+    app.insertAdjacentHTML('afterbegin', chatPanel(me)); // staff notice right under the logo
+    restoreChat(me);
     return;
   }
 
@@ -601,8 +606,9 @@ function render(){
         🦗 Loved Pine & Co? Come find <strong style="color:var(--gold);">Cricket</strong> — our second spot is just around the corner.
       </a>
       <button class="btn-cancel" onclick="cantCome()">CANCEL WAITING / 못 갈 것 같아요</button>
-      ${chatPanel(me)}`;
-    restoreChat();
+`;
+    app.insertAdjacentHTML('afterbegin', chatPanel(me)); // staff notice right under the logo
+    restoreChat(me);
     return;
   }
 

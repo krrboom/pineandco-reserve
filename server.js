@@ -1226,6 +1226,14 @@ function buildReserveConfirmHTML(r) {
            인원 변동이 있으시면 매장으로 직접 연락 부탁드립니다.
          </p>
        </div>` : '';
+  // Language buttons → localized web view of this reservation (email can't run JS).
+  const base = `${CONFIG.PUBLIC_URL}/r/${r.confirmCode || ''}`;
+  const langBtn = (code, label) => `<a href="${base}?lang=${code}" style="display:inline-block;padding:6px 12px;margin:3px;border:1px solid rgba(184,147,90,.4);border-radius:6px;color:#c9a96e;text-decoration:none;font-size:11px;letter-spacing:.03em;">${label}</a>`;
+  const langRow = r.confirmCode
+    ? `<div style="text-align:center;margin-bottom:22px;">
+         <p style="font-size:10px;color:#7a6550;letter-spacing:.1em;margin:0 0 8px;">VIEW IN · 언어 · 语言 · 言語</p>
+         ${langBtn('en','English')}${langBtn('ko','한국어')}${langBtn('zh','中文')}${langBtn('ja','日本語')}
+       </div>` : '';
   return `
 <div style="max-width:480px;margin:0 auto;font-family:'Helvetica Neue',sans-serif;background:#1e1208;color:#f0ebe0;padding:40px 30px;border-radius:12px;">
   <div style="text-align:center;margin-bottom:24px;">
@@ -1233,6 +1241,7 @@ function buildReserveConfirmHTML(r) {
     <p style="font-family:Georgia,serif;font-size:10px;color:#c9a96e;letter-spacing:6px;margin:4px 0 0;">SEOUL</p>
   </div>
   <div style="width:40px;height:1px;background:#b8935a;margin:0 auto 24px;opacity:.5;"></div>
+  ${langRow}
   <h2 style="font-family:Georgia,serif;font-size:16px;color:#b8935a;text-align:center;font-weight:400;letter-spacing:2px;margin-bottom:20px;">${t.rTitle}</h2>
   <div style="background:rgba(184,147,90,.08);border:1px solid rgba(184,147,90,.2);border-radius:8px;padding:20px;margin-bottom:20px;">
     <table style="width:100%;font-size:14px;color:#f0ebe0;border-collapse:collapse;">
@@ -2561,6 +2570,18 @@ app.get('/api/history', (_req, res) => {
   const hist = reservations.filter(r => r.status==='seated' || r.status==='noshow' || r.status==='completed')
     .sort((a,b) => b.date < a.date ? -1 : 1);
   res.json(hist);
+});
+
+// Localized reservation view — target of the email's language buttons.
+// Read-only; renders the confirmation in the chosen language (?lang=en|ko|zh|ja).
+app.get('/r/:code', (req, res) => {
+  const r = reservations.find(x => x.confirmCode === req.params.code);
+  if (!r) {
+    return res.status(404).send('<!doctype html><meta charset="utf-8"><body style="font-family:Georgia,serif;background:#1e1208;color:#f0ebe0;text-align:center;padding:64px 20px;">Reservation not found.<br>예약을 찾을 수 없습니다.</body>');
+  }
+  const lang = ['en', 'ko', 'zh', 'ja'].includes(req.query.lang) ? req.query.lang : (r.lang || 'en');
+  const card = buildReserveConfirmHTML({ ...r, lang });
+  res.send(`<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pine & Co — Reservation</title></head><body style="margin:0;background:#0f0a06;padding:24px 12px;">${card}</body></html>`);
 });
 
 // Verify reservation by code (used by guest who lost confirmation)
