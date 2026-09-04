@@ -97,7 +97,18 @@ const CONFIG = {
   RESTRICT_BAR_TEAMS   : 2,
   RESTRICT_TABLES      : 2,
   RESTRICT_COMBINE_MAX : 9,
+  // 23:00 (weekday late slot) is tighter: 1 bar team + 1 table only.
+  LATE_BAR_TEAMS       : 1,
+  LATE_TABLES          : 1,
 };
+
+// Reservation restriction for a given slot: null = unrestricted (19:00/20:00),
+// else { barTeams, tables }. 23:00 is tighter than 21:00.
+function restrictionFor(time) {
+  if (time < CONFIG.RESTRICT_FROM) return null;
+  if (time === CONFIG.LATE_SLOT) return { barTeams: CONFIG.LATE_BAR_TEAMS, tables: CONFIG.LATE_TABLES };
+  return { barTeams: CONFIG.RESTRICT_BAR_TEAMS, tables: CONFIG.RESTRICT_TABLES };
+}
 
 const IS_DEV          = !CONFIG.ALIGO_KEY || CONFIG.ALIGO_KEY === 'YOUR_API_KEY';
 const IS_TWILIO_READY = CONFIG.TWILIO_SID !== 'YOUR_TWILIO_SID';
@@ -1086,18 +1097,18 @@ function buildReserveConfirmHTML(r) {
     </table>
     ${roomNote}
   </div>
-  <div style="text-align:center;font-size:12px;color:#c9a96e;line-height:1.8;">
-    <p>예약 취소는 전화로만 가능합니다.</p>
-    <p>To cancel, please call:</p>
-    <p style="font-size:14px;color:#b8935a;font-weight:500;">${CONFIG.BUSINESS_PHONE}</p>
+  <div style="font-size:12px;color:#f0ebe0;line-height:1.85;background:rgba(184,147,90,.06);border:1px solid rgba(184,147,90,.18);border-radius:8px;padding:16px;">
+    <p style="margin:0 0 8px;">Please arrive on time. As a courtesy to all our guests, tables more than <strong style="color:#c9a96e;">5 minutes late</strong> may be released as a no-show.</p>
+    <p style="margin:0 0 8px;">Running a little late, or having trouble finding the entrance? Please give us a call — we'd be glad to help you in.</p>
+    <p style="margin:0;">To change or cancel your reservation, kindly call us at <strong style="color:#b8935a;">${CONFIG.BUSINESS_PHONE}</strong>.</p>
   </div>
   <div style="width:40px;height:1px;background:#b8935a;margin:24px auto;opacity:.3;"></div>
-  <p style="text-align:center;font-size:10px;color:#c9a96e;opacity:.5;">Open 7PM — 2AM</p>
+  <p style="text-align:center;font-size:10px;color:#c9a96e;opacity:.5;">Open 7PM — 2AM · 📞 ${CONFIG.BUSINESS_PHONE}</p>
 </div>`;
 }
 
 function sendReserveConfirmation(r) {
-  const msg = `[PINE&CO] ${r.name}님, 예약이 확인되었습니다.\n날짜: ${r.date} ${r.time}\n인원: ${r.partySize}명\n취소는 전화로만: ${CONFIG.BUSINESS_PHONE}\n\n[PINE&CO] Confirmed.\n${r.date} ${r.time} / Party: ${r.partySize}\nTo cancel: ${CONFIG.BUSINESS_PHONE}`;
+  const msg = `PINE&CO: Hi ${asciiName(r.name)}, your reservation is confirmed — ${r.date} ${r.time} for ${r.partySize}. Please arrive on time; tables 5+ min late may be released as a no-show. Late or can't find the entrance? Call ${CONFIG.BUSINESS_PHONE}`;
   if (r.phone) sendSMS(r.phone, msg);
   if (r.email && IS_EMAIL_READY) {
     sendEmail(r.email, `[PINE&CO] Reservation Confirmed — ${r.date} ${r.time}`, buildReserveConfirmHTML(r)).catch(()=>{});
@@ -1118,8 +1129,8 @@ function buildCancelledEmailHTML(name, kind, reserveUrl) {
       <div style="font-family:Georgia,serif;font-size:9px;letter-spacing:3px;color:#7a6550;margin-bottom:36px;">SEOUL · COCKTAIL BAR</div>
       <p style="color:#c9a96e;font-size:13px;letter-spacing:2px;margin:0 0 20px;">${kind === '예약' ? 'RESERVATION RELEASED' : 'WAITLIST RELEASED'}</p>
       <div style="font-family:Georgia,serif;font-size:28px;color:#b8935a;font-weight:300;margin:0 0 24px;line-height:1.3;">See you next time,<br>${name}.</div>
-      <p style="color:#f0ebe0;font-size:15px;line-height:1.8;margin:0 0 10px;">We held your ${kindEn} and waited, but couldn't reach you — so it's been released for now.</p>
-      <p style="color:#a89478;font-size:13px;line-height:1.8;margin:0 0 28px;">자리를 마련해두고 기다렸는데 연락이 닿지 않아, 이번 ${kind}은 아쉽게 취소되었어요.<br>다음엔 꼭 편하게 모시고 싶어요.</p>
+      <p style="color:#f0ebe0;font-size:15px;line-height:1.8;margin:0 0 10px;">We held your ${kindEn} for 5 minutes and tried to reach you, but couldn't — so, per our policy, it has been marked a no-show. We're truly sorry.</p>
+      <p style="color:#a89478;font-size:13px;line-height:1.8;margin:0 0 28px;">5분간 기다리고 연락도 드렸지만 닿지 않아, 정책상 부득이하게 노쇼 처리되었어요.<br>양해 부탁드리며, 다음엔 꼭 편하게 모시고 싶어요.</p>
       <p style="margin:28px 0;"><a href="${reserveUrl}" style="display:inline-block;padding:16px 44px;background:#b8935a;color:#1e1208;text-decoration:none;border-radius:8px;font-family:Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">Reserve a Table · 예약하기</a></p>
       <hr style="border:none;border-top:1px solid rgba(184,147,90,.25);margin:28px auto;width:60px;"/>
       <p style="color:#c9a96e;font-size:14px;line-height:1.8;margin:0;">다음에 꼭 뵙겠습니다. / We'd love to see you soon.</p>
@@ -1137,8 +1148,8 @@ function sendCancellationNotice(p, kind) {
   const kindEn = kind === '예약' ? 'reservation' : 'waitlist spot';
   try {
     if (p.phone) {
-      const smsKr = `[PINE&CO]\n${name}님, ${kind}이 취소되었어요.\n자리를 준비하고 기다렸지만 연락이 닿지 않아 아쉽게 정리했어요.\n다음엔 꼭 편하게 모실게요. 아래에서 예약하고 와주세요.\n\n${name}, your ${kindEn} was released — we held it and waited but couldn't reach you. We'd love to see you next time. Reserve below.\n${reserveUrl}\nTel: ${CONFIG.BUSINESS_PHONE}`;
-      const smsEn = `PINE&CO: ${asciiName(name)}, your ${kindEn} was released — we held it and waited but couldn't reach you. We'd love to see you next time. Reserve: ${reserveUrl}`;
+      const smsKr = `[PINE&CO]\n${name}님, ${kind}이(가) 노쇼 처리되었습니다.\n5분간 기다리고 연락도 시도했지만 닿지 않아, 정책상 부득이하게 취소되었어요. 양해 부탁드려요.\n다음엔 꼭 편하게 모실게요. 아래에서 예약해 주세요.\n\n${name}, we held your ${kindEn} for 5 minutes and tried to reach you but couldn't, so per our policy it's been marked a no-show. We're sorry — we'd love to welcome you next time. Reserve below.\n${reserveUrl}\nTel: ${CONFIG.BUSINESS_PHONE}`;
+      const smsEn = `PINE&CO: ${asciiName(name)}, we held your ${kindEn} for 5 min and tried to reach you but couldn't, so per our policy it's marked a no-show. We're sorry — we'd love to see you next time. Reserve: ${reserveUrl}`;
       sendSMS(p.phone, isKoreanNumber(p.phone) ? smsKr : smsEn);
     }
     if (p.email && IS_EMAIL_READY) {
@@ -1149,27 +1160,39 @@ function sendCancellationNotice(p, kind) {
 }
 
 // ── Reminders (D-1, D-0) ──
+// Reservation datetime (KST) in ms; NaN for walk-ins / bad data.
+function reservationTimeMs(r) {
+  if (!r.date || !r.time || r.time === 'walkin') return NaN;
+  return new Date(`${r.date}T${r.time}:00+09:00`).getTime();
+}
+// Polite English reminder (email + SMS) with the on-time / call policy.
+function sendReservationReminder(r, kind) {
+  const subj = kind === '24h'
+    ? `Pine & Co — Reservation reminder (${r.date} ${r.time})`
+    : `Pine & Co — Your reservation is coming up (${r.time})`;
+  if (r.phone) {
+    const lead = kind === '24h'
+      ? `a friendly reminder — your reservation is on ${r.date} at ${r.time} for ${r.partySize}.`
+      : `your reservation is coming up at ${r.time} today for ${r.partySize}. See you soon!`;
+    const sms = `PINE&CO: Hi ${asciiName(r.name)}, ${lead} Please arrive on time; tables 5+ min late may be released as a no-show. Running late or can't find the entrance? Call ${CONFIG.BUSINESS_PHONE}`;
+    sendSMS(r.phone, sms);
+  }
+  if (r.email && IS_EMAIL_READY) {
+    sendEmail(r.email, subj, buildReserveConfirmHTML(r)).catch(() => {});
+  }
+  console.log(`⏰ [REMINDER ${kind}] ${r.name} · ${r.date} ${r.time}`);
+}
+// Fires 24h before and 1h before each confirmed reservation (checked every 30 min).
 function sendReminders() {
-  const today = kstToday();
-  const tmrw  = new Date(Date.now()+9*3600000+86400000).toISOString().slice(0,10);
+  const nowMs = Date.now();
   reservations.forEach(r => {
     if (r.status !== 'confirmed') return;
-    if (r.date === tmrw && !r.reminderD1) {
-      const msg = `[PINE&CO] ${r.name}님, 내일 예약 확인: ${r.date} ${r.time} / ${r.partySize}명\n변경/취소: ${CONFIG.BUSINESS_PHONE}`;
-      if (r.phone) sendSMS(r.phone, msg);
-      if (r.email && IS_EMAIL_READY) {
-        sendEmail(r.email, `[PINE&CO] Tomorrow's Reservation — ${r.date} ${r.time}`, buildReserveConfirmHTML(r)).catch(()=>{});
-      }
-      r.reminderD1 = true; saveRes();
-    }
-    if (r.date === today && !r.reminderD0) {
-      const msg = `[PINE&CO] ${r.name}님, 오늘 예약 확인: ${r.time} / ${r.partySize}명\n오늘 뵙겠습니다!`;
-      if (r.phone) sendSMS(r.phone, msg);
-      if (r.email && IS_EMAIL_READY) {
-        sendEmail(r.email, `[PINE&CO] Today's Reservation — ${r.time}`, buildReserveConfirmHTML(r)).catch(()=>{});
-      }
-      r.reminderD0 = true; saveRes();
-    }
+    const resMs = reservationTimeMs(r);
+    if (isNaN(resMs)) return;
+    const h24 = resMs - 24 * 3600000;
+    const h1  = resMs - 1 * 3600000;
+    if (!r.reminder24 && nowMs >= h24 && nowMs < h1)   { sendReservationReminder(r, '24h'); r.reminder24 = true; saveRes(); }
+    if (!r.reminder1h && nowMs >= h1  && nowMs < resMs) { sendReservationReminder(r, '1h');  r.reminder1h = true; saveRes(); }
   });
 }
 
@@ -1321,15 +1344,16 @@ function autoAssign(date, time, partySize, preference) {
   const freeRoom  = free('ROOM');
 
   // ── 9PM+ restriction (21:00 onward): cap bar teams + tables, no high tables ──
-  const restricted = time >= CONFIG.RESTRICT_FROM;
+  const restr = restrictionFor(time); // null = 19/20 unrestricted; {barTeams,tables} otherwise
+  const restricted = !!restr;
   let barTeamsUsed = 0, tablesUsed = 0;
   if (restricted) {
     const ex = getResFor(date, time); // reservations AT this slot (the cap counter)
     barTeamsUsed = ex.filter(r => r.zone === 'bar').length;
     tablesUsed   = ex.filter(r => r.zone === 'table').reduce((s, r) => s + ((r.seats && r.seats.length) || 1), 0);
   }
-  const barOK      = !restricted || barTeamsUsed < CONFIG.RESTRICT_BAR_TEAMS;      // ≤2 bar teams
-  const tablesLeft = restricted ? Math.max(0, CONFIG.RESTRICT_TABLES - tablesUsed) : 99;
+  const barOK      = !restricted || barTeamsUsed < restr.barTeams;                 // 21:00=2 teams, 23:00=1
+  const tablesLeft = restricted ? Math.max(0, restr.tables - tablesUsed) : 99;     // 21:00=2, 23:00=1
 
   // 1명: 바 → (제한 아닐 때만) 하이
   if (partySize === 1) {
@@ -1903,14 +1927,14 @@ app.get('/api/availability/:date', (req, res) => {
     const roomFree   = !occ.includes('ROOM') ? 1 : 0;
 
     // 9PM+ restriction (21:00 onward): cap bar teams + tables, hide high tables.
-    const restricted = time >= CONFIG.RESTRICT_FROM;
+    const restr = restrictionFor(time); // null=19/20; 21:00={2,2}; 23:00={1,1}
     let eBar = barFree, eTbl = tablesFree, eHigh = highFree;
-    if (restricted) {
+    if (restr) {
       const ex = getResFor(date, time);
       const barTeams   = ex.filter(r => r.zone === 'bar').length;
       const tablesUsed = ex.filter(r => r.zone === 'table').reduce((s, r) => s + ((r.seats && r.seats.length) || 1), 0);
-      eBar  = Math.min(barFree, Math.max(0, CONFIG.RESTRICT_BAR_TEAMS - barTeams) * 2); // ≤2 teams × 2 seats
-      eTbl  = Math.min(tablesFree, Math.max(0, CONFIG.RESTRICT_TABLES - tablesUsed));
+      eBar  = Math.min(barFree, Math.max(0, restr.barTeams - barTeams) * 2); // teams × 2 seats
+      eTbl  = Math.min(tablesFree, Math.max(0, restr.tables - tablesUsed));
       eHigh = 0; // high tables not offered after 9PM
     }
     const closed = isToday && nowHour >= 17;
@@ -1918,7 +1942,7 @@ app.get('/api/availability/:date', (req, res) => {
     for (let ps = 1; ps <= 10; ps++) {
       if (autoAssign(date, time, ps, null)) availPax.push(ps);
     }
-    result[time] = { bar:eBar, tables:eTbl, highTables:eHigh, room:roomFree, isLate:restricted, closed, occupiedSeats:occ, availPax };
+    result[time] = { bar:eBar, tables:eTbl, highTables:eHigh, room:roomFree, isLate:!!restr, closed, occupiedSeats:occ, availPax };
   });
   res.json(result);
 });
