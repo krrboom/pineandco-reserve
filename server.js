@@ -267,6 +267,7 @@ function loadQueue() {
       guestCantCome: typeof e.guestCantCome === 'number' ? e.guestCantCome : null,
       guestComing:   typeof e.guestComing   === 'number' ? e.guestComing   : null,
       lang: typeof e.lang === 'string' ? e.lang : 'en',
+      messages: Array.isArray(e.messages) ? e.messages : [],
     }));
     if (queue.length !== parsed.length) {
       console.warn(`⚠️  Removed ${parsed.length - queue.length} invalid entries from queue`);
@@ -1634,6 +1635,7 @@ app.post('/api/queue/join', async (req, res) => {
         email: cleanEmail || null,
         partySize: size,
         lang: ['en','ko','zh','ja'].includes(lang) ? lang : 'en',
+        messages: [],
         joinedAt: Date.now(), status: 'waiting',
       };
       queue.push(entry);
@@ -1740,6 +1742,35 @@ app.post('/api/queue/swap', async (req, res) => {
     });
     res.json({ ok: true });
   } catch (e) { console.error('SWAP error:', e); res.status(500).json({ error: 'Server error.' }); }
+});
+
+// ── Chat between staff and a waiting guest ──
+// Staff send from manage.html (pin required); guest replies from their status page
+// (no pin). Messages live on the queue entry and reach the other side over the
+// existing SSE queue broadcast — no SMS, in-page only. This never touches
+// reservations or seat logic.
+app.post('/api/queue/message/:id', async (req, res) => {
+  try {
+    const from = req.body?.from === 'staff' ? 'staff' : 'guest';
+    if (from === 'staff' && req.body?.pin !== CONFIG.STAFF_PIN) {
+      return res.status(403).json({ error: 'Wrong PIN' });
+    }
+    const text = String(req.body?.text || '').trim().slice(0, 500);
+    if (!text) return res.status(400).json({ error: 'Empty message.' });
+
+    const result = await withQueueLock(async () => {
+      const entry = queue.find(q => q.id === req.params.id);
+      if (!entry) return { status: 404, body: { error: 'Not found.' } };
+      if (!Array.isArray(entry.messages)) entry.messages = [];
+      entry.messages.push({ from, text, at: Date.now() });
+      // Cap history so a long back-and-forth can't bloat the entry.
+      if (entry.messages.length > 50) entry.messages = entry.messages.slice(-50);
+      broadcastQueue();
+      console.log(`💬 [CHAT ${from}→${from === 'staff' ? 'guest' : 'staff'}] #${entry.number} ${entry.name}: ${text}`);
+      return { status: 200, body: { ok: true, messages: entry.messages } };
+    });
+    res.status(result.status).json(result.body);
+  } catch (e) { console.error('CHAT error:', e); res.status(500).json({ error: 'Server error.' }); }
 });
 
 // ── Guest: "can't go this time" → FLAG only, don't remove yet ──

@@ -1376,6 +1376,7 @@ function renderWaitSidebar(){
     });
   }
   el.innerHTML=h;
+  restoreStaffChat();
 }
 
 function waitCard(e,called){
@@ -1407,8 +1408,50 @@ function waitCard(e,called){
     h+='<button class="btn-del" onclick="wDelete(\''+e.id+'\')">✕</button>';
     h+='</div>';
   }
+  h+=staffChat(e);
   h+='</div>';
   return h;
+}
+
+// ═══════════ STAFF ↔ GUEST CHAT ═══════════
+var staffChatDraft={}, staffChatFocus=null;
+function staffChat(e){
+  var msgs=Array.isArray(e.messages)?e.messages:[];
+  var unread=msgs.length&&msgs[msgs.length-1].from==='guest';
+  var thread=msgs.length?msgs.map(function(m){
+    var staff=m.from==='staff';
+    return '<div style="display:flex;justify-content:'+(staff?'flex-end':'flex-start')+';margin:3px 0;">'
+      +'<div style="max-width:80%;padding:6px 10px;border-radius:10px;font-size:12px;line-height:1.4;word-break:break-word;background:'
+      +(staff?'rgba(184,147,90,.18);border:1px solid rgba(184,147,90,.3);':'rgba(74,124,89,.18);border:1px solid rgba(74,124,89,.3);')
+      +'color:var(--tx);">'+esc(m.text)+'</div></div>';
+  }).join(''):'<div style="font-size:11px;color:var(--mu);text-align:center;padding:4px 0;">메시지 없음</div>';
+  var h='<div class="wc-chat" style="margin-top:8px;border-top:1px solid var(--brd);padding-top:8px;">';
+  h+='<div style="font-size:10px;color:'+(unread?'#4a7c59':'var(--mu)')+';margin-bottom:4px;">💬 손님 채팅'+(unread?' · 새 메시지':'')+'</div>';
+  h+='<div id="stThread_'+e.id+'" style="max-height:120px;overflow-y:auto;margin-bottom:6px;">'+thread+'</div>';
+  h+='<div style="display:flex;gap:5px;">';
+  h+='<input id="stIn_'+e.id+'" placeholder="메시지 보내기…" maxlength="500" autocomplete="off" '
+    +'oninput="staffChatDraft[\''+e.id+'\']=this.value" onfocus="staffChatFocus=\''+e.id+'\'" onblur="if(staffChatFocus===\''+e.id+'\')staffChatFocus=null" '
+    +'onkeydown="if(event.key===\'Enter\'){event.preventDefault();sendStaffChat(\''+e.id+'\');}" '
+    +'style="flex:1;padding:7px 9px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:12px;outline:none;"/>';
+  h+='<button onclick="sendStaffChat(\''+e.id+'\')" style="padding:7px 12px;border:none;border-radius:6px;background:var(--gold);color:#1a1208;font-weight:700;font-size:12px;cursor:pointer;">전송</button>';
+  h+='</div></div>';
+  return h;
+}
+async function sendStaffChat(id){
+  var inp=document.getElementById('stIn_'+id);if(!inp)return;
+  var text=inp.value.trim();if(!text)return;
+  inp.value='';staffChatDraft[id]='';
+  var r=await fetch('/api/queue/message/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:'staff',pin:pin,text:text})}).then(function(r){return r.json();}).catch(function(){return null;});
+  if(!r||!r.ok){fl((r&&r.error)||'메시지 전송 실패');staffChatDraft[id]=text;if(inp)inp.value=text;return;}
+  // SSE broadcast will re-render the card with the new message
+}
+function restoreStaffChat(){
+  Object.keys(staffChatDraft).forEach(function(id){
+    var i=document.getElementById('stIn_'+id);
+    if(i&&staffChatDraft[id]&&!i.value)i.value=staffChatDraft[id];
+  });
+  if(staffChatFocus){var f=document.getElementById('stIn_'+staffChatFocus);if(f){f.focus();var v=f.value;f.value='';f.value=v;}}
+  (wQueue||[]).forEach(function(e){var th=document.getElementById('stThread_'+e.id);if(th)th.scrollTop=th.scrollHeight;});
 }
 
 // ═══════════ WAITING ACTIONS ═══════════

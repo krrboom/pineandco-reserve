@@ -223,6 +223,55 @@ function pickLang(l){
   document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active', b.dataset.lang===l));
 }
 
+// ── Staff ↔ guest chat (in-page, over SSE) ──
+let chatDraft='', chatWasFocused=false;
+const CHATTR={
+  en:{title:'Chat with staff',ph:'Type a message…',send:'Send',empty:'Questions? Message us here.'},
+  ko:{title:'스태프와 대화',ph:'메시지를 입력하세요…',send:'전송',empty:'궁금한 점이 있으면 여기로 보내주세요.'},
+  zh:{title:'与门店沟通',ph:'输入消息…',send:'发送',empty:'有问题？在此留言。'},
+  ja:{title:'スタッフとチャット',ph:'メッセージを入力…',send:'送信',empty:'ご質問はこちらへ。'},
+};
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function chatPanel(me){
+  const t=CHATTR[me.lang]||CHATTR.en;
+  const msgs=Array.isArray(me.messages)?me.messages:[];
+  const bubbles=msgs.length?msgs.map(m=>{
+    const staff=m.from==='staff';
+    return `<div style="display:flex;justify-content:${staff?'flex-start':'flex-end'};margin:5px 0;">
+      <div style="max-width:78%;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word;
+        background:${staff?'rgba(184,147,90,.18)':'rgba(74,124,89,.22)'};color:var(--cream);
+        border:1px solid ${staff?'rgba(184,147,90,.3)':'rgba(74,124,89,.35)'};">${esc(m.text)}</div></div>`;
+  }).join(''):`<p style="text-align:center;font-size:12px;color:var(--muted);padding:8px 0;margin:0;">${t.empty}</p>`;
+  return `<div class="chat-box" style="margin-top:16px;border:1px solid rgba(184,147,90,.2);border-radius:12px;padding:12px;background:rgba(240,235,224,.03);text-align:left;">
+    <div style="font-size:11px;letter-spacing:.1em;color:var(--gold);margin-bottom:8px;">💬 ${t.title}</div>
+    <div id="chatThread" style="max-height:180px;overflow-y:auto;margin-bottom:8px;">${bubbles}</div>
+    <div style="display:flex;gap:6px;">
+      <input id="chatInput" placeholder="${t.ph}" maxlength="500" autocomplete="off"
+        oninput="chatDraft=this.value" onfocus="chatWasFocused=true" onblur="chatWasFocused=false"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();sendChat();}"
+        style="flex:1;padding:10px;border:1px solid rgba(184,147,90,.25);border-radius:8px;background:rgba(240,235,224,.05);color:var(--cream);font-size:13px;"/>
+      <button onclick="sendChat()" style="padding:10px 16px;border:none;border-radius:8px;background:var(--gold);color:var(--ink);font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap;">${t.send}</button>
+    </div>
+  </div>`;
+}
+function restoreChat(){
+  const inp=document.getElementById('chatInput');
+  if(inp){
+    if(chatDraft&&!inp.value)inp.value=chatDraft;
+    if(chatWasFocused){inp.focus();const v=inp.value;inp.value='';inp.value=v;} // keep cursor at end
+  }
+  const th=document.getElementById('chatThread');
+  if(th)th.scrollTop=th.scrollHeight;
+}
+async function sendChat(){
+  const inp=document.getElementById('chatInput');if(!inp)return;
+  const text=inp.value.trim();if(!text||!myId)return;
+  inp.value='';chatDraft='';
+  const res=await safeFetch('/api/queue/message/'+myId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:'guest',text})});
+  if(!res.ok){flash('메시지 전송 실패 / Failed to send.');chatDraft=text;if(inp)inp.value=text;return;}
+  await reloadQueue();render();
+}
+
 // safeFetch: returns {ok, data} — never crashes
 async function safeFetch(url,opts){
   try{
@@ -460,7 +509,9 @@ function render(){
         <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.6;">Please arrive within <strong>5 minutes</strong>, or your spot may be released. Running late? Please call us.<br>5분 내 도착 부탁드려요. 늦어지시면 자리가 취소될 수 있으니 전화 주세요.</p>
       </div>
       <button class="btn-cancel" style="margin-top:12px;" onclick="cantCome()">앗, 못 가게 됐어요 / Actually, can't make it</button>
-      <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>`;
+      <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>
+      ${chatPanel(me)}`;
+    restoreChat();
     return;
   }
 
@@ -509,7 +560,9 @@ function render(){
       </div>
       <button class="btn-primary" style="margin-top:16px;background:#4a7c59;" onclick="coming()">ON MY WAY / 갈게요</button>
       <button class="btn-primary" style="margin-top:8px;background:rgba(160,80,80,.5);font-size:11px;" onclick="cantCome()">CAN'T MAKE IT / 못 갈 것 같아요</button>
-      <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>`;
+      <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>
+      ${chatPanel(me)}`;
+    restoreChat();
     return;
   }
 
@@ -550,7 +603,9 @@ function render(){
         <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:11px;letter-spacing:.12em;">PINE & CO'S SISTER BAR</span><br>
         🦗 Loved Pine & Co? Come find <strong style="color:var(--gold);">Cricket</strong> — our second spot is just around the corner.
       </a>
-      <button class="btn-cancel" onclick="cantCome()">CANCEL WAITING / 못 갈 것 같아요</button>`;
+      <button class="btn-cancel" onclick="cantCome()">CANCEL WAITING / 못 갈 것 같아요</button>
+      ${chatPanel(me)}`;
+    restoreChat();
     return;
   }
 
