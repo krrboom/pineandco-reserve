@@ -1415,21 +1415,31 @@ function waitCard(e,called){
 
 // ═══════════ STAFF ↔ GUEST CHAT ═══════════
 var staffChatDraft={}, staffChatFocus=null;
+// One-way notices: staff → guest. The guest cannot reply; staff can turn the
+// guest's chat window off (그러면 손님 화면에서 사라지고 전화로만 소통).
 function staffChat(e){
+  var enabled=e.chatEnabled!==false;
   var msgs=Array.isArray(e.messages)?e.messages:[];
-  var unread=msgs.length&&msgs[msgs.length-1].from==='guest';
-  var thread=msgs.length?msgs.map(function(m){
-    var staff=m.from==='staff';
-    return '<div style="display:flex;justify-content:'+(staff?'flex-end':'flex-start')+';margin:3px 0;">'
-      +'<div style="max-width:80%;padding:6px 10px;border-radius:10px;font-size:12px;line-height:1.4;word-break:break-word;background:'
-      +(staff?'rgba(184,147,90,.18);border:1px solid rgba(184,147,90,.3);':'rgba(74,124,89,.18);border:1px solid rgba(74,124,89,.3);')
-      +'color:var(--tx);">'+esc(m.text)+'</div></div>';
-  }).join(''):'<div style="font-size:11px;color:var(--mu);text-align:center;padding:4px 0;">메시지 없음</div>';
+  var lastMsg=msgs.length?msgs[msgs.length-1]:null;
+  var seen=lastMsg&&(e.chatAckAt||0)>=(lastMsg.at||0);
   var h='<div class="wc-chat" style="margin-top:8px;border-top:1px solid var(--brd);padding-top:8px;">';
-  h+='<div style="font-size:10px;color:'+(unread?'#4a7c59':'var(--mu)')+';margin-bottom:4px;">💬 손님 채팅'+(unread?' · 새 메시지':'')+'</div>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+  h+='<span style="font-size:10px;color:var(--mu);">💬 손님에게 안내 (읽기 전용)'+(seen?' <span style="color:#4a7c59;">· 손님 확인함 ✓</span>':'')+'</span>';
+  h+='<button onclick="toggleChat(\''+e.id+'\','+(enabled?'false':'true')+')" style="padding:2px 8px;border:1px solid '+(enabled?'#a05050':'#4a7c59')+';border-radius:5px;background:none;color:'+(enabled?'#a05050':'#4a7c59')+';font-size:10px;cursor:pointer;">'+(enabled?'채팅 끄기':'채팅 켜기')+'</button>';
+  h+='</div>';
+  if(!enabled){
+    h+='<div style="font-size:11px;color:var(--mu);padding:4px 0;">채팅 꺼짐 · 손님 화면에서 사라짐 (전화로만 소통)</div>';
+    h+='</div>';
+    return h;
+  }
+  var thread=msgs.length?msgs.map(function(m){
+    return '<div style="display:flex;justify-content:flex-end;margin:3px 0;">'
+      +'<div style="max-width:80%;padding:6px 10px;border-radius:10px;font-size:12px;line-height:1.4;word-break:break-word;'
+      +'background:rgba(184,147,90,.18);border:1px solid rgba(184,147,90,.3);color:var(--tx);">'+esc(m.text)+'</div></div>';
+  }).join(''):'<div style="font-size:11px;color:var(--mu);text-align:center;padding:4px 0;">보낸 안내 없음</div>';
   h+='<div id="stThread_'+e.id+'" style="max-height:120px;overflow-y:auto;margin-bottom:6px;">'+thread+'</div>';
   h+='<div style="display:flex;gap:5px;">';
-  h+='<input id="stIn_'+e.id+'" placeholder="메시지 보내기…" maxlength="500" autocomplete="off" '
+  h+='<input id="stIn_'+e.id+'" placeholder="안내 보내기…" maxlength="500" autocomplete="off" '
     +'oninput="staffChatDraft[\''+e.id+'\']=this.value" onfocus="staffChatFocus=\''+e.id+'\'" onblur="if(staffChatFocus===\''+e.id+'\')staffChatFocus=null" '
     +'onkeydown="if(event.key===\'Enter\'){event.preventDefault();sendStaffChat(\''+e.id+'\');}" '
     +'style="flex:1;padding:7px 9px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:12px;outline:none;"/>';
@@ -1441,9 +1451,15 @@ async function sendStaffChat(id){
   var inp=document.getElementById('stIn_'+id);if(!inp)return;
   var text=inp.value.trim();if(!text)return;
   inp.value='';staffChatDraft[id]='';
-  var r=await fetch('/api/queue/message/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:'staff',pin:pin,text:text})}).then(function(r){return r.json();}).catch(function(){return null;});
+  var r=await fetch('/api/queue/message/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin,text:text})}).then(function(r){return r.json();}).catch(function(){return null;});
   if(!r||!r.ok){fl((r&&r.error)||'메시지 전송 실패');staffChatDraft[id]=text;if(inp)inp.value=text;return;}
   // SSE broadcast will re-render the card with the new message
+}
+async function toggleChat(id,enabled){
+  var r=await fetch('/api/queue/chat-toggle/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:pin,enabled:enabled})}).then(function(r){return r.json();}).catch(function(){return null;});
+  if(!r||!r.ok){fl((r&&r.error)||'변경 실패');return;}
+  fl(enabled?'채팅 켬':'채팅 끔 · 손님 화면에서 사라짐');
+  // SSE broadcast will re-render the card
 }
 function restoreStaffChat(){
   Object.keys(staffChatDraft).forEach(function(id){

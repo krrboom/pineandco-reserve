@@ -268,6 +268,8 @@ function loadQueue() {
       guestComing:   typeof e.guestComing   === 'number' ? e.guestComing   : null,
       lang: typeof e.lang === 'string' ? e.lang : 'en',
       messages: Array.isArray(e.messages) ? e.messages : [],
+      chatEnabled: typeof e.chatEnabled === 'boolean' ? e.chatEnabled : true,
+      chatAckAt: typeof e.chatAckAt === 'number' ? e.chatAckAt : 0,
     }));
     if (queue.length !== parsed.length) {
       console.warn(`⚠️  Removed ${parsed.length - queue.length} invalid entries from queue`);
@@ -591,6 +593,40 @@ function logWaitingEvent(entry) {
     req.write(body); req.end();
   }
   postWithRedirect(CONFIG.SHEETS_WEBHOOK, payload);
+}
+
+// Staff → guest chat message → Apps Script webhook (채팅로그 tab).
+// Kept for complaint-prevention: every notice we push to a guest is archived
+// with who/when/what. Fire-and-forget; never blocks the reply to staff.
+function logChatMessage(entry, text) {
+  try {
+    const atMs = Date.now();
+    const kst = new Date(atMs + 9 * 60 * 60 * 1000);
+    const payload = JSON.stringify({
+      type: 'chat',
+      direction: 'staff→guest',
+      name: entry.name || '',
+      number: entry.number,
+      phone: entry.phone ? toE164(entry.phone) : '',
+      text: text,
+      at: atMs,
+      date: kst.toISOString().split('T')[0],
+      time: kst.toISOString().split('T')[1].slice(0, 8),
+    });
+    const u = new URL(CONFIG.SHEETS_WEBHOOK);
+    const opts = {
+      hostname: u.hostname, path: u.pathname + u.search, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+    };
+    const rq = https.request(opts, (res) => {
+      if (res.statusCode === 302 || res.statusCode === 301) {
+        https.get(res.headers.location, (r2) => { r2.on('data', () => {}); r2.on('end', () => {}); })
+          .on('error', e => console.error('Chat-log redirect error:', e.message));
+      } else { res.on('data', () => {}); res.on('end', () => {}); }
+    });
+    rq.on('error', e => console.error('Chat-log sheet error:', e.message));
+    rq.write(payload); rq.end();
+  } catch (e) { console.error('logChatMessage error:', e.message); }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1635,7 +1671,7 @@ app.post('/api/queue/join', async (req, res) => {
         email: cleanEmail || null,
         partySize: size,
         lang: ['en','ko','zh','ja'].includes(lang) ? lang : 'en',
-        messages: [],
+        messages: [], chatEnabled: true, chatAckAt: 0,
         joinedAt: Date.now(), status: 'waiting',
       };
       queue.push(entry);
@@ -1744,33 +1780,74 @@ app.post('/api/queue/swap', async (req, res) => {
   } catch (e) { console.error('SWAP error:', e); res.status(500).json({ error: 'Server error.' }); }
 });
 
-// ── Chat between staff and a waiting guest ──
-// Staff send from manage.html (pin required); guest replies from their status page
-// (no pin). Messages live on the queue entry and reach the other side over the
-// existing SSE queue broadcast — no SMS, in-page only. This never touches
-// reservations or seat logic.
+// ── One-way notices: staff → waiting guest ──
+// Staff send from manage.html (PIN required). The guest CANNOT reply — their
+// status page shows the notices read-only. Messages live on the queue entry and
+// reach the guest over the existing SSE queue broadcast — no SMS, in-page only.
+// Only guests still holding a waiting page (status waiting/called, i.e. not
+// checked in) can be messaged, and only while chat is left ON for them.
+// This never touches reservations or seat logic.
 app.post('/api/queue/message/:id', async (req, res) => {
   try {
-    const from = req.body?.from === 'staff' ? 'staff' : 'guest';
-    if (from === 'staff' && req.body?.pin !== CONFIG.STAFF_PIN) {
-      return res.status(403).json({ error: 'Wrong PIN' });
-    }
+    if (req.body?.pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
     const text = String(req.body?.text || '').trim().slice(0, 500);
     if (!text) return res.status(400).json({ error: 'Empty message.' });
 
     const result = await withQueueLock(async () => {
       const entry = queue.find(q => q.id === req.params.id);
       if (!entry) return { status: 404, body: { error: 'Not found.' } };
+      if (entry.status !== 'waiting' && entry.status !== 'called') {
+        return { status: 409, body: { error: 'Guest is no longer waiting.' } };
+      }
+      if (entry.chatEnabled === false) {
+        return { status: 409, body: { error: 'Chat is turned off for this guest.' } };
+      }
       if (!Array.isArray(entry.messages)) entry.messages = [];
-      entry.messages.push({ from, text, at: Date.now() });
-      // Cap history so a long back-and-forth can't bloat the entry.
+      entry.messages.push({ from: 'staff', text, at: Date.now() });
+      // Cap history so a long thread can't bloat the entry.
       if (entry.messages.length > 50) entry.messages = entry.messages.slice(-50);
       broadcastQueue();
-      console.log(`💬 [CHAT ${from}→${from === 'staff' ? 'guest' : 'staff'}] #${entry.number} ${entry.name}: ${text}`);
+      logChatMessage(entry, text); // archive to sheet for complaint prevention
+      console.log(`💬 [NOTICE staff→guest] #${entry.number} ${entry.name}: ${text}`);
       return { status: 200, body: { ok: true, messages: entry.messages } };
     });
     res.status(result.status).json(result.body);
   } catch (e) { console.error('CHAT error:', e); res.status(500).json({ error: 'Server error.' }); }
+});
+
+// ── Guest: acknowledge / close the notice panel ──
+// Not a message (guest can't send text) — just a read receipt. Once acked, the
+// panel hides on the guest side until a NEWER staff notice arrives. Lets staff
+// see the guest saw it, and lets the guest dismiss it ("닫기 누르면 끝").
+app.post('/api/queue/ack/:id', async (req, res) => {
+  try {
+    const result = await withQueueLock(async () => {
+      const entry = queue.find(q => q.id === req.params.id);
+      if (!entry) return { status: 404, body: { error: 'Not found.' } };
+      entry.chatAckAt = Date.now();
+      broadcastQueue();
+      return { status: 200, body: { ok: true } };
+    });
+    res.status(result.status).json(result.body);
+  } catch (e) { console.error('CHAT ACK error:', e); res.status(500).json({ error: 'Server error.' }); }
+});
+
+// ── Staff: turn a guest's chat window on/off ──
+// Off → the guest's chat panel disappears entirely; from then on it's phone only.
+app.post('/api/queue/chat-toggle/:id', async (req, res) => {
+  try {
+    if (req.body?.pin !== CONFIG.STAFF_PIN) return res.status(403).json({ error: 'Wrong PIN' });
+    const enabled = req.body?.enabled === true;
+    const result = await withQueueLock(async () => {
+      const entry = queue.find(q => q.id === req.params.id);
+      if (!entry) return { status: 404, body: { error: 'Not found.' } };
+      entry.chatEnabled = enabled;
+      broadcastQueue();
+      console.log(`💬 [CHAT ${enabled ? 'ON' : 'OFF'}] #${entry.number} ${entry.name}`);
+      return { status: 200, body: { ok: true, chatEnabled: entry.chatEnabled } };
+    });
+    res.status(result.status).json(result.body);
+  } catch (e) { console.error('CHAT TOGGLE error:', e); res.status(500).json({ error: 'Server error.' }); }
 });
 
 // ── Guest: "can't go this time" → FLAG only, don't remove yet ──
