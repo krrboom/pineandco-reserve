@@ -1499,13 +1499,13 @@ async function wDecline(id){
   await fetch('/api/queue/decline/'+id,{method:'POST'});
   fl('❌ '+e.name+' 거절됨');
 }
-// 호출했는데 안 온 손님을 직원이 취소 → 노쇼로 기록 (조용히 제거, 문자/메일 없음)
+// 호출했는데 안 온 손님을 직원이 노쇼 처리 → 손님 언어로 취소 안내(문자/이메일) 발송
 async function wNoShow(id){
   var e=(wQueue||[]).find(function(q){return q.id===id;});
   if(!e)return;
-  if(!confirm(e.name+'님을 취소 처리할까요? (노쇼 기록)\n조용히 제거되고 문자·메일은 가지 않습니다.'))return;
+  if(!confirm(e.name+'님을 노쇼 처리할까요?\n5분 기다렸으나 연락이 닿지 않아 취소되었다는 안내가 손님 언어로 문자·이메일 발송됩니다.'))return;
   await fetch('/api/queue/noshow/'+id,{method:'POST'});
-  fl('취소됨: '+e.name+' (노쇼 기록)');
+  fl('노쇼 처리됨: '+e.name+' · 취소 안내 발송');
 }
 
 // ═══════════ 공용 모달 헬퍼 ═══════════
@@ -1944,7 +1944,7 @@ async function sf(id,f,v){
 async function us(id,st){
   var r=aR.find(function(x){return x.id===id;});
   var name=r?r.name:'';
-  if(st==='noshow'){if(!confirm('⚠️ '+name+'님을 NO SHOW 처리할까요?\n\n이 작업은 되돌릴 수 없습니다.'))return;}
+  if(st==='noshow'){if(!confirm('⚠️ '+name+'님을 NO SHOW 처리할까요?\n5분 기다렸으나 연락이 닿지 않아 취소되었다는 안내가 손님 언어로 문자·이메일 발송됩니다.\n\n이 작업은 되돌릴 수 없습니다.'))return;}
   if(st==='cancelled'){if(!confirm('⚠️ '+name+'님의 예약을 취소할까요?\n\n이 작업은 되돌릴 수 없습니다.'))return;}
   if(st==='seated'){if(!confirm(name+'님이 자리에 앉았습니까?'))return;}
   await fetch('/api/reservations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st,staffName:gs()})});
