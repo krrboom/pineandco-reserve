@@ -1345,7 +1345,10 @@ function sendReminders() {
     if (isNaN(resMs)) return;
     const h24 = resMs - 24 * 3600000;
     const h1  = resMs - 1 * 3600000;
-    if (!r.reminder24 && nowMs >= h24 && nowMs < h1)   { sendReservationReminder(r, '24h'); r.reminder24 = true; saveRes(); }
+    // 24h reminder only for FUTURE-day reservations (tomorrow onward). Today's
+    // reservations are already inside the wide 24h window, so they'd wrongly get a
+    // "24 hours to go" note — per policy they get the 1h reminder only.
+    if (!r.reminder24 && r.date > kstToday() && nowMs >= h24 && nowMs < h1) { sendReservationReminder(r, '24h'); r.reminder24 = true; saveRes(); }
     if (!r.reminder1h && nowMs >= h1  && nowMs < resMs) { sendReservationReminder(r, '1h');  r.reminder1h = true; saveRes(); }
   });
 }
