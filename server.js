@@ -781,10 +781,22 @@ if (IS_GMAIL_READY) {
     .catch(err => console.error('❌ Gmail SMTP connection FAILED:', err.message));
 }
 
+// Rough HTML→text for the plain-text MIME part (multipart mail scores better with spam filters).
+function htmlToText(html) {
+  return String(html || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|tr|h[1-6])>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+}
 async function sendEmailViaResend(toEmail, subject, htmlBody) {
   const fromAddr = CONFIG.RESEND_FROM || CONFIG.EMAIL_FROM || 'onboarding@resend.dev';
   return new Promise((resolve) => {
-    const body = JSON.stringify({ from: fromAddr, to: [toEmail], subject, html: htmlBody });
+    const payload = { from: fromAddr, to: [toEmail], subject, html: htmlBody, text: htmlToText(htmlBody) };
+    if (CONFIG.GMAIL_USER) payload.reply_to = CONFIG.GMAIL_USER; // a real reply-to helps deliverability
+    const body = JSON.stringify(payload);
     const req = https.request({
       hostname: 'api.resend.com', path: '/emails', method: 'POST',
       headers: {
