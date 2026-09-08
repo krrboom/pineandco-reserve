@@ -79,6 +79,7 @@ window.I18N_EN={"ui":{
 "ck.Flower Peak Tree 60":"Pork-belly gin, pinot sherry, coconut, perilla leaf",
 "ck.Makgeolli Fizz":"Makgeolli, house coconut soda, orange",
 "ck.Sujeonggwa":"Moonbaesool, home-made sujeonggwa, persimmon sorbet, sorghum pop",
+"ck.Yakjutini":"Yakju, Korean white wine, Korean gin, seasonal jang-ajji",
 "ck.Andong Mule":"Andong soju base, house pear-and-ginger beer",
 "ck.Nokcha Gin Tonic":"Korean gin, house green tea tonic water",
 "ck.Hyunmi & Corn":"Soju, corn-silk and brown-rice soda, house corn cream tart",

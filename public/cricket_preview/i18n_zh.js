@@ -60,6 +60,7 @@ window.I18N_ZH={"ui": {
 "ck.Flower Peak Tree 60":"五花肉琴酒、菲诺雪莉、椰子、紫苏叶",
 "ck.Makgeolli Fizz":"马格利、手工椰子苏打、橙子",
 "ck.Sujeonggwa":"文杯酒、自制水正果、柿子雪葩、高粱爆米花",
+"ck.Yakjutini":"药酒、韩国白葡萄酒、韩国金酒、当季酱菜",
 "ck.Andong Mule":"安东烧酒为基、手工梨·姜啤",
 "ck.Nokcha Gin Tonic":"韩国琴酒、手工绿茶汤力水",
 "ck.Hyunmi & Corn":"烧酒、玉米须·糙米苏打、手工玉米奶油塔",

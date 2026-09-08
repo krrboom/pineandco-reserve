@@ -60,6 +60,7 @@ window.I18N_JA={"ui": {
 "ck.Flower Peak Tree 60":"サムギョプサル・ジン、フィノ・シェリー、ココナッツ、エゴマの葉",
 "ck.Makgeolli Fizz":"マッコリ、自家製ココナッツソーダ、オレンジ",
 "ck.Sujeonggwa":"ムンベスル、自家製スジョングァ、柿シャーベット、ソルガムポップ",
+"ck.Yakjutini":"薬酒、韓国白ワイン、韓国ジン、旬のチャンアチ(漬物)",
 "ck.Andong Mule":"アンドン(Andong)焼酎ベース、自家製の梨・生姜ビア",
 "ck.Nokcha Gin Tonic":"韓国ジン、自家製 緑茶トニックウォーター",
 "ck.Hyunmi & Corn":"焼酎、とうもろこしのひげ・玄米ソーダ、自家製コーンクリームタルト",
