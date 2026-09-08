@@ -709,7 +709,7 @@ const FLAG={unknown:{ko:"지역 미상",en:"Region N/A",zh:"产地不明",ja:"�
             low:{ko:"자료 부족",en:"Limited info",zh:"资料有限",ja:"資料不足"}};
 function fl(k){return FLAG[k][LANG]||FLAG[k].ko;}
 // 지역명: 한국어는 REG.kr, 그 외는 로마자
-const REG_ROM={seoul:"Seoul",incheon:"Incheon·Ganghwa",yangpyeong:"Gyeonggi·Yangpyeong",hwaseong:"Gyeonggi·Hwaseong",yongin:"Gyeonggi·Yongin",yeoju:"Gyeonggi·Yeoju",gimpo:"Gyeonggi·Gimpo",guri:"Gyeonggi·Guri",namyangju:"Gyeonggi·Namyangju",hoengseong:"Gangwon·Hoengseong",chuncheon:"Gangwon·Chuncheon",cheongju:"Chungbuk·Cheongju",chungju:"Chungbuk·Chungju",yeongdong:"Chungbuk·Yeongdong",gongju:"Chungnam·Gongju",yesan:"Chungnam·Yesan",daejeon:"Daejeon",daegu:"Daegu",andong:"Gyeongbuk·Andong",sangju:"Gyeongbuk·Sangju",mungyeong:"Gyeongbuk·Mungyeong",gimhae:"Gyeongnam·Gimhae",hamyang:"Gyeongnam·Hamyang",changwon:"Gyeongnam·Changwon",sacheon:"Gyeongnam·Sacheon",ulsan:"Ulsan",jeonju:"Jeonbuk·Jeonju",sunchang:"Jeonbuk·Sunchang",gochang:"Jeonbuk·Gochang",damyang:"Jeonnam·Damyang",naju:"Jeonnam·Naju",jeju:"Jeju",goyang:"Gyeonggi·Goyang"};
+const REG_ROM={seoul:"Seoul",incheon:"Incheon·Ganghwa",yangpyeong:"Gyeonggi·Yangpyeong",hwaseong:"Gyeonggi·Hwaseong",yongin:"Gyeonggi·Yongin",yeoju:"Gyeonggi·Yeoju",gimpo:"Gyeonggi·Gimpo",guri:"Gyeonggi·Guri",namyangju:"Gyeonggi·Namyangju",hoengseong:"Gangwon·Hoengseong",chuncheon:"Gangwon·Chuncheon",cheongju:"Chungbuk·Cheongju",chungju:"Chungbuk·Chungju",yeongdong:"Chungbuk·Yeongdong",gongju:"Chungnam·Gongju",yesan:"Chungnam·Yesan",sejong:"Sejong",daejeon:"Daejeon",daegu:"Daegu",andong:"Gyeongbuk·Andong",sangju:"Gyeongbuk·Sangju",mungyeong:"Gyeongbuk·Mungyeong",gimhae:"Gyeongnam·Gimhae",hamyang:"Gyeongnam·Hamyang",changwon:"Gyeongnam·Changwon",sacheon:"Gyeongnam·Sacheon",ulsan:"Ulsan",jeonju:"Jeonbuk·Jeonju",sunchang:"Jeonbuk·Sunchang",gochang:"Jeonbuk·Gochang",damyang:"Jeonnam·Damyang",naju:"Jeonnam·Naju",jeju:"Jeju",goyang:"Gyeonggi·Goyang"};
 const PROV_ROM={"11":"Seoul","21":"Busan","22":"Daegu","23":"Incheon","24":"Gwangju","25":"Daejeon","26":"Ulsan","29":"Sejong","31":"Gyeonggi","32":"Gangwon","33":"Chungbuk","34":"Chungnam","35":"Jeonbuk","36":"Jeonnam","37":"Gyeongbuk","38":"Gyeongnam","39":"Jeju"};
 function regName(k){return LANG==="ko"?REG[k].kr:(REG_ROM[k]||k);}
 function cityName(k){return LANG==="ko"?REG[k].kr.replace(/^.. /,''):(REG_ROM[k]||k).split("·").pop();}
@@ -752,7 +752,7 @@ const REG={
  chuncheon:{kr:"강원 춘천",la:37.88,lo:127.73}, cheongju:{kr:"충북 청주",la:36.64,lo:127.49},
  chungju:{kr:"충북 충주",la:36.99,lo:127.93}, yeongdong:{kr:"충북 영동",la:36.17,lo:127.78},
  gongju:{kr:"충남 공주",la:36.45,lo:127.12}, yesan:{kr:"충남 예산",la:36.68,lo:126.84},
- daejeon:{kr:"대전",la:36.35,lo:127.38}, daegu:{kr:"대구",la:35.87,lo:128.60},
+ sejong:{kr:"세종",la:36.49,lo:127.29}, daejeon:{kr:"대전",la:36.35,lo:127.38}, daegu:{kr:"대구",la:35.87,lo:128.60},
  andong:{kr:"경북 안동",la:36.57,lo:128.73}, sangju:{kr:"경북 상주",la:36.41,lo:128.16},
  mungyeong:{kr:"경북 문경",la:36.59,lo:128.19}, gimhae:{kr:"경남 김해",la:35.23,lo:128.89},
  hamyang:{kr:"경남 함양",la:35.52,lo:127.73}, changwon:{kr:"경남 창원",la:35.23,lo:128.68},
@@ -767,6 +767,7 @@ const CATS=[
  {k:"takju",label:"탁주 · 막걸리",desc:"쌀과 누룩으로 빚어 거르지 않은 탁한 술. 은은한 탄산과 새콤달콤함."},
  {k:"yakju",label:"약주 · 청주",desc:"탁주를 맑게 거른 술. 곡물의 깨끗한 단맛에 약재나 꽃을 더하기도."},
  {k:"gwasil",label:"과실주 · 와인",desc:"국산 과일이나 포도로 빚은 술. 오미자·복분자·키위·유자."},
+ {k:"natural",label:"내추럴 와인",desc:"국산 포도만으로 첨가물 없이 빚은 자연주의 와인."},
  {k:"soju",label:"증류식 소주",desc:"발효주를 증류한 맑고 강한 술. 곡물·과일의 풍미가 살아있다."},
  {k:"aged",label:"숙성주",desc:"오크·백자·대나무에 숙성한 증류주. 위스키 같은 깊이."},
  {k:"whisky",label:"위스키",desc:"국내 증류소가 만든 한국 싱글몰트."},
@@ -784,7 +785,7 @@ const BOTTLES=[
  B("ihwaju","국순당 이화주","Kooksoondang Ihwaju","takju",12.5,20,75,"hoengseong","배꽃 필 때 쌀누룩과 떡으로 빚어 요구르트처럼 걸쭉한 전통주.",false),
  B("minhwaju","민화주","Minhwaju","takju",8,17,60,"incheon","야생 효모와 전통 기법으로 빚은 부드럽고 크리미한 프리미엄 막걸리.",false),
  B("chorokseom-sonamu","초록섬 소나무","Chorokseom Sonamu Takju","takju",12,23,80,"yangpyeong","쌀과 솔순을 더해 빚어 솔향과 허브, 곡물향이 은은한 탁주.",false),
- B("chorokseom-spring-takju","초록섬 봄 탁주","Chorokseom Spring Takju","takju",12,0,80,"yangpyeong","멥쌀·찹쌀 이양주에 연잎을 더해 거르지 않고 빚은 초록섬 봄의 탁주, 은은한 연잎향과 균형 잡힌 단맛·산미.",false),
+ B("chorokseom-spring-takju","초록섬 봄 탁주","Chorokseom Spring Takju","takju",12,23,80,"yangpyeong","멥쌀·찹쌀 이양주에 연잎을 더해 거르지 않고 빚은 초록섬 봄의 탁주, 은은한 연잎향과 균형 잡힌 단맛·산미.",false),
  B("inner-nectar","이너피스 넥타","Inner Peace Nectar","takju",10,18,62,"sangju","쌀·복숭아·민트로 빚어 달콤한 복숭아향과 산뜻한 허브 피니시.",false),
  B("inner-flow","이너피스 플로우","Inner Peace Flow","takju",12,18,62,"sangju","쌀·포도·라벤더·민트, 은은한 꽃향과 깔끔한 과일 단맛.",false),
  B("inner-calm","이너피스 캄","Inner Peace Calm","takju",12,18,62,"sangju","딜과 민트를 더한 허브 막걸리, 차분하고 상쾌한 한 잔.",false),
@@ -802,6 +803,7 @@ const BOTTLES=[
  B("chorokseom-spring","초록섬 맑은 술, 봄","Chorokseom Malgeun Sool, Spring","yakju",15,27,80,"yangpyeong","히읗 양조장의 계절 약주, 쌀·누룩·연잎, 섬세한 향과 감칠맛.",false),
  B("daetong-daeip","대통대입술","Daetong Daeip Sul","yakju",13,17,70,"damyang","담양에서 쌀·누룩·보태니컬로 빚어 대나무에 숙성한 약주, 허브향과 깔끔한 피니시.",false),
  B("naju-pear","나주 배 약주","Naju Pear Yakju","yakju",15,18,65,"naju","쌀과 나주 배로 빚은 약주, 은은한 배 단맛과 상쾌한 향.",false),
+ B("baekgyeong-gold","백경 골드","Baekgyeong Gold","yakju",15,20,95,"sejong","세종 백경증류소가 토종벼와 자체 누룩으로 빚은 프리미엄 약주, 곡물의 깊은 단맛과 깔끔한 여운.",false),
  // 과실주 · 와인
  B("sahwa-yuja","사화 유자주","Sahwa Yujaju","gwasil",7,17,65,"changwon","창원 맑은내일 양조장의 유자 과실주, 상큼한 시트러스향과 부드러운 단맛.",false),
  B("seonunsan-bokbunja","선운산 복분자주","Seonunsan Bokbunjaju","gwasil",19,20,90,"gochang","고창 복분자로 빚은 고급 과실주, 균형 잡힌 단맛·산미와 복합적인 향.",false),
@@ -811,6 +813,10 @@ const BOTTLES=[
  B("omirose-yeon","오미로제 연","Omirose Yeon","gwasil",8,0,170,"mungyeong","루비빛 오미자 스파클링, 새콤달콤한 오미자와 상쾌한 피니시.",false),
  B("omirose-gyeol","오미로제 결","Omirose Gyeol","gwasil",12,0,300,"mungyeong","국산 오미자로 빚어 다섯 가지 맛과 가벼운 기포가 어우러진 스파클링.",false),
  B("kiwi-wine","키위와인","Kiwi Wine","gwasil",8,0,95,"sacheon","사천 키위로 빚은 과실주, 상큼달콤한 키위향과 산뜻한 산미.",false),
+ // 내추럴 와인
+ B("meogom-white","화이트 머곰","Meogom White","natural",7.5,0,110,"seoul","서울 도심 양조장 머곰이 국산 청수 포도로 빚은 화이트 내추럴 와인, 드라이한 산미와 은은한 감칠맛.",false),
+ B("meogom-red","레드 머곰","Meogom Red","natural",8.5,0,110,"seoul","국산 머루아(MBA) 포도를 무첨가로 발효한 가벼운 바디의 레드 내추럴 와인.",false),
+ B("meogom-rose","로제 머곰","Meogom Rosé","natural",8,0,110,"seoul","국산 포도를 짧게 침용해 빚은 산뜻하고 드라이한 로제 내추럴 와인.",false),
  // 증류식 소주
  B("tangja-c","탱자씨 소주","Tangja C Soju","soju",23,15,90,"gimhae","김해 가야양조의 증류주, 토종 탱자·진영 단감·김해 쌀로 빚음.",false),
  B("moonbaesool","문배술 25","Moonbaesool","soju",25,15,90,"gimpo","좁쌀·수수·밀로 빚어 문배(돌배) 향이 나는 전통 증류주.",false),
@@ -847,7 +853,7 @@ function priceStr(bt){const G=t("glass"),B=t("bottle"),f=v=>(v*1000).toLocaleStr
  if(bt.g)return G+" "+f(bt.g); return"";}
 const byId=Object.fromEntries(BOTTLES.map(b=>[b.id,b]));
 // 술병 이미지(랜드마크)가 있는 바틀 id — b_<id>.png 존재
-const LM_IDS=new Set(["boksundoga","fogmag","minhwaju","jiranjigyo-fig","sucre","seoul-gold","chorokseom-sonamu","mars-sour","ihwaju","ellyeop-takju","inner-nectar","inner-flow","inner-calm","hwajeonilchwi","ellyeop-cheongju","hangahanju","maruna","pungjeong","naju-pear","daetong-daeip","chorokseom-spring","gyeongseong-gwahaju","dudumulmul","kiwi-wine","omirose-gyeol","omirose-yeon","yul-red","yul-white","seonunsan-bokbunja","sahwa-yuja","damsol","kiwi-sool","hwasim-sweetpotato","andong-jinmaek","ryu24","tangja-c","kione-eagle","gowoon-oak","mongro","ggeek-pale","chusa40","soorok","hwayo-xp"]);
+const LM_IDS=new Set(["boksundoga","fogmag","minhwaju","jiranjigyo-fig","sucre","seoul-gold","chorokseom-sonamu","mars-sour","ihwaju","ellyeop-takju","baekgyeong-gold","meogom-white","inner-nectar","inner-flow","inner-calm","hwajeonilchwi","ellyeop-cheongju","hangahanju","maruna","pungjeong","naju-pear","daetong-daeip","chorokseom-spring","gyeongseong-gwahaju","dudumulmul","kiwi-wine","omirose-gyeol","omirose-yeon","yul-red","yul-white","seonunsan-bokbunja","sahwa-yuja","damsol","kiwi-sool","hwasim-sweetpotato","andong-jinmaek","ryu24","tangja-c","kione-eagle","gowoon-oak","mongro","ggeek-pale","chusa40","soorok","hwayo-xp"]);
 // 크리켓 바 정보 (검색 확인)
 const BARINFO={addr:"서울 강남구 언주로164길 35-6 1층",hours:"매일 19:00 ~ 02:00",tel:"0507-1467-2557"};
 
@@ -961,7 +967,7 @@ renderSool();
 /* ===== 도별 인터랙티브 지도 ===== */
 const SVGNS="http://www.w3.org/2000/svg";
 // 도시(region) → 시도 코드
-const PROV_OF={seoul:'11',incheon:'23',yangpyeong:'31',hwaseong:'31',yongin:'31',yeoju:'31',gimpo:'31',guri:'31',namyangju:'31',hoengseong:'32',chuncheon:'32',cheongju:'33',chungju:'33',yeongdong:'33',gongju:'34',yesan:'34',daejeon:'25',daegu:'22',andong:'37',sangju:'37',mungyeong:'37',gimhae:'38',hamyang:'38',changwon:'38',sacheon:'38',ulsan:'26',jeonju:'35',sunchang:'35',gochang:'35',damyang:'36',naju:'36',jeju:'39',goyang:'31'};
+const PROV_OF={seoul:'11',incheon:'23',yangpyeong:'31',hwaseong:'31',yongin:'31',yeoju:'31',gimpo:'31',guri:'31',namyangju:'31',hoengseong:'32',chuncheon:'32',cheongju:'33',chungju:'33',yeongdong:'33',gongju:'34',yesan:'34',sejong:'34',daejeon:'25',daegu:'22',andong:'37',sangju:'37',mungyeong:'37',gimhae:'38',hamyang:'38',changwon:'38',sacheon:'38',ulsan:'26',jeonju:'35',sunchang:'35',gochang:'35',damyang:'36',naju:'36',jeju:'39',goyang:'31'};
 function cityXY(la,lo){const p=MAPDATA.proj;return [(lo*p.cosLat-p.minX)*p.S+p.pad,(-la-p.minY)*p.S+p.pad];}
 let activeProv=null, zoomed=false, vbAnim=null;
 let barMode='full', seoulBB=null;  // 크리켓 바 상태

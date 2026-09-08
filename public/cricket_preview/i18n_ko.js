@@ -52,6 +52,7 @@ window.I18N_KO = {
 "cat.takju.label":"탁주 · 막걸리","cat.takju.desc":"쌀과 누룩으로 빚어 거르지 않은 탁한 술. 은은한 탄산과 새콤달콤함.",
 "cat.yakju.label":"약주 · 청주","cat.yakju.desc":"탁주를 맑게 거른 술. 곡물의 깨끗한 단맛에 약재나 꽃을 더하기도.",
 "cat.gwasil.label":"과실주 · 와인","cat.gwasil.desc":"국산 과일이나 포도로 빚은 술. 오미자·복분자·키위·유자.",
+"cat.natural.label":"내추럴 와인","cat.natural.desc":"국산 포도만으로 첨가물 없이 빚은 자연주의 와인.",
 "cat.soju.label":"증류식 소주","cat.soju.desc":"발효주를 증류한 맑고 강한 술. 곡물·과일의 풍미가 살아있다.",
 "cat.aged.label":"숙성주","cat.aged.desc":"오크·백자·대나무에 숙성한 증류주. 위스키 같은 깊이.",
 "cat.whisky.label":"위스키","cat.whisky.desc":"국내 증류소가 만든 한국 싱글몰트.",
