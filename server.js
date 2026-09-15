@@ -1439,6 +1439,15 @@ function scheduleDailyReset() {
 //  RESERVATION SYSTEM: availability, auto-assign
 // ─────────────────────────────────────────────────────────────
 function kstToday() { return new Date(Date.now() + 9*3600000).toISOString().slice(0,10); }
+// ── Guest waitlist self-registration window: daily 19:00 → next day 01:30 KST ──
+// Only gates POST /api/queue/join (customer.html). Staff actions, existing guests'
+// status pages, reservations and the 2AM reset are untouched.
+const WAIT_OPEN_MIN = 19 * 60, WAIT_CLOSE_MIN = 1 * 60 + 30;
+function waitingOpenNow() {
+  const d = new Date(Date.now() + 9 * 3600000);
+  const m = d.getUTCHours() * 60 + d.getUTCMinutes();
+  return m >= WAIT_OPEN_MIN || m < WAIT_CLOSE_MIN;
+}
 function isWeekend(d) { const day = new Date(d+'T12:00:00+09:00').getDay(); return day===5 || day===6; }
 // ── New Sunday-as-weekend rule: applies from June 1, 2026 onward ──
 // Before June 1: legacy behavior (Sun = weekday, allows 23:00) — protects existing May reservations
@@ -1644,6 +1653,8 @@ app.get('/api/config', (_req, res) => {
     autoCancelMin : CONFIG.AUTO_CANCEL_MIN,
     staffPin      : CONFIG.STAFF_PIN,
     publicUrl     : CONFIG.PUBLIC_URL,
+    waitingOpen   : waitingOpenNow(),
+    waitingHours  : { open: '19:00', close: '01:30' },
   });
 });
 
@@ -1670,6 +1681,8 @@ app.post('/api/queue/join', async (req, res) => {
   try {
     const result = await withQueueLock(async () => {
       const { name, phone, partySize, email, lang } = req.body;
+      if (!waitingOpenNow())
+        return { status: 403, body: { closed: true, error: 'Waitlist registration is open 7:00 PM – 1:30 AM only. / 웨이팅 등록은 오후 7시부터 새벽 1시 30분까지만 가능합니다.' } };
       if (!name?.trim())
         return { status: 400, body: { error: 'Please enter your name.' } };
       if (!phone?.trim() && !email?.trim())

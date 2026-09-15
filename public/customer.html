@@ -177,6 +177,10 @@ let cfg={},queue=[],waitHist=[],myId=new URLSearchParams(location.search).get('i
 // Deep-link from the "Can't go this time" email button → show a focused confirm screen
 let cantMode=new URLSearchParams(location.search).get('cant')==='1';
 let comingMode=new URLSearchParams(location.search).get('coming')==='1';
+// Self-registration window: 19:00 → next day 01:30 KST (computed from UTC, so a foreign phone's timezone doesn't matter).
+// Server enforces the same rule on /api/queue/join; this only decides whether to show the form.
+let _lastWaitOpen=null;
+function waitOpenNow(){const d=new Date(Date.now()+9*3600000);const m=d.getUTCHours()*60+d.getUTCMinutes();return m>=19*60||m<90;}
 
 // Country codes — Korea first, then common tourist countries
 const COUNTRIES=[
@@ -292,6 +296,8 @@ async function init(){
   await reloadQueue();
   render();
   connectSSE();
+  // Flip the form open/closed exactly at 19:00 / 01:30 without wiping anything the guest is typing.
+  setInterval(()=>{if(!myId&&_lastWaitOpen!==null&&waitOpenNow()!==_lastWaitOpen)render();},15000);
 }
 function connectSSE(){
   try{
@@ -389,6 +395,9 @@ async function register(){
   try{
     const res=await safeFetch('/api/queue/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,phone,partySize,email,lang:guestLang})});
     if(!res.ok){
+      if(res.status===403&&res.data?.closed){
+        flash(res.data.error);render();return;
+      }
       if(res.data?.existing){
         myId=res.data.existing.id;submitted=true;history.replaceState(null,'',`?id=${myId}`);
         await reloadQueue();render();
@@ -644,6 +653,26 @@ function render(){
           🦗 Visit <strong style="color:var(--gold);">Cricket</strong> — our sister bar is waiting for you.
         </a>
         <button class="btn-new" onclick="reset()">NEW REGISTRATION</button>
+      </div>`;
+    return;
+  }
+
+  // 등록 시간 외 (19:00 ~ 익일 01:30 KST) — 폼 대신 안내만
+  _lastWaitOpen=waitOpenNow();
+  if(!_lastWaitOpen){
+    app.innerHTML=`
+      <div class="divider"><span>WAITING LIST</span></div>
+      <div class="my-card">
+        <p class="my-pos" style="color:#c9a96e;">Waitlist opens at 7 PM</p>
+        <p style="font-size:14px;color:var(--muted);margin-top:8px;line-height:1.7;">
+          Registration is open daily <strong style="color:var(--cream);">7:00 PM – 1:30 AM</strong> (Seoul time).<br>
+          <span style="color:#a89478;">웨이팅 등록은 매일 <strong style="color:var(--cream);">오후 7시부터 새벽 1시 30분</strong>까지 가능합니다.</span><br>
+          <span style="font-size:12px;">等候登记时间 19:00 – 01:30 · ウェイティング受付 19:00 – 01:30</span>
+        </p>
+        <a href="/reserve.html" style="display:block;text-align:center;margin-top:16px;padding:12px 16px;border:1px solid rgba(184,147,90,.28);border-radius:10px;background:rgba(184,147,90,.06);text-decoration:none;color:var(--cream);font-size:13px;">
+          Make a reservation instead <span style="color:var(--gold);font-weight:600;">→</span><br><span style="font-size:11px;color:#a89478;">예약은 언제든 가능합니다</span>
+        </a>
+        <div style="text-align:center;margin-top:12px;"><a href="tel:010-6817-0406" style="color:var(--gold);font-size:13px;">📞 010-6817-0406</a></div>
       </div>`;
     return;
   }
