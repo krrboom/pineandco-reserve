@@ -100,14 +100,29 @@ const CONFIG = {
   // 23:00 (weekday late slot) is tighter: 1 bar team + 1 table only.
   LATE_BAR_TEAMS       : 1,
   LATE_TABLES          : 1,
+  // ── TOTAL team cap per slot (owner policy 2026-09-20) ──
+  // Push bookings into 19:00/20:00 and keep late slots thin to cut no-shows:
+  //   21:00 = 2 teams TOTAL, 23:00 = 1 team TOTAL (bar + table + room combined).
+  // Applies to guest online booking + what the booking page shows. Existing
+  // reservations are never touched; staff can still add manually.
+  RESTRICT_TOTAL_TEAMS : 2,
+  LATE_TOTAL_TEAMS     : 1,
 };
 
 // Reservation restriction for a given slot: null = unrestricted (19:00/20:00),
-// else { barTeams, tables }. 23:00 is tighter than 21:00.
+// else { barTeams, tables, total }. 23:00 is tighter than 21:00.
 function restrictionFor(time) {
   if (time < CONFIG.RESTRICT_FROM) return null;
-  if (time === CONFIG.LATE_SLOT) return { barTeams: CONFIG.LATE_BAR_TEAMS, tables: CONFIG.LATE_TABLES };
-  return { barTeams: CONFIG.RESTRICT_BAR_TEAMS, tables: CONFIG.RESTRICT_TABLES };
+  if (time === CONFIG.LATE_SLOT) return { barTeams: CONFIG.LATE_BAR_TEAMS, tables: CONFIG.LATE_TABLES, total: CONFIG.LATE_TOTAL_TEAMS };
+  return { barTeams: CONFIG.RESTRICT_BAR_TEAMS, tables: CONFIG.RESTRICT_TABLES, total: CONFIG.RESTRICT_TOTAL_TEAMS };
+}
+
+// True when a restricted slot already holds its total team cap (any zone, any
+// source; cancelled/no-show excluded). Guest booking is closed for that slot.
+function slotTeamCapReached(date, time) {
+  const restr = restrictionFor(time);
+  if (!restr || !restr.total) return false;
+  return getResFor(date, time).length >= restr.total;
 }
 
 const IS_DEV          = !CONFIG.ALIGO_KEY || CONFIG.ALIGO_KEY === 'YOUR_API_KEY';
@@ -2210,11 +2225,16 @@ app.get('/api/availability/:date', (req, res) => {
       eHigh = 0; // high tables not offered after 9PM
     }
     const closed = isToday && nowHour >= 17;
+    // Total team cap (21:00 = 2, 23:00 = 1): once reached, show the slot as full.
+    const capFull = slotTeamCapReached(date, time);
     const availPax = [];
-    for (let ps = 1; ps <= 10; ps++) {
-      if (autoAssign(date, time, ps, null)) availPax.push(ps);
+    if (!capFull) {
+      for (let ps = 1; ps <= 10; ps++) {
+        if (autoAssign(date, time, ps, null)) availPax.push(ps);
+      }
     }
-    result[time] = { bar:eBar, tables:eTbl, highTables:eHigh, room:roomFree, isLate:!!restr, closed, occupiedSeats:occ, availPax };
+    if (capFull) { eBar = 0; eTbl = 0; eHigh = 0; }
+    result[time] = { bar:eBar, tables:eTbl, highTables:eHigh, room:capFull ? 0 : roomFree, isLate:!!restr, closed, occupiedSeats:occ, availPax };
   });
   res.json(result);
 });
@@ -2266,18 +2286,12 @@ app.post('/api/reserve', async (req, res) => {
 
   try {
     await withResLock(async () => {
-      // ── Late-night (23:00) hard cap: max 2 teams per day ──
-      // Owner policy: 11PM slot limited to 2 teams to ensure proper closing time.
-      if (time === CONFIG.LATE_SLOT) {
-        const lateCount = reservations.filter(r =>
-          r.date === date &&
-          r.time === CONFIG.LATE_SLOT &&
-          r.status !== 'cancelled' &&
-          r.status !== 'noshow'
-        ).length;
-        if (lateCount >= 2) {
-          throw new Error('23:00(11PM) 예약은 하루 2팀까지만 가능합니다. 다른 시간을 선택해주세요. / Late night (11PM) reservations are limited to 2 teams per day. Please select another time.');
-        }
+      // ── Total team cap per slot: 21:00 = 2 teams, 23:00 = 1 team (owner policy) ──
+      // Checked inside the lock so two guests can't both take the last spot.
+      if (slotTeamCapReached(date, time)) {
+        const cap = restrictionFor(time).total;
+        const label = time === CONFIG.LATE_SLOT ? '23:00(11PM)' : '21:00(9PM)';
+        throw new Error(label + ' 예약은 하루 ' + cap + '팀까지만 받습니다. 19:00 또는 20:00을 선택해주세요. / ' + label + ' reservations are limited to ' + cap + ' team' + (cap > 1 ? 's' : '') + ' per day. Please choose 7PM or 8PM.');
       }
       const a = autoAssign(date, time, partySize, null);
       if (!a) {
