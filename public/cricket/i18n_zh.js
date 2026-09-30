@@ -74,7 +74,7 @@ window.I18N_ZH={"ui": {
 "fd.Acorn Rabokki":"以橡子凉粉替代年糕，辣椒酱底加拉面",
 "fd.Golbengi Somyeon":"香螺、橄榄、蒜以鲜味酱汁拌制的素面",
 "fd.Bekhap Sujebi":"以花蛤与萝卜熬汤的手工面片汤",
-"fd.Deaha Gambas":"以紫苏油与泡菜制成的蒜香虾，佐蒜与胡椒",
+"fd.Kimchi Gambas":"以紫苏油与泡菜制成的蒜香虾，佐蒜与胡椒","fd.Mu Jorim":"以辣椒调制的爽辣酱汁与香浓芝麻油慢炖至软嫩的炖萝卜",
 "fd.Dombegogi":"济州式砧板白切肉，配酒曲盐、鱼虾酱、萝卜泡菜",
 "fd.Mungtigi":"韩式生牛肉，佐手工蒜·胡椒酱",
 "fd.Makgeolli Bingsu":"绵密的马格利刨冰，锅巴牛奶，梨花酒与栗子"

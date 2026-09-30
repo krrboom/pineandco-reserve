@@ -94,7 +94,7 @@ window.I18N_EN={"ui":{
 "fd.Acorn Rabokki":"Acorn jelly in place of rice cake, ramen noodles in gochujang sauce",
 "fd.Golbengi Somyeon":"Whelks, olives and garlic tossed with somyeon in a savory sauce",
 "fd.Bekhap Sujebi":"Hand-torn sujebi in a broth simmered with clams and radish",
-"fd.Deaha Gambas":"Shrimp gambas made with perilla oil and kimchi, garlic and pepper",
+"fd.Kimchi Gambas":"Shrimp gambas made with perilla oil and kimchi, garlic and pepper","fd.Mu Jorim":"Tender braised radish simmered in a spicy chili sauce with fragrant sesame oil",
 "fd.Dombegogi":"Jeju-style dombegogi, nuruk salt, jeotgal and radish kimchi",
 "fd.Mungtigi":"Korean-style beef tartare with a house garlic-and-pepper sauce",
 "fd.Makgeolli Bingsu":"Creamy makgeolli shaved ice, nurungji milk, ihwaju and chestnut"

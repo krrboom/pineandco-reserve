@@ -95,7 +95,7 @@ window.I18N_KO = {
 "fd.Acorn Rabokki":"떡 대신 도토리묵, 고추장 소스에 라면사리",
 "fd.Golbengi Somyeon":"골뱅이·올리브·마늘을 감칠맛 소스에 무친 소면",
 "fd.Bekhap Sujebi":"바지락과 무로 끓인 육수의 손수제비",
-"fd.Deaha Gambas":"들기름과 김치로 만든 새우 감바스, 마늘·후추",
+"fd.Kimchi Gambas":"들기름과 김치로 만든 새우 감바스, 마늘·후추","fd.Mu Jorim":"고추를 넣은 칼칼한 소스와 고소한 참기름에 푹 익힌 부드러운 무 조림",
 "fd.Dombegogi":"제주식 돔베고기, 누룩 소금·젓갈·무김치",
 "fd.Mungtigi":"한국식 소고기 육회, 수제 마늘·후추 소스",
 "fd.Makgeolli Bingsu":"크리미한 막걸리 빙수, 누룽지 밀크, 이화주와 밤"
