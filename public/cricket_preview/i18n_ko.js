@@ -77,8 +77,8 @@ window.I18N_KO = {
 "tap":"무알콜 가능",
 "glass":"잔","bottle":"병",
 
-"ck.Flower Peak Tree 60":"삼겹살 진, 피노 셰리, 코코넛, 깻잎",
 "ck.Makgeolli Fizz":"막걸리, 수제 코코넛 소다, 오렌지",
+"dv.hint":"좌우로 넘겨 보세요 · 아무 곳이나 누르면 닫힙니다",
 "ck.Sujeonggwa":"문배술, 수제 수정과, 감 셔벗, 수수 뻥튀기",
 "ck.Yakjutini":"약주, 한국 화이트와인, 한국 진, 제철 장아찌",
 "ck.Andong Mule":"안동소주 베이스, 수제 배·생강 비어",

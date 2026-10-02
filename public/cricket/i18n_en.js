@@ -76,8 +76,8 @@ window.I18N_EN={"ui":{
 "tap":"Non-alcoholic available",
 "glass":"Glass","bottle":"Bottle",
 
-"ck.Flower Peak Tree 60":"Pork-belly gin, pinot sherry, coconut, perilla leaf",
 "ck.Makgeolli Fizz":"Makgeolli, house coconut soda, orange",
+"dv.hint":"Swipe to browse · tap anywhere to close",
 "ck.Sujeonggwa":"Moonbaesool, home-made sujeonggwa, persimmon sorbet, sorghum pop",
 "ck.Yakjutini":"Yakju, Korean white wine, Korean gin, seasonal jang-ajji",
 "ck.Andong Mule":"Andong soju base, house pear-and-ginger beer",

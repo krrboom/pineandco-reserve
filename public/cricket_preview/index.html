@@ -415,6 +415,43 @@ body.mapzoom #sky{opacity:0}   /* 지도 확대 시 배경 태양/달 숨겨 화
 .home-brand,.scrollcue,nav{transition:opacity 1s ease}
 body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:0}
 
+/* ===== 메뉴 그림 뷰어 (동양화) ===== */
+.item-c.has-dish,.item-c.no-dish{display:flex;gap:13px;align-items:center}
+.item-c.has-dish{cursor:pointer}
+.item-c .ibody{flex:1;min-width:0}
+.dthumb{width:60px;height:60px;flex:0 0 auto;border-radius:9px;object-fit:cover;display:block;background:#f1e6cd;
+  box-shadow:0 1px 3px rgba(70,50,20,.22),0 0 0 1px rgba(120,95,55,.22);transition:transform .18s ease}
+.item-c.has-dish:active .dthumb{transform:scale(.94)}
+.dthumb-none{background:#efe6d2 url(mark_cricket.webp) center/50% no-repeat;opacity:.35;box-shadow:0 0 0 1px rgba(120,95,55,.18)}
+.dv{position:fixed;inset:0;z-index:1150;display:flex;align-items:center;justify-content:center;padding:14px 0 44px;cursor:pointer;
+  background:rgba(34,25,14,.82);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+  opacity:0;visibility:hidden;transition:opacity .28s ease,visibility .28s}
+.dv.on{opacity:1;visibility:visible}
+.dv-card{position:relative;width:min(82vw,400px,54dvh);background:#f1e6cd;border-radius:5px;overflow:hidden;
+  box-shadow:0 18px 50px rgba(0,0,0,.5),0 0 0 1px rgba(110,85,45,.4);
+  transform:translateY(14px) scale(.97);transition:transform .32s cubic-bezier(.2,.8,.3,1)}
+.dv-card::after{content:"";position:absolute;inset:6px;border:1px solid rgba(120,95,55,.3);border-radius:2px;pointer-events:none}
+.dv.on .dv-card{transform:none}
+.dv-card.dv-r{animation:dvR .3s ease}
+.dv-card.dv-l{animation:dvL .3s ease}
+@keyframes dvR{from{opacity:.2;transform:translateX(26px)}to{opacity:1;transform:none}}
+@keyframes dvL{from{opacity:.2;transform:translateX(-26px)}to{opacity:1;transform:none}}
+.dv-pic{aspect-ratio:1/1;width:100%;background:#f1e6cd}
+.dv-pic img{width:100%;height:100%;object-fit:cover;display:block;-webkit-mask:linear-gradient(#000 84%,transparent);mask:linear-gradient(#000 84%,transparent)}
+.dv-info{position:relative;margin-top:-8px;padding:0 22px 22px;text-align:center;color:#38291a}
+.dv-kind{display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--f-eul);font-size:11px;letter-spacing:.14em;color:#a8482f}
+.dv-kind i{width:26px;height:1px;background:rgba(168,72,47,.45)}
+.dv-name{font-family:var(--serif);font-size:24px;font-variant-caps:small-caps;letter-spacing:.02em;line-height:1.2;margin-top:6px}
+.dv-tw{font-family:var(--serif);font-style:italic;font-size:12.5px;color:#8a765a;margin-top:2px}
+.dv-desc{font-family:var(--kr);font-size:13.5px;line-height:1.65;color:#5a4630;margin-top:10px;word-break:keep-all;overflow-wrap:anywhere}
+.dv-price{display:inline-block;margin-top:12px;font-family:var(--serif);font-size:14px;color:#38291a;border:1px solid rgba(120,95,55,.45);border-radius:20px;padding:3px 15px;background:rgba(255,252,244,.6)}
+.dv-nav{position:absolute;top:50%;transform:translateY(-70%);z-index:2;width:34px;height:60px;padding:0;border:none;background:none;color:#f1e6cd;
+  font-family:var(--serif);font-size:42px;line-height:1;cursor:pointer;opacity:.9}
+.dv-prev{left:max(1px,calc(50% - 246px))}
+.dv-next{right:max(1px,calc(50% - 246px))}
+.dv-foot{position:absolute;left:0;right:0;bottom:15px;display:flex;gap:10px;justify-content:center;color:#e9dcc0;font-family:var(--kr);font-size:11.5px;letter-spacing:.03em;opacity:.85;pointer-events:none}
+.dv-foot #dvCount{font-family:var(--serif);letter-spacing:.12em}
+
 /* ===== 3주년 팝업 메뉴 (오늘만) ===== */
 #annivPop{position:fixed;inset:0;z-index:1200;background:#f3e9d2;display:none;flex-direction:column;opacity:0;transition:opacity .4s ease}
 #annivPop.show{display:flex;opacity:1}
@@ -499,6 +536,23 @@ body.intro-run .home-brand,body.intro-run .scrollcue,body.intro-run nav{opacity:
     </div>
   </div>
   <button id="annivEnter" class="anniv-btn">메뉴 보기 · View Menu</button>
+</div>
+
+<!-- 메뉴 그림 뷰어: 칵테일·안주를 누르면 동양화 그림 + 이름·재료. 좌우로 넘기고, 아무 곳이나 누르면 닫힘 -->
+<div id="dishView" class="dv" role="dialog" aria-modal="true">
+  <button class="dv-nav dv-prev" aria-label="previous">‹</button>
+  <div class="dv-card" id="dvCard">
+    <div class="dv-pic"><img id="dvImg" alt="" decoding="async"></div>
+    <div class="dv-info">
+      <div class="dv-kind"><i></i><span id="dvKind"></span><i></i></div>
+      <div class="dv-name" id="dvName"></div>
+      <div class="dv-tw" id="dvTw"></div>
+      <div class="dv-desc" id="dvDesc"></div>
+      <div class="dv-price" id="dvPrice"></div>
+    </div>
+  </div>
+  <button class="dv-nav dv-next" aria-label="next">›</button>
+  <div class="dv-foot"><span id="dvCount"></span><span id="dvHint"></span></div>
 </div>
 
 <button id="soundToggle" class="sound-toggle" aria-label="sound">🔊</button>
@@ -717,8 +771,6 @@ function provName(code,kr){return LANG==="ko"?kr:(PROV_ROM[code]||kr);}
 
 /* ===== 메뉴 데이터 ===== */
 const COCKTAILS=[
- {name:"Flower Peak Tree 60",tw:"",desc:"삼겹살 진, 피노 셰리, 코코넛, 깻잎",link:null,
-  share:{flag:"flag_sg.webp",country:"Singapore",bar:"bar_nighthawk.webp",barName:"Nighthawk"}},
  {name:"Makgeolli Fizz",tw:"Piña Colada twist",desc:"막걸리, 수제 코코넛 소다, 오렌지",link:"takju"},
  {name:"Andong Mule",tw:"Moscow Mule twist",desc:"안동소주 베이스, 수제 배·생강 비어",link:null,na:true},
  {name:"Nokcha Gin Tonic",tw:"G&T twist",desc:"한국 진, 수제 녹차 토닉워터",link:null,na:true},
@@ -872,17 +924,71 @@ function renderCocktails(){
     ? `<img class="shflag" src="${d.share.flag}" alt="${esc(d.share.country)}" title="from ${esc(d.share.country)}">`
       +`<img class="shbar" src="${d.share.bar}" alt="${esc(d.share.barName)}" title="by ${esc(d.share.barName)}" onerror="this.remove()">`
     : "";
-  return `<div class="item-c">
+  return `<div ${dishAttr(d.name)}>${dishThumb(d.name)}<div class="ibody">
     <div class="ih"><span class="iname">${esc(d.name)}${sh}${d.tw?` <span class="itw">(${esc(d.tw)})</span>`:""}</span><span class="idot"></span><span class="iprice">25,000</span></div>
     <div class="idesc">${esc(t('ck.'+d.name))}</div>${d.share?'<div class="shnote">(sharing project)</div>':""}
     <div class="itags">${tag}${d.na?`<span class="tj na">${esc(t('tap'))}</span>`:""}</div>
-  </div>`;}).join("");
+  </div></div>`;}).join("");
 }
 function renderFoods(){
  document.getElementById("foodList").innerHTML=FOODS.map(d=>`
-  <div class="item-c"><div class="ih"><span class="iname">${esc(d.name)}</span><span class="idot"></span><span class="iprice">${d.p}</span></div>
-  <div class="idesc">${esc(t('fd.'+d.name))}</div></div>`).join("");
+  <div ${dishAttr(d.name)}>${dishThumb(d.name)}<div class="ibody"><div class="ih"><span class="iname">${esc(d.name)}</span><span class="idot"></span><span class="iprice">${d.p}</span></div>
+  <div class="idesc">${esc(t('fd.'+d.name))}</div></div></div>`).join("");
 }
+
+/* ===== 메뉴 그림 뷰어 (실제 사진을 동양화로 옮긴 그림) =====
+   dish/<id>.webp(큰 그림) · dish/<id>_t.webp(목록 썸네일). 그림이 있는 메뉴만 DISH에 등록. */
+const DISH=new Set(["andong-mule","nokcha-gin-tonic","hyunmi-and-corn","maesil-and-cucumber","gwahaju-on-the-lotus-leaf","yin-and-yang","tomato-and-spicy","mushroom-and-coffee","ube-alexander","sujeonggwa","yakjutini","namul-jeon","acorn-rabokki","golbengi-somyeon","bekhap-sujebi","kimchi-gambas","mu-jorim","dombegogi","mungtigi","makgeolli-bingsu"]);
+const DISH_BG={"andong-mule":"#f7e7cb","acorn-rabokki":"#f2e0c4","bekhap-sujebi":"#ebd1ab","dombegogi":"#f3ddb9","golbengi-somyeon":"#f6ead4","gwahaju-on-the-lotus-leaf":"#f3e2c7","hyunmi-and-corn":"#eecea4","kimchi-gambas":"#f3deb9","maesil-and-cucumber":"#f1ddc0","makgeolli-bingsu":"#f6e3c5","mu-jorim":"#f3ddbc","mungtigi":"#f4ddb5","mushroom-and-coffee":"#f2ddbc","namul-jeon":"#eed9b8","nokcha-gin-tonic":"#f3ddba","sujeonggwa":"#f1dfc1","tomato-and-spicy":"#f6e5c8","ube-alexander":"#f7e3c4","yakjutini":"#f4ddb8","yin-and-yang":"#f2e1c1"};   // 그림별 한지 바탕색(자동 추출)
+function dishId(n){return String(n).toLowerCase().replace(/\s*&\s*/g,"-and-").replace(/\s+/g,"-");}
+function dishAttr(n){const id=dishId(n);return DISH.has(id)?`class="item-c has-dish" onclick="openDish('${id}',event)"`:`class="item-c no-dish"`;}
+function dishThumb(n){const id=dishId(n);
+ return DISH.has(id)?`<img class="dthumb" loading="lazy" decoding="async" src="dish/${id}_t.webp" alt="">`:`<span class="dthumb dthumb-none"></span>`;}
+let dvList=[],dvIdx=0,dvSwiped=false;
+function dishItems(){   // 메뉴에 보이는 순서 그대로: 칵테일 → 안주
+ const a=[];
+ COCKTAILS.forEach(d=>{const id=dishId(d.name);if(DISH.has(id))a.push({id,name:d.name,tw:d.tw||"",desc:t('ck.'+d.name),price:"25,000",kind:t('nav.cocktail')});});
+ FOODS.forEach(d=>{const id=dishId(d.name);if(DISH.has(id))a.push({id,name:d.name,tw:"",desc:t('fd.'+d.name),price:d.p,kind:t('nav.food')});});
+ return a;
+}
+function showDish(dir){
+ const it=dvList[dvIdx]; if(!it)return;
+ const card=document.getElementById("dvCard"), img=document.getElementById("dvImg");
+ card.classList.remove("dv-l","dv-r"); void card.offsetWidth;
+ if(dir)card.classList.add(dir>0?"dv-r":"dv-l");
+ card.style.background=DISH_BG[it.id]||"#f1e6cd";   // 그림마다 한지 색이 조금씩 달라, 카드 바탕을 그 그림의 한지 색에 맞춘다
+ img.src="dish/"+it.id+".webp"; img.alt=it.name;
+ document.getElementById("dvKind").textContent=it.kind;
+ document.getElementById("dvName").textContent=it.name;
+ const tw=document.getElementById("dvTw"); tw.textContent=it.tw?"("+it.tw+")":""; tw.style.display=it.tw?"":"none";
+ document.getElementById("dvDesc").textContent=it.desc;
+ document.getElementById("dvPrice").textContent="₩"+it.price;
+ document.getElementById("dvCount").textContent=(dvIdx+1)+" / "+dvList.length;
+ [-1,1].forEach(k=>{const n=dvList[(dvIdx+k+dvList.length)%dvList.length]; if(n){const p=new Image();p.src="dish/"+n.id+".webp";}});   // 양옆 그림 미리 받기
+}
+function openDish(id,ev){
+ if(ev&&ev.target&&ev.target.closest&&ev.target.closest(".tj"))return;   // 도감 바로가기 태그는 원래 동작
+ dvList=dishItems(); const i=dvList.findIndex(x=>x.id===id); if(i<0)return;
+ dvIdx=i; document.getElementById("dvHint").textContent=t('dv.hint');
+ showDish(0); document.getElementById("dishView").classList.add("on");
+}
+function closeDish(){document.getElementById("dishView").classList.remove("on");}
+function stepDish(k){if(!dvList.length)return; dvIdx=(dvIdx+k+dvList.length)%dvList.length; showDish(k);}
+(function(){
+ const v=document.getElementById("dishView"); if(!v)return;
+ let sx=0,sy=0,tracking=false;
+ v.addEventListener("touchstart",e=>{const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true;dvSwiped=false;},{passive:true});
+ v.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;
+   if(Math.abs(dx)>42&&Math.abs(dx)>Math.abs(dy)*1.3){dvSwiped=true;stepDish(dx<0?1:-1);setTimeout(()=>{dvSwiped=false;},350);}},{passive:true});
+ v.addEventListener("click",e=>{
+   if(dvSwiped)return;                                   // 방금 넘긴 스와이프는 닫기로 치지 않는다
+   const nav=e.target.closest(".dv-nav");
+   if(nav){e.stopPropagation();stepDish(nav.classList.contains("dv-next")?1:-1);return;}
+   closeDish();                                          // 그 밖에는 어디를 눌러도 닫힘
+ });
+ document.addEventListener("keydown",e=>{if(!v.classList.contains("on"))return;
+   if(e.key==="ArrowRight")stepDish(1);else if(e.key==="ArrowLeft")stepDish(-1);else if(e.key==="Escape")closeDish();});
+})();
 
 /* ===== 전통주 도감 렌더 ===== */
 let soolFilter="all";
