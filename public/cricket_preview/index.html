@@ -776,6 +776,7 @@ const COCKTAILS=[
  {name:"Nokcha Gin Tonic",tw:"G&T twist",desc:"한국 진, 수제 녹차 토닉워터",link:null,na:true},
  {name:"Hyunmi & Corn",tw:"Whisky Highball twist",desc:"소주, 옥수수수염·현미 소다, 수제 옥수수 크림 타르트",link:null,na:true},
  {name:"Maesil & Cucumber",tw:"Gin Fizz twist",desc:"죽력고, 매실·오이 소다, 유산발효 오이 피클",link:null,na:true},
+ {name:"Boksoonga Fizz",tw:"",desc:"복분자 스피릿, 복숭아 봉봉, 망고, 한국 복숭아 리큐르",link:null},
  {name:"Gwahaju on the Lotus Leaf",tw:"bamboo twist",desc:"과하주, 연꽃 인퓨즈 약주, 연잎 압생트, 무화과 피클",link:null},
  {name:"Yin & Yang",tw:"Whisky Sour twist",desc:"약주, 살구주, 한국 베리 리큐르, 레몬",link:"yakju"},
  {name:"Tomato & spicy",tw:"Bloody Mary twist",desc:"토마토 막걸리, 불닭 팅크, 우스터 소스, 바질",link:"takju"},
@@ -783,18 +784,17 @@ const COCKTAILS=[
  {name:"Ube Alexander",tw:"Brandy Alexander twist",desc:"고구마 소주, 우베 막걸리, 스모키 솔트, 라임",link:null},
  {name:"Sujeonggwa",tw:"",desc:"문배술, 수제 수정과, 감 셔벗, 수수 뻥튀기",link:"moonbaesool"},
  {name:"Yakjutini",tw:"Reverse Martini twist",desc:"약주, 한국 화이트와인, 한국 진, 제철 장아찌",link:"yakju"},
- {name:"Boksoonga Fizz",tw:"",desc:"복분자 스피릿, 복숭아 봉봉, 망고, 한국 복숭아 리큐르",link:null},
 ];
 const FOODS=[
+ {name:"Mu Jorim",p:"12,000",desc:"고추를 넣은 칼칼한 소스와 고소한 참기름에 푹 익힌 부드러운 무 조림"},
  {name:"Namul Jeon",p:"23,000",desc:"나물과 오징어·새우로 부친 한국식 전"},
+ {name:"Makgeolli Bingsu",p:"23,000",desc:"크리미한 막걸리 빙수, 누룽지 밀크, 이화주와 밤"},
  {name:"Acorn Rabokki",p:"25,000",desc:"떡 대신 도토리묵, 고추장 소스에 라면사리"},
  {name:"Golbengi Somyeon",p:"25,000",desc:"골뱅이·올리브·마늘을 감칠맛 소스에 무친 소면"},
  {name:"Bekhap Sujebi",p:"25,000",desc:"바지락과 무로 끓인 육수의 손수제비"},
  {name:"Kimchi Gambas",p:"28,000",desc:"들기름과 김치로 만든 새우 감바스, 마늘·후추"},
- {name:"Mu Jorim",p:"12,000",desc:"고추를 넣은 칼칼한 소스와 고소한 참기름에 푹 익힌 부드러운 무 조림"},
  {name:"Dombegogi",p:"33,000",desc:"제주식 돔베고기, 누룩 소금·젓갈·무김치"},
  {name:"Mungtigi",p:"35,000",desc:"한국식 소고기 육회, 수제 마늘·후추 소스"},
- {name:"Makgeolli Bingsu",p:"23,000",desc:"크리미한 막걸리 빙수, 누룽지 밀크, 이화주와 밤"},
 ];
 
 /* ===== 지역 ===== */
@@ -939,8 +939,8 @@ function renderFoods(){
 
 /* ===== 메뉴 그림 뷰어 (실제 사진을 동양화로 옮긴 그림) =====
    dish/<id>.webp(큰 그림) · dish/<id>_t.webp(목록 썸네일). 그림이 있는 메뉴만 DISH에 등록. */
-const DISH=new Set(["andong-mule","nokcha-gin-tonic","hyunmi-and-corn","maesil-and-cucumber","gwahaju-on-the-lotus-leaf","yin-and-yang","tomato-and-spicy","mushroom-and-coffee","ube-alexander","makgeolli-fizz","sujeonggwa","yakjutini","namul-jeon","acorn-rabokki","golbengi-somyeon","bekhap-sujebi","kimchi-gambas","mu-jorim","dombegogi","mungtigi","makgeolli-bingsu"]);
-const DISH_BG={"andong-mule":"#f7e7cb","acorn-rabokki":"#f2e0c4","bekhap-sujebi":"#ebd1ab","dombegogi":"#f3ddb9","golbengi-somyeon":"#f6ead4","gwahaju-on-the-lotus-leaf":"#f4e3c9","hyunmi-and-corn":"#eecea4","kimchi-gambas":"#f3deb9","maesil-and-cucumber":"#f1ddc0","makgeolli-bingsu":"#f6e3c5","makgeolli-fizz":"#f1ddbb","mu-jorim":"#f3ddbc","mungtigi":"#f4ddb5","mushroom-and-coffee":"#f2ddbc","namul-jeon":"#eed9b8","nokcha-gin-tonic":"#f3ddba","sujeonggwa":"#f1dfc1","tomato-and-spicy":"#f6e5c8","ube-alexander":"#f7e3c4","yakjutini":"#f4ddb8","yin-and-yang":"#f2e1c1"};   // 그림별 한지 바탕색(자동 추출)
+const DISH=new Set(["andong-mule","nokcha-gin-tonic","hyunmi-and-corn","maesil-and-cucumber","boksoonga-fizz","gwahaju-on-the-lotus-leaf","yin-and-yang","tomato-and-spicy","mushroom-and-coffee","ube-alexander","makgeolli-fizz","sujeonggwa","yakjutini","namul-jeon","acorn-rabokki","golbengi-somyeon","bekhap-sujebi","kimchi-gambas","mu-jorim","dombegogi","mungtigi","makgeolli-bingsu"]);
+const DISH_BG={"andong-mule":"#f7e7cb","acorn-rabokki":"#f2e0c4","bekhap-sujebi":"#ebd1ab","boksoonga-fizz":"#f6e2bf","dombegogi":"#f3ddb9","golbengi-somyeon":"#f6ead4","gwahaju-on-the-lotus-leaf":"#f4e3c9","hyunmi-and-corn":"#eecea4","kimchi-gambas":"#f3deb9","maesil-and-cucumber":"#f1ddc0","makgeolli-bingsu":"#f6e3c5","makgeolli-fizz":"#f1ddbb","mu-jorim":"#f3ddbc","mungtigi":"#f4ddb5","mushroom-and-coffee":"#f2ddbc","namul-jeon":"#eed9b8","nokcha-gin-tonic":"#f3ddba","sujeonggwa":"#f1dfc1","tomato-and-spicy":"#f6e5c8","ube-alexander":"#f7e3c4","yakjutini":"#f4ddb8","yin-and-yang":"#f2e1c1"};   // 그림별 한지 바탕색(자동 추출)
 function dishId(n){return String(n).toLowerCase().replace(/\s*&\s*/g,"-and-").replace(/\s+/g,"-");}
 function dishAttr(n){const id=dishId(n);return DISH.has(id)?`class="item-c has-dish" onclick="openDish('${id}',event)"`:`class="item-c no-dish"`;}
 function dishThumb(n){const id=dishId(n);
