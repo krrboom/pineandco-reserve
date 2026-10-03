@@ -80,6 +80,7 @@ window.I18N_EN={"ui":{
 "dv.hint":"Swipe to browse · tap anywhere to close",
 "ck.Sujeonggwa":"Moonbaesool, home-made sujeonggwa, persimmon sorbet, sorghum pop",
 "ck.Yakjutini":"Yakju, Korean white wine, Korean gin, seasonal jang-ajji",
+"ck.Boksunga Crush":"Bokbunja spirit, peach bongbong, mango, Korean peach liqueur",
 "ck.Andong Mule":"Andong soju base, house pear-and-ginger beer",
 "ck.Nokcha Gin Tonic":"Korean gin, house green tea tonic water",
 "ck.Hyunmi & Corn":"Soju, corn-silk and brown-rice soda, house corn cream tart",
