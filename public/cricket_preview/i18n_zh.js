@@ -61,7 +61,7 @@ window.I18N_ZH={"ui": {
 "dv.hint":"左右滑动浏览 · 点击任意处关闭",
 "ck.Sujeonggwa":"文杯酒、自制水正果、柿子雪葩、高粱爆米花",
 "ck.Yakjutini":"药酒、韩国白葡萄酒、韩国金酒、当季酱菜",
-"ck.Boksoonga Fizz":"覆盆子烈酒、桃子蹦蹦饮、芒果、韩国桃子利口酒",
+"ck.Boksoonga Crush":"覆盆子烈酒、桃子蹦蹦饮、芒果、韩国桃子利口酒",
 "ck.Andong Mule":"安东烧酒为基、手工梨·姜啤",
 "ck.Nokcha Gin Tonic":"韩国琴酒、手工绿茶汤力水",
 "ck.Hyunmi & Corn":"烧酒、玉米须·糙米苏打、手工玉米奶油塔",

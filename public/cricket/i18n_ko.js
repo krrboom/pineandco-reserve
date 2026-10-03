@@ -81,7 +81,7 @@ window.I18N_KO = {
 "dv.hint":"좌우로 넘겨 보세요 · 아무 곳이나 누르면 닫힙니다",
 "ck.Sujeonggwa":"문배술, 수제 수정과, 감 셔벗, 수수 뻥튀기",
 "ck.Yakjutini":"약주, 한국 화이트와인, 한국 진, 제철 장아찌",
-"ck.Boksoonga Fizz":"복분자 스피릿, 복숭아 봉봉, 망고, 한국 복숭아 리큐르",
+"ck.Boksoonga Crush":"복분자 스피릿, 복숭아 봉봉, 망고, 한국 복숭아 리큐르",
 "ck.Andong Mule":"안동소주 베이스, 수제 배·생강 비어",
 "ck.Nokcha Gin Tonic":"한국 진, 수제 녹차 토닉워터",
 "ck.Hyunmi & Corn":"소주, 옥수수수염·현미 소다, 수제 옥수수 크림 타르트",
