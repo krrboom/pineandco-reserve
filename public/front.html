@@ -69,6 +69,27 @@
   #contact{ position:absolute; right:60px; bottom:50px; font-size:18px; letter-spacing:.2em; color:var(--gold2); }
   #contact b{ font-weight:500; color:var(--gold); font-size:22px; letter-spacing:.14em; }
   #clock{ position:absolute; left:60px; bottom:50px; font-size:16px; letter-spacing:.14em; color:#8a7250; }
+
+  /* ══ 세로 모니터(붐 가게: 26×47cm, 1080×1920) 레이아웃 ══
+     화면이 세로이면(body.portrait) 위에서 아래로: 로고·QR·대기 → 가로 구분선 → Welcome → 벨트. 1080×1920 기준으로 그린다. */
+  body.portrait #stage{ width:1080px; height:1920px; }
+  body.portrait .vline{ left:120px; right:120px; top:1010px; bottom:auto; width:auto; height:1.5px; }
+  body.portrait #left{ width:1080px; height:1000px; }
+  body.portrait #logo{ top:64px; width:150px; height:267px; }
+  body.portrait #scanto{ top:350px; left:160px; right:160px; }
+  body.portrait #qr{ top:398px; width:400px; height:400px; }
+  body.portrait #srw{ top:840px; }
+  body.portrait #sub{ top:880px; }
+  body.portrait #howmini{ top:942px; }
+  body.portrait #wait{ top:978px; }
+  body.portrait #right{ left:0; top:1020px; width:1080px; height:900px; }
+  body.portrait #welcome{ top:40px; width:860px; height:292px; }
+  body.portrait #hello{ top:338px; }
+  body.portrait #row{ left:40px; right:40px; top:396px; height:410px; }
+  body.portrait #track{ zoom:.84; }   /* 세로에선 카드를 16% 줄여 아래 연락처 자리를 남긴다 */
+  body.portrait #contact{ right:60px; bottom:30px; font-size:16px; }
+  body.portrait #contact b{ font-size:19px; }
+  body.portrait #clock{ left:60px; bottom:30px; font-size:14px; }
 </style>
 </head>
 <body>
@@ -132,7 +153,12 @@
 
 <script>
 /* ── 화면 맞춤: 1920×1080 을 어떤 모니터에도 비율 유지 ── */
-function fit(){ const s=Math.min(innerWidth/1920, innerHeight/1080); const st=document.getElementById('stage'); st.style.transform='translate(-50%,-50%) scale('+s+')'; st.style.transformOrigin='50% 50%'; }
+/* 가로 화면이면 1920×1080, 세로 화면이면 1080×1920 디자인을 쓴다. ?rot=1 이면 윈도우가 가로인데 모니터만 세로로 세운 경우: 세로 디자인을 90° 돌려 꽉 채운다 */
+const ROT=(location.search.match(/[?&]rot=(1|2)/)||[])[1]|0;   // 1 = 시계방향 90°, 2 = 반시계 90°
+function fit(){ const st=document.getElementById('stage'); const portrait=ROT||innerHeight>innerWidth; document.body.classList.toggle('portrait',portrait);
+  const W=portrait?1080:1920, H=portrait?1920:1080;
+  const s=ROT?Math.min(innerWidth/H, innerHeight/W):Math.min(innerWidth/W, innerHeight/H);
+  st.style.transform='translate(-50%,-50%) '+(ROT===1?'rotate(90deg) ':ROT===2?'rotate(-90deg) ':'')+'scale('+s+')'; st.style.transformOrigin='50% 50%'; }
 addEventListener('resize',fit); fit();
 
 /* ── 오늘의 칵테일: 날짜로 하나 고른다 (매일 바뀜, 같은 날엔 같은 잔) ── */
@@ -180,7 +206,7 @@ function pollQueue(){ fetch('/api/queue',{cache:'no-store'}).then(r=>r.json()).t
 })();
 
 /* ── 귀뚜라미 이스터에그: 오른쪽 칸 바닥선을 따라 무작위로 뛰어다닌다 ── */
-(function(){ const el=document.getElementById('cricket'); const GROUND=1004; const SPOTS=[150,330,520,700,880,1020]; let cur=2, ci=0;
+(function(){ const el=document.getElementById('cricket'); const P=document.body.classList.contains('portrait'); const GROUND=P?878:1004; const SPOTS=P?[120,300,480,660,840,980]:[150,330,520,700,880,1020]; let cur=2, ci=0;
   const HEAD_RIGHT=i=>i===3; const place=(x,y,f)=>{ el.style.left=x+'px'; el.style.top=y+'px'; el.style.transform='translate(-50%,-100%) scaleX('+f+')'; };
   function pick(){ let n; do{ n=Math.floor(Math.random()*5); }while(n===ci); ci=n; el.src='front/cricket_ch'+ci+'.png'; }
   function hop(){ let nx; do{ nx=Math.floor(Math.random()*SPOTS.length); }while(nx===cur); const x0=SPOTS[cur], x1=SPOTS[nx]; const goR=x1>x0; const f=(goR===HEAD_RIGHT(ci))?1:-1;
