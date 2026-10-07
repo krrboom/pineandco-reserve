@@ -54,13 +54,11 @@
   .card .pic{ width:222px; height:222px; margin:8px 0 6px; background:center/contain no-repeat; image-rendering:pixelated; flex:0 0 auto; }
   .card .nm{ font-size:17px; line-height:1.3; color:#1a120b; text-shadow:none; }
   .card .tw{ margin-top:8px; display:inline-block; padding:5px 8px; background:#c89a3c; color:#1a130a; font-size:8px; letter-spacing:.03em; max-width:310px; }
-  .card .pr{ margin-top:9px; font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:600; color:#7a5a2a; }
-  /* QR 카드 */
-  .card .qrbig{ width:210px; height:210px; margin:8px 0 6px; background:center/contain no-repeat; image-rendering:pixelated; border:5px solid #1a120b; box-sizing:content-box; flex:0 0 auto; }
-  .card .mark{ width:96px; height:auto; margin:2px 0 0; image-rendering:auto; }
-  .card .ttl{ font-size:15px; line-height:1.35; color:#1a120b; }
-  .card .desc{ margin-top:9px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:13px; letter-spacing:.06em; color:#5a4020; line-height:1.6; }
-  .card .url{ margin-top:5px; font-family:'Cormorant Garamond',serif; font-size:18px; color:#7a5a2a; letter-spacing:.04em; }
+  .card .ing{ margin-top:9px; font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:500; line-height:1.3; color:#5a4020; max-width:320px; }
+  /* QR 카드: 위에 이름 한 줄, 아래는 QR 만 (붐 10/7) */
+  .card.qr{ justify-content:flex-start; }
+  .card .lbl.big{ font-size:15px; letter-spacing:.12em; color:#1a120b; margin-top:8px; }
+  .card .qrbig{ width:300px; height:300px; margin:28px 0 0; background:center/contain no-repeat; image-rendering:pixelated; border:5px solid #1a120b; box-sizing:content-box; flex:0 0 auto; }
 
   /* 귀뚜라미 이스터에그: 오른쪽 칸 바닥을 뛰어다닌다 */
   #cricket{ position:absolute; left:0; top:0; width:44px; height:auto; image-rendering:auto; filter:drop-shadow(1px 2px 0 rgba(0,0,0,.6)); transform:translate(-50%,-100%); will-change:left,top,transform; }
@@ -96,23 +94,15 @@
         <div class="pic ckPic"></div>
         <div class="nm ckName">—</div>
         <div class="tw ckTw"></div>
-        <div class="pr ckPr">₩26,000</div>
+        <div class="ing ckIng"></div>
       </div>
-      <div class="card">
-        <div class="lbl">MENU &amp; GAMES<span class="ko">파인앤코 메뉴 · 게임</span></div>
-        <img class="mark" src="front/bp_title_logo.png" alt="Bartender's Happy Hour">
+      <div class="card qr">
+        <div class="lbl big">PINE&amp;CO MENU</div>
         <div class="qrbig" style="background-image:url(front/qr_pine.png)"></div>
-        <div class="ttl">PINE &amp; CO ONLINE</div>
-        <div class="desc">메뉴 보기 · 기다리는 동안 한 판</div>
-        <div class="url">pineandco.online</div>
       </div>
-      <div class="card">
-        <div class="lbl">OUR SISTER BAR<span class="ko">크리켓 서울 메뉴</span></div>
-        <img class="mark" src="front/cricket_mark.png" alt="Cricket Seoul">
+      <div class="card qr">
+        <div class="lbl big">CRICKET MENU</div>
         <div class="qrbig" style="background-image:url(front/qr_cricket.png)"></div>
-        <div class="ttl">CRICKET SEOUL</div>
-        <div class="desc">전통주 칵테일 바 · 메뉴 &amp; 전통주 도감</div>
-        <div class="url">cricketseoul.com</div>
       </div>
     </template>
     <img id="cricket" src="front/cricket_ch0.png" alt="">
@@ -129,22 +119,22 @@ addEventListener('resize',fit); fit();
 
 /* ── 오늘의 칵테일: 날짜로 하나 고른다 (매일 바뀜, 같은 날엔 같은 잔) ── */
 const COCKTAILS=[
-  { slug:'bingsu', name:'BINGSU', tw:'Twisted Frozen G&T' },
-  { slug:'nuruk', name:'NURUK', tw:'Twisted Whisky Highball' },
-  { slug:'americano', name:'AMERICANO', tw:'Twisted Americano' },
-  { slug:'picnic', name:'PICNIC', tw:'Twisted Tom Collins' },
-  { slug:'bulgogi', name:'BULGOGI', tw:'Twisted Paloma & Batanga' },
-  { slug:'hwachae', name:'HWACHAE', tw:'Twisted Punch', price:'₩120,000 / 26,000' },
-  { slug:'gungoguma', name:'GUN-GOGUMA', tw:'Twisted Roasted Sweet Potato Latte' },
-  { slug:'aperolslush', name:'APEROL SLUSH', tw:'Twisted Aperol Spritz' },
-  { slug:'kiwicolada', name:'KIWI COLADA', tw:'Twisted Piña Colada' },
-  { slug:'bloodymarysoup', name:'BLOODY MARY SOUP', tw:'Twisted Bloody Mary' },
-  { slug:'corn', name:'CORN', tw:'Twisted Margarita' },
-  { slug:'banana', name:'BANANA', tw:'Twisted Daiquiri' },
-  { slug:'yogurt', name:'YOGURT', tw:'Twisted Kaikan Fizz' },
-  { slug:'hotbeer', name:'HOT BEER', tw:'Twisted Irish Coffee' },
-  { slug:'cacao', name:'CACAO', tw:'Twisted Old Fashioned' },
-  { slug:'passionfruit', name:'PASSIONFRUIT', tw:'Twisted Pornstar Martini' },
+  {"slug":"bingsu","name":"BINGSU","tw":"Twisted Frozen G&T","ing":"pine gin · tonic water · mandarin sorbet · lime"},
+  {"slug":"nuruk","name":"NURUK","tw":"Twisted Whisky Highball","ing":"whisky · nuruk · genmai tea · koji · toasted barley"},
+  {"slug":"americano","name":"AMERICANO","tw":"Twisted Americano","ing":"distilled coffee water · solomon syrup · campari · cacao vodka"},
+  {"slug":"picnic","name":"PICNIC","tw":"Twisted Tom Collins","ing":"boiled egg · vodka · lactose · yuzu · lemon · gimbap · umami rice"},
+  {"slug":"bulgogi","name":"BULGOGI","tw":"Twisted Paloma & Batanga","ing":"tequila · bulgogi · calamansi · grapefruit · cola syrup · tonic water"},
+  {"slug":"hwachae","name":"HWACHAE","tw":"Twisted Punch","ing":"soju · omija · watermelon · soda"},
+  {"slug":"gungoguma","name":"GUN-GOGUMA","tw":"Twisted Roasted Sweet Potato Latte","ing":"gamuchi soju · purple sweet potato · coconut · charcoal smoked cream"},
+  {"slug":"aperolslush","name":"APEROL SLUSH","tw":"Twisted Aperol Spritz","ing":"aperol · sparkling wine · campari · orange · lemon zest"},
+  {"slug":"kiwicolada","name":"KIWI COLADA","tw":"Twisted Piña Colada","ing":"white rum · korean mint · pistachio · kiwi · almond · coconut · green tea"},
+  {"slug":"bloodymarysoup","name":"BLOODY MARY SOUP","tw":"Twisted Bloody Mary","ing":"moonbaesool · fresh tomato juice · lemon · olive gel · worcestershire gel · sesame oil · cardamom pepper oil · cucumber bubble · dill"},
+  {"slug":"corn","name":"CORN","tw":"Twisted Margarita","ing":"tequila · mezcal · young corn · corn silk · lime · distilled tabasco"},
+  {"slug":"banana","name":"BANANA","tw":"Twisted Daiquiri","ing":"rum · banana · lime · homemade black sesame meringue"},
+  {"slug":"yogurt","name":"YOGURT","tw":"Twisted Kaikan Fizz","ing":"vodka · apricot · peach · homemade yogurt · lime · agave · lemongrass · kaffir lime"},
+  {"slug":"hotbeer","name":"HOT BEER","tw":"Twisted Irish Coffee","ing":"rye whisky · peanut butter · soboro powder · coffee · Guinness · mango butter"},
+  {"slug":"cacao","name":"CACAO","tw":"Twisted Old Fashioned","ing":"whisky · cacao bitters · lapsang souchong · port wine · chocolate · cacao nibs · baby choux"},
+  {"slug":"passionfruit","name":"PASSIONFRUIT","tw":"Twisted Pornstar Martini","ing":"gin · vodka · passionfruit · lemon · yakju · vanilla"}
 ];
 /* 영업일마다 무작위로 한 잔 (붐 10/7). 영업일(19:00~익일 02:00)을 씨앗으로 섞어서 같은 날엔 어느 화면이든 같은 잔, 다음 영업일엔 다른 잔(전날과 같은 잔은 피함) */
 function bizDay(){ const d=new Date(); d.setHours(d.getHours()-19);   // 영업일 = 오후 7시 개점 ~ 새벽 2시 마감. 7시에 새 날, 새벽 2시까지는 같은 날
@@ -156,7 +146,7 @@ function dayIndex(){ const day=bizDay(); let i=pickFor(day); if(i===pickFor(day-
 (function(){ const track=document.getElementById('track'), tpl=document.getElementById('cardTpl'); for(let k=0;k<2;k++) track.appendChild(tpl.content.cloneNode(true)); })();
 function showCocktail(){ const c=COCKTAILS[dayIndex()];
   document.querySelectorAll('.ckPic').forEach(e=>e.style.backgroundImage='url(front/photo_'+c.slug+'.png)');
-  document.querySelectorAll('.ckName').forEach(e=>e.textContent=c.name); document.querySelectorAll('.ckTw').forEach(e=>e.textContent=c.tw); document.querySelectorAll('.ckPr').forEach(e=>e.textContent=c.price||'₩26,000'); }
+  document.querySelectorAll('.ckName').forEach(e=>e.textContent=c.name); document.querySelectorAll('.ckTw').forEach(e=>e.textContent=c.tw); document.querySelectorAll('.ckIng').forEach(e=>e.textContent=c.ing); }
 showCocktail(); setInterval(showCocktail, 60e3);
 
 /* ── 실시간 대기 (같은 서버의 /api/stream, 끊기면 /api/queue 폴링) ── */
