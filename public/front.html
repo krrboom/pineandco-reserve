@@ -10,7 +10,9 @@
 <style>
   /* 프론트 23.6" 모니터용 웰컴/웨이팅 화면. 1920×1080 기준으로 그리고 어떤 화면이든 비율 유지해 맞춘다. */
   :root{ --bg:#331f14; --gold:#d39d64; --gold2:#c9a66b; --line:#6b5236; --cream:#f1e7d3; --cream2:#e4d6bd; --ink:#1a120b; }
-  html,body{ margin:0; height:100%; background:var(--bg); overflow:hidden; cursor:none; }
+  html,body{ margin:0; height:100%; background:var(--bg); overflow:hidden; }
+  /* 마우스 커서: 평소엔 보이고, 3초 안 움직이면 숨긴다(모니터 전시용) */
+  body.idle{ cursor:none; }
   #stage{ position:absolute; left:50%; top:50%; width:1920px; height:1080px; transform-origin:0 0; background:var(--bg); color:var(--cream); font-family:'Cormorant Garamond',Georgia,serif; }
   .frame{ position:absolute; inset:26px; border:2px solid var(--line); pointer-events:none; }
   .frame2{ position:absolute; inset:40px; border:1px solid var(--line); pointer-events:none; }
@@ -39,28 +41,16 @@
   #welcome{ position:absolute; left:50%; top:86px; width:740px; height:269px; transform:translateX(-50%); background:url(front/title_logo.png) center/contain no-repeat; image-rendering:pixelated; filter:drop-shadow(0 6px 0 rgba(0,0,0,.45)); }
   #hello{ position:absolute; left:0; right:0; top:362px; text-align:center; font-family:'Press Start 2P',monospace; font-size:17px; color:var(--gold); letter-spacing:.06em; text-shadow:2px 2px 0 #000; }
   #hello .ko{ display:block; margin-top:12px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:17px; color:var(--cream2); letter-spacing:.2em; text-shadow:none; }
-  /* 가운데 카드 3장이 15초마다 번갈아 뜬다: 오늘의 칵테일 → 크리켓 메뉴 QR → 파인앤코 QR (붐 10/7. Pat·Joe 캐릭터는 뺌) */
+  /* 오늘의 칵테일 카드 하나를 가운데 크게 (붐 10/7: Pat·Joe 캐릭터는 빼기로) */
   #row{ position:absolute; left:0; right:0; top:440px; bottom:70px; }
-  .card{ position:absolute; left:50%; top:0; margin-left:-200px; width:400px; height:530px; background:#f3e9c8; border:4px solid #000; box-shadow:0 0 0 4px #c89a3c, 10px 12px 0 rgba(0,0,0,.5); display:flex; flex-direction:column; align-items:center; padding:22px 18px 16px; box-sizing:border-box; font-family:'Press Start 2P',monospace; color:var(--ink); text-align:center;
-    opacity:0; visibility:hidden; transition:opacity .7s ease, visibility 0s linear .7s; }
-  .card.show{ opacity:1; visibility:visible; transition:opacity .7s ease; animation:cardbob 3.4s ease-in-out infinite; }
+  #card{ position:absolute; left:50%; top:0; margin-left:-200px; width:400px; height:530px; background:#f3e9c8; border:4px solid #000; box-shadow:0 0 0 4px #c89a3c, 10px 12px 0 rgba(0,0,0,.5); display:flex; flex-direction:column; align-items:center; padding:22px 18px 16px; box-sizing:border-box; font-family:'Press Start 2P',monospace; color:var(--ink); text-align:center; animation:cardbob 3.4s ease-in-out infinite; }
   @keyframes cardbob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-8px); } }
-  .card .lbl{ font-size:11px; letter-spacing:.14em; color:#7a5a2a; }
-  .card .lbl .ko{ display:block; margin-top:7px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:13px; letter-spacing:.3em; }
-  .card .pic{ width:250px; height:250px; margin:10px 0 8px; background:center/contain no-repeat; image-rendering:pixelated; flex:0 0 auto; }
-  .card .nm{ font-size:18px; line-height:1.3; color:#1a120b; text-shadow:none; }
-  .card .tw{ margin-top:8px; display:inline-block; padding:5px 9px; background:#c89a3c; color:#1a130a; font-size:8px; letter-spacing:.03em; max-width:340px; }
-  .card .ing{ margin-top:10px; font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:500; line-height:1.3; color:#5a4020; max-width:350px; }
-  /* QR 카드 */
-  .card .qrbig{ width:250px; height:250px; margin:12px 0 10px; background:center/contain no-repeat; image-rendering:pixelated; border:5px solid #1a120b; box-sizing:content-box; flex:0 0 auto; }
-  .card .mark{ width:120px; height:auto; margin:4px 0 0; image-rendering:auto; }
-  .card .ttl{ font-size:16px; line-height:1.35; color:#1a120b; }
-  .card .desc{ margin-top:10px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:14px; letter-spacing:.08em; color:#5a4020; line-height:1.6; }
-  .card .url{ margin-top:6px; font-family:'Cormorant Garamond',serif; font-size:19px; color:#7a5a2a; letter-spacing:.04em; }
-  /* 진행 점 3개 */
-  #dots{ position:absolute; left:50%; top:555px; transform:translateX(-50%); display:flex; gap:10px; }
-  #dots i{ width:9px; height:9px; border-radius:50%; background:#5a4428; }
-  #dots i.on{ background:var(--gold); box-shadow:0 0 6px var(--gold); }
+  #card .lbl{ font-size:11px; letter-spacing:.14em; color:#7a5a2a; }
+  #card .lbl .ko{ display:block; margin-top:7px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:13px; letter-spacing:.3em; }
+  #card .pic{ width:280px; height:280px; margin:12px 0 10px; background:center/contain no-repeat; image-rendering:pixelated; }
+  #card .nm{ font-size:19px; line-height:1.3; color:#1a120b; text-shadow:none; }
+  #card .tw{ margin-top:10px; display:inline-block; padding:5px 9px; background:#c89a3c; color:#1a130a; font-size:9px; letter-spacing:.03em; max-width:340px; }
+  #card .pr{ margin-top:10px; font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:600; color:#7a5a2a; }
 
   /* 귀뚜라미 이스터에그: 오른쪽 칸 바닥을 뛰어다닌다 */
   #cricket{ position:absolute; left:0; top:0; width:44px; height:auto; image-rendering:auto; filter:drop-shadow(1px 2px 0 rgba(0,0,0,.6)); transform:translate(-50%,-100%); will-change:left,top,transform; }
@@ -87,30 +77,13 @@
     <div id="welcome" role="img" aria-label="Welcome to Pine & Co"></div>
     <div id="hello">WELCOME HOME, GUEST!<span class="ko">파인앤코에 오신 것을 환영합니다</span></div>
     <div id="row">
-      <div class="card show" id="cardCk">
+      <div id="card">
         <div class="lbl">TODAY'S COCKTAIL<span class="ko">오늘의 한 잔</span></div>
         <div class="pic" id="ckPic"></div>
         <div class="nm" id="ckName">—</div>
         <div class="tw" id="ckTw"></div>
-        <div class="ing" id="ckIng"></div>
+        <div class="pr" id="ckPr">₩26,000</div>
       </div>
-      <div class="card" id="cardCricket">
-        <div class="lbl">OUR SISTER BAR<span class="ko">크리켓 서울 메뉴</span></div>
-        <img class="mark" src="front/cricket_mark.png" alt="Cricket Seoul">
-        <div class="qrbig" style="background-image:url(front/qr_cricket.png)"></div>
-        <div class="ttl">CRICKET SEOUL</div>
-        <div class="desc">전통주 칵테일 바 · 메뉴 & 전통주 도감</div>
-        <div class="url">cricketseoul.com</div>
-      </div>
-      <div class="card" id="cardPine">
-        <div class="lbl">MENU &amp; GAMES<span class="ko">파인앤코 메뉴 · 게임</span></div>
-        <img class="mark" src="front/bp_title_logo.png" alt="Bartender's Happy Hour">
-        <div class="qrbig" style="background-image:url(front/qr_pine.png)"></div>
-        <div class="ttl">PINE &amp; CO ONLINE</div>
-        <div class="desc">메뉴 보기 · 기다리는 동안 한 판</div>
-        <div class="url">pineandco.online</div>
-      </div>
-      <div id="dots"><i class="on"></i><i></i><i></i></div>
     </div>
     <img id="cricket" src="front/cricket_ch0.png" alt="">
   </section>
@@ -126,32 +99,28 @@ addEventListener('resize',fit); fit();
 
 /* ── 오늘의 칵테일: 날짜로 하나 고른다 (매일 바뀜, 같은 날엔 같은 잔) ── */
 const COCKTAILS=[
-  {"slug":"bingsu","name":"BINGSU","tw":"Twisted Frozen G&T","ing":"pine gin · tonic water · mandarin sorbet · lime"},
-  {"slug":"nuruk","name":"NURUK","tw":"Twisted Whisky Highball","ing":"whisky · nuruk · genmai tea · koji · toasted barley"},
-  {"slug":"americano","name":"AMERICANO","tw":"Twisted Americano","ing":"distilled coffee water · solomon syrup · campari · cacao vodka"},
-  {"slug":"picnic","name":"PICNIC","tw":"Twisted Tom Collins","ing":"boiled egg · vodka · lactose · yuzu · lemon · gimbap · umami rice"},
-  {"slug":"bulgogi","name":"BULGOGI","tw":"Twisted Paloma & Batanga","ing":"tequila · bulgogi · calamansi · grapefruit · cola syrup · tonic water"},
-  {"slug":"hwachae","name":"HWACHAE","tw":"Twisted Punch","ing":"soju · omija · watermelon · soda"},
-  {"slug":"gungoguma","name":"GUN-GOGUMA","tw":"Twisted Roasted Sweet Potato Latte","ing":"gamuchi soju · purple sweet potato · coconut · charcoal smoked cream"},
-  {"slug":"aperolslush","name":"APEROL SLUSH","tw":"Twisted Aperol Spritz","ing":"aperol · sparkling wine · campari · orange · lemon zest"},
-  {"slug":"kiwicolada","name":"KIWI COLADA","tw":"Twisted Piña Colada","ing":"white rum · korean mint · pistachio · kiwi · almond · coconut · green tea"},
-  {"slug":"bloodymarysoup","name":"BLOODY MARY SOUP","tw":"Twisted Bloody Mary","ing":"moonbaesool · fresh tomato juice · lemon · olive gel · worcestershire gel · sesame oil · cardamom pepper oil · cucumber bubble · dill"},
-  {"slug":"corn","name":"CORN","tw":"Twisted Margarita","ing":"tequila · mezcal · young corn · corn silk · lime · distilled tabasco"},
-  {"slug":"banana","name":"BANANA","tw":"Twisted Daiquiri","ing":"rum · banana · lime · homemade black sesame meringue"},
-  {"slug":"yogurt","name":"YOGURT","tw":"Twisted Kaikan Fizz","ing":"vodka · apricot · peach · homemade yogurt · lime · agave · lemongrass · kaffir lime"},
-  {"slug":"hotbeer","name":"HOT BEER","tw":"Twisted Irish Coffee","ing":"rye whisky · peanut butter · soboro powder · coffee · Guinness · mango butter"},
-  {"slug":"cacao","name":"CACAO","tw":"Twisted Old Fashioned","ing":"whisky · cacao bitters · lapsang souchong · port wine · chocolate · cacao nibs · baby choux"},
-  {"slug":"passionfruit","name":"PASSIONFRUIT","tw":"Twisted Pornstar Martini","ing":"gin · vodka · passionfruit · lemon · yakju · vanilla"}
+  { slug:'bingsu', name:'BINGSU', tw:'Twisted Frozen G&T' },
+  { slug:'nuruk', name:'NURUK', tw:'Twisted Whisky Highball' },
+  { slug:'americano', name:'AMERICANO', tw:'Twisted Americano' },
+  { slug:'picnic', name:'PICNIC', tw:'Twisted Tom Collins' },
+  { slug:'bulgogi', name:'BULGOGI', tw:'Twisted Paloma & Batanga' },
+  { slug:'hwachae', name:'HWACHAE', tw:'Twisted Punch', price:'₩120,000 / 26,000' },
+  { slug:'gungoguma', name:'GUN-GOGUMA', tw:'Twisted Roasted Sweet Potato Latte' },
+  { slug:'aperolslush', name:'APEROL SLUSH', tw:'Twisted Aperol Spritz' },
+  { slug:'kiwicolada', name:'KIWI COLADA', tw:'Twisted Piña Colada' },
+  { slug:'bloodymarysoup', name:'BLOODY MARY SOUP', tw:'Twisted Bloody Mary' },
+  { slug:'corn', name:'CORN', tw:'Twisted Margarita' },
+  { slug:'banana', name:'BANANA', tw:'Twisted Daiquiri' },
+  { slug:'yogurt', name:'YOGURT', tw:'Twisted Kaikan Fizz' },
+  { slug:'hotbeer', name:'HOT BEER', tw:'Twisted Irish Coffee' },
+  { slug:'cacao', name:'CACAO', tw:'Twisted Old Fashioned' },
+  { slug:'passionfruit', name:'PASSIONFRUIT', tw:'Twisted Pornstar Martini' },
 ];
 function dayIndex(){ const d=new Date(); d.setHours(d.getHours()-5);   // 새벽 5시까지는 전날 영업일로 친다
   const day=Math.floor((d.getTime()+9*3600e3)/864e5); return ((day%COCKTAILS.length)+COCKTAILS.length)%COCKTAILS.length; }
 function showCocktail(){ const c=COCKTAILS[dayIndex()]; document.getElementById('ckPic').style.backgroundImage='url(front/photo_'+c.slug+'.png)';
-  document.getElementById('ckName').textContent=c.name; document.getElementById('ckTw').textContent=c.tw; document.getElementById('ckIng').textContent=c.ing; }
+  document.getElementById('ckName').textContent=c.name; document.getElementById('ckTw').textContent=c.tw; document.getElementById('ckPr').textContent=c.price||'₩26,000'; }
 showCocktail(); setInterval(showCocktail, 60e3);
-
-/* ── 가운데 카드 3장 순환: 오늘의 칵테일 → 크리켓 QR → 파인앤코 QR, 15초마다 ── */
-(function(){ const cards=['cardCk','cardCricket','cardPine'].map(id=>document.getElementById(id)); const dots=[...document.querySelectorAll('#dots i')]; let i=0;
-  setInterval(()=>{ i=(i+1)%cards.length; cards.forEach((c,k)=>c.classList.toggle('show',k===i)); dots.forEach((d,k)=>d.classList.toggle('on',k===i)); }, 15000); })();
 
 /* ── 실시간 대기 (같은 서버의 /api/stream, 끊기면 /api/queue 폴링) ── */
 const waitEl=document.getElementById('wait'), waitTxt=document.getElementById('waitTxt');
@@ -177,6 +146,9 @@ function pollQueue(){ fetch('/api/queue',{cache:'no-store'}).then(r=>r.json()).t
 /* ── 시계 + 새벽 5시 자동 새로고침(업데이트 반영) ── */
 function tick(){ const d=new Date(); document.getElementById('clock').textContent=d.toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase()+' · '+d.toTimeString().slice(0,5); if(d.getHours()===5&&d.getMinutes()===0&&d.getSeconds()<2) location.reload(); }
 tick(); setInterval(tick,1000);
+
+/* ── 마우스 커서 자동 숨김: 움직이면 보이고 3초 멈추면 숨김 ── */
+(function(){ let t=0; const idle=()=>document.body.classList.add('idle'); addEventListener('mousemove',()=>{ document.body.classList.remove('idle'); clearTimeout(t); t=setTimeout(idle,3000); }); t=setTimeout(idle,3000); })();
 </script>
 </body>
 </html>
