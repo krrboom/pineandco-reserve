@@ -58,7 +58,8 @@
   /* QR 카드: 위에 이름 한 줄, 아래는 QR 만 (붐 10/7) */
   .card.qr{ justify-content:flex-start; }
   .card .lbl.big{ font-size:15px; letter-spacing:.12em; color:#1a120b; margin-top:8px; }
-  .card .qrbig{ width:300px; height:300px; margin:28px 0 0; background:center/contain no-repeat; image-rendering:pixelated; border:5px solid #1a120b; box-sizing:content-box; flex:0 0 auto; }
+  .card .mark{ width:110px; height:74px; object-fit:contain; margin:8px 0 0; image-rendering:auto; }
+  .card .qrbig{ width:270px; height:270px; margin:8px 0 0; background:center/contain no-repeat; image-rendering:pixelated; border:5px solid #1a120b; box-sizing:content-box; flex:0 0 auto; }
 
   /* 귀뚜라미 이스터에그: 오른쪽 칸 바닥을 뛰어다닌다 */
   #cricket{ position:absolute; left:0; top:0; width:44px; height:auto; image-rendering:auto; filter:drop-shadow(1px 2px 0 rgba(0,0,0,.6)); transform:translate(-50%,-100%); will-change:left,top,transform; }
@@ -98,10 +99,12 @@
       </div>
       <div class="card qr">
         <div class="lbl big">PINE&amp;CO MENU</div>
+        <img class="mark" src="front/bp_title_logo.png" alt="Bartender's Happy Hour">
         <div class="qrbig" style="background-image:url(front/qr_pine.png)"></div>
       </div>
       <div class="card qr">
         <div class="lbl big">CRICKET MENU</div>
+        <img class="mark" src="front/cricket_mark.png" alt="Cricket Seoul">
         <div class="qrbig" style="background-image:url(front/qr_cricket.png)"></div>
       </div>
     </template>
