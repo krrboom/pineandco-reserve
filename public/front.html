@@ -44,7 +44,7 @@
   #hello .ko{ display:block; margin-top:12px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:17px; color:var(--cream2); letter-spacing:.2em; text-shadow:none; }
   /* 컨베이어 벨트 (붐 10/7): 오늘의 칵테일 → 파인앤코 QR → 크리켓 QR 카드가 오른쪽에서 왼쪽으로 천천히 지나간다.
      카드 3장을 두 번 이어 붙이고 트랙을 절반(-50%)만큼 옮기면 끊김 없이 돈다. 한 바퀴 80초(카드 5장, 속도는 3장 때와 같음). */
-  #row{ position:absolute; left:0; right:0; top:512px; height:486px; overflow:hidden;
+  #row{ position:absolute; left:28px; right:64px; top:512px; height:486px; overflow:hidden;   /* 세로 구분선(760)과 안쪽 테두리(1880) 안에서만 흐르게 */
     -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 70px, #000 calc(100% - 70px), transparent 100%); mask-image:linear-gradient(90deg, transparent 0, #000 70px, #000 calc(100% - 70px), transparent 100%); }
   #track{ position:absolute; left:0; top:4px; display:flex; gap:0; width:max-content; animation:belt 80s linear infinite; will-change:transform; }
   @keyframes belt{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
