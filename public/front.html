@@ -145,8 +145,12 @@ const COCKTAILS=[
   { slug:'cacao', name:'CACAO', tw:'Twisted Old Fashioned' },
   { slug:'passionfruit', name:'PASSIONFRUIT', tw:'Twisted Pornstar Martini' },
 ];
-function dayIndex(){ const d=new Date(); d.setHours(d.getHours()-5);   // 새벽 5시까지는 전날 영업일로 친다
-  const day=Math.floor((d.getTime()+9*3600e3)/864e5); return ((day%COCKTAILS.length)+COCKTAILS.length)%COCKTAILS.length; }
+/* 매일 무작위로 한 잔 (붐 10/7). 날짜를 씨앗으로 섞어서 같은 날엔 어느 화면이든 같은 잔, 다음 날엔 다른 잔(전날과 같은 잔은 피함) */
+function bizDay(){ const d=new Date(); d.setHours(d.getHours()-5);   // 새벽 5시까지는 전날 영업일로 친다
+  return Math.floor((d.getTime()+9*3600e3)/864e5); }
+function seeded(n){ let x=Math.imul(n,2654435761)>>>0; x^=x>>>15; x=Math.imul(x,2246822519)>>>0; x^=x>>>13; x=Math.imul(x,3266489917)>>>0; x^=x>>>16; return x>>>0; }
+function pickFor(day){ return seeded(day)%COCKTAILS.length; }
+function dayIndex(){ const day=bizDay(); let i=pickFor(day); if(i===pickFor(day-1)) i=(i+1)%COCKTAILS.length; return i; }
 /* 벨트 트랙: 카드 3장을 두 벌 깐다(끊김 없는 순환용) */
 (function(){ const track=document.getElementById('track'), tpl=document.getElementById('cardTpl'); for(let k=0;k<2;k++) track.appendChild(tpl.content.cloneNode(true)); })();
 function showCocktail(){ const c=COCKTAILS[dayIndex()];
