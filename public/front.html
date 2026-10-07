@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pine & Co Seoul — Front</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Press+Start+2P&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* 프론트 23.6" 모니터용 웰컴/웨이팅 화면. 1920×1080 기준으로 그리고 어떤 화면이든 비율 유지해 맞춘다. */
+  :root{ --bg:#331f14; --gold:#d39d64; --gold2:#c9a66b; --line:#6b5236; --cream:#f1e7d3; --cream2:#e4d6bd; --ink:#1a120b; }
+  html,body{ margin:0; height:100%; background:var(--bg); overflow:hidden; cursor:none; }
+  #stage{ position:absolute; left:50%; top:50%; width:1920px; height:1080px; transform-origin:0 0; background:var(--bg); color:var(--cream); font-family:'Cormorant Garamond',Georgia,serif; }
+  .frame{ position:absolute; inset:26px; border:2px solid var(--line); pointer-events:none; }
+  .frame2{ position:absolute; inset:40px; border:1px solid var(--line); pointer-events:none; }
+  .vline{ position:absolute; left:760px; top:110px; bottom:110px; width:1.5px; background:var(--line); }
+
+  /* ── 왼쪽: QR ── */
+  #left{ position:absolute; left:0; top:0; width:760px; height:1080px; text-align:center; }
+  #logo{ position:absolute; left:50%; top:70px; width:176px; height:313px; transform:translateX(-50%); background:url(front/logo_gold.png) center/contain no-repeat; }
+  .sp{ letter-spacing:.42em; color:var(--gold2); font-size:22px; text-transform:uppercase; }
+  .rule{ position:absolute; left:120px; right:120px; display:flex; align-items:center; gap:28px; justify-content:center; }
+  .rule i{ flex:1; height:1.5px; background:var(--line); }
+  #scanto{ top:404px; }
+  #qr{ position:absolute; left:50%; top:452px; width:360px; height:360px; transform:translateX(-50%); background:url(front/qr_wait.png) center/contain no-repeat; image-rendering:pixelated; border:6px solid #f3e9c8; box-sizing:content-box; }
+  #srw{ position:absolute; left:0; right:0; top:852px; font-weight:600; font-size:26px; letter-spacing:.3em; color:var(--gold2); }
+  #sub{ position:absolute; left:0; right:0; top:892px; font-size:23px; color:var(--cream2); line-height:1.45; }
+  #sub .zh{ font-family:'Noto Sans KR','Microsoft YaHei',sans-serif; font-size:19px; }
+  #howmini{ position:absolute; left:0; right:0; top:968px; font-size:18px; color:#a88c62; letter-spacing:.04em; }
+  /* 실시간 대기: 작게. 많으면 손님이 질릴 수 있어 숫자를 크게 안 띄운다 */
+  #wait{ position:absolute; left:50%; top:1010px; transform:translateX(-50%); display:inline-flex; align-items:center; gap:10px; padding:5px 14px; border:1px solid var(--line); border-radius:999px; font-size:17px; color:var(--gold2); letter-spacing:.08em; white-space:nowrap; }
+  #wait b{ color:var(--cream); font-weight:600; }
+  #wait .dot{ width:7px; height:7px; border-radius:50%; background:#6fcf8f; box-shadow:0 0 6px #6fcf8f; }
+  #wait.off .dot{ background:#8a8d82; box-shadow:none; }
+
+  /* ── 오른쪽: 웰컴 + Pat & Joe + 오늘의 칵테일 ── */
+  #right{ position:absolute; left:760px; top:0; width:1160px; height:1080px; }
+  #welcome{ position:absolute; left:50%; top:86px; width:740px; height:269px; transform:translateX(-50%); background:url(front/title_logo.png) center/contain no-repeat; image-rendering:pixelated; filter:drop-shadow(0 6px 0 rgba(0,0,0,.45)); }
+  #hello{ position:absolute; left:0; right:0; top:362px; text-align:center; font-family:'Press Start 2P',monospace; font-size:17px; color:var(--gold); letter-spacing:.06em; text-shadow:2px 2px 0 #000; }
+  #hello .ko{ display:block; margin-top:12px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:17px; color:var(--cream2); letter-spacing:.2em; text-shadow:none; }
+  #row{ position:absolute; left:0; right:0; top:410px; height:610px; }
+  /* Pat & Joe 손 흔들기: ChatGPT(GPT-6 Astra)가 그린 4프레임 스트립(front/wave_duo.png, 프레임 620×700). 둘이 겹쳐 서 있어서 한 덩어리로 움직이고, 오늘의 칵테일 카드는 그 앞 가운데에 선다 */
+  #duo{ position:absolute; left:50%; bottom:0; width:620px; height:700px; margin-left:-310px; transform:scale(.87); transform-origin:50% 100%;
+    background:url(front/wave_duo.png) 0 0 no-repeat; background-size:2480px 700px; animation:wave 1.1s steps(4) infinite; filter:drop-shadow(6px 8px 0 rgba(0,0,0,.5)); }
+  @keyframes wave{ from{ background-position-x:0; } to{ background-position-x:-2480px; } }
+  /* 카드는 두 사람 얼굴을 가리지 않게 가슴 높이 아래, 작게 */
+  #card{ position:absolute; left:50%; bottom:4px; margin-left:-120px; width:240px; height:300px; background:#f3e9c8; border:4px solid #000; box-shadow:0 0 0 4px #c89a3c, 8px 10px 0 rgba(0,0,0,.5); display:flex; flex-direction:column; align-items:center; padding:12px 12px 10px; box-sizing:border-box; font-family:'Press Start 2P',monospace; color:var(--ink); text-align:center; }
+  #card .lbl{ font-size:8px; letter-spacing:.12em; color:#7a5a2a; }
+  #card .lbl .ko{ display:block; margin-top:5px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:10px; letter-spacing:.3em; }
+  #card .pic{ width:165px; height:165px; margin:6px 0 4px; background:center/contain no-repeat; image-rendering:pixelated; }
+  #card .nm{ font-size:13px; line-height:1.3; color:#1a120b; text-shadow:none; }
+  #card .tw{ margin-top:6px; display:inline-block; padding:3px 6px; background:#c89a3c; color:#1a130a; font-size:7px; letter-spacing:.03em; max-width:210px; }
+  #card .pr{ margin-top:5px; font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:600; color:#7a5a2a; }
+
+  /* 귀뚜라미 이스터에그: 오른쪽 칸 바닥을 뛰어다닌다 */
+  #cricket{ position:absolute; left:0; top:0; width:44px; height:auto; image-rendering:auto; filter:drop-shadow(1px 2px 0 rgba(0,0,0,.6)); transform:translate(-50%,-100%); will-change:left,top,transform; }
+  #contact{ position:absolute; right:60px; bottom:50px; font-size:18px; letter-spacing:.2em; color:var(--gold2); }
+  #contact b{ font-weight:500; color:var(--gold); font-size:22px; letter-spacing:.14em; }
+  #clock{ position:absolute; left:60px; bottom:50px; font-size:16px; letter-spacing:.14em; color:#8a7250; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="frame"></div><div class="frame2"></div><div class="vline"></div>
+
+  <section id="left">
+    <div id="logo"></div>
+    <div class="rule" id="scanto"><i></i><span class="sp">Scan to Join</span><i></i></div>
+    <div id="qr"></div>
+    <div id="srw">SCAN · REGISTER · WAIT</div>
+    <div id="sub">Scan the QR code to join our waiting list<br><span class="zh">扫码加入等候名单</span></div>
+    <div id="howmini">Name &amp; phone → SMS when your table is ready → arrive within 10 min</div>
+    <div id="wait" class="off"><span class="dot"></span><span id="waitTxt">WAITING LIST</span></div>
+  </section>
+
+  <section id="right">
+    <div id="welcome" role="img" aria-label="Welcome to Pine & Co"></div>
+    <div id="hello">WELCOME HOME, GUEST!<span class="ko">파인앤코에 오신 것을 환영합니다</span></div>
+    <div id="row">
+      <div id="duo" role="img" aria-label="Pat and Joe waving"></div>
+      <div id="card">
+        <div class="lbl">TODAY'S COCKTAIL<span class="ko">오늘의 한 잔</span></div>
+        <div class="pic" id="ckPic"></div>
+        <div class="nm" id="ckName">—</div>
+        <div class="tw" id="ckTw"></div>
+        <div class="pr" id="ckPr">₩26,000</div>
+      </div>
+    </div>
+    <img id="cricket" src="front/cricket_ch0.png" alt="">
+  </section>
+
+  <div id="clock"></div>
+  <div id="contact">CONTACT <b>010 · 6817 · 0406</b></div>
+</div>
+
+<script>
+/* ── 화면 맞춤: 1920×1080 을 어떤 모니터에도 비율 유지 ── */
+function fit(){ const s=Math.min(innerWidth/1920, innerHeight/1080); const st=document.getElementById('stage'); st.style.transform='translate(-50%,-50%) scale('+s+')'; st.style.transformOrigin='50% 50%'; }
+addEventListener('resize',fit); fit();
+
+/* ── 오늘의 칵테일: 날짜로 하나 고른다 (매일 바뀜, 같은 날엔 같은 잔) ── */
+const COCKTAILS=[
+  { slug:'bingsu', name:'BINGSU', tw:'Twisted Frozen G&T' },
+  { slug:'nuruk', name:'NURUK', tw:'Twisted Whisky Highball' },
+  { slug:'americano', name:'AMERICANO', tw:'Twisted Americano' },
+  { slug:'picnic', name:'PICNIC', tw:'Twisted Tom Collins' },
+  { slug:'bulgogi', name:'BULGOGI', tw:'Twisted Paloma & Batanga' },
+  { slug:'hwachae', name:'HWACHAE', tw:'Twisted Punch', price:'₩120,000 / 26,000' },
+  { slug:'gungoguma', name:'GUN-GOGUMA', tw:'Twisted Roasted Sweet Potato Latte' },
+  { slug:'aperolslush', name:'APEROL SLUSH', tw:'Twisted Aperol Spritz' },
+  { slug:'kiwicolada', name:'KIWI COLADA', tw:'Twisted Piña Colada' },
+  { slug:'bloodymarysoup', name:'BLOODY MARY SOUP', tw:'Twisted Bloody Mary' },
+  { slug:'corn', name:'CORN', tw:'Twisted Margarita' },
+  { slug:'banana', name:'BANANA', tw:'Twisted Daiquiri' },
+  { slug:'yogurt', name:'YOGURT', tw:'Twisted Kaikan Fizz' },
+  { slug:'hotbeer', name:'HOT BEER', tw:'Twisted Irish Coffee' },
+  { slug:'cacao', name:'CACAO', tw:'Twisted Old Fashioned' },
+  { slug:'passionfruit', name:'PASSIONFRUIT', tw:'Twisted Pornstar Martini' },
+];
+function dayIndex(){ const d=new Date(); d.setHours(d.getHours()-5);   // 새벽 5시까지는 전날 영업일로 친다
+  const day=Math.floor((d.getTime()+9*3600e3)/864e5); return ((day%COCKTAILS.length)+COCKTAILS.length)%COCKTAILS.length; }
+function showCocktail(){ const c=COCKTAILS[dayIndex()]; document.getElementById('ckPic').style.backgroundImage='url(front/photo_'+c.slug+'.png)';
+  document.getElementById('ckName').textContent=c.name; document.getElementById('ckTw').textContent=c.tw; document.getElementById('ckPr').textContent=c.price||'₩26,000'; }
+showCocktail(); setInterval(showCocktail, 60e3);
+
+/* ── 실시간 대기 (같은 서버의 /api/stream, 끊기면 /api/queue 폴링) ── */
+const waitEl=document.getElementById('wait'), waitTxt=document.getElementById('waitTxt');
+function paintWait(q){ if(!Array.isArray(q)){ waitEl.classList.add('off'); waitTxt.textContent='WAITING LIST'; return; }
+  const n=q.filter(x=>x&&x.status==='waiting').length; waitEl.classList.remove('off');
+  waitTxt.innerHTML = n===0 ? 'NO WAIT · <b>walk right in</b> · 바로 입장' : 'NOW WAITING <b>'+n+'</b> '+(n===1?'team':'teams')+' · 대기 <b>'+n+'</b>팀'; }
+function pollQueue(){ fetch('/api/queue',{cache:'no-store'}).then(r=>r.json()).then(paintWait).catch(()=>paintWait(null)); }
+(function sse(){ let es; try{ es=new EventSource('/api/stream'); }catch(e){ pollQueue(); setInterval(pollQueue,20e3); return; }
+  let gotAny=false; es.onmessage=e=>{ try{ const d=JSON.parse(e.data); gotAny=true; paintWait(Array.isArray(d)?d:d.queue); }catch(_){} };
+  es.onerror=()=>{ if(!gotAny) pollQueue(); };
+  setInterval(pollQueue, 30e3);   // 보험: 30초마다 한 번 더 맞춘다
+})();
+
+/* ── 귀뚜라미 이스터에그: 오른쪽 칸 바닥선을 따라 무작위로 뛰어다닌다 ── */
+(function(){ const el=document.getElementById('cricket'); const GROUND=1000; const SPOTS=[150,330,520,700,880,1020]; let cur=2, ci=0;
+  const HEAD_RIGHT=i=>i===3; const place=(x,y,f)=>{ el.style.left=x+'px'; el.style.top=y+'px'; el.style.transform='translate(-50%,-100%) scaleX('+f+')'; };
+  function pick(){ let n; do{ n=Math.floor(Math.random()*5); }while(n===ci); ci=n; el.src='front/cricket_ch'+ci+'.png'; }
+  function hop(){ let nx; do{ nx=Math.floor(Math.random()*SPOTS.length); }while(nx===cur); const x0=SPOTS[cur], x1=SPOTS[nx]; const goR=x1>x0; const f=(goR===HEAD_RIGHT(ci))?1:-1;
+    const dur=600+Math.random()*300, arc=60+Math.random()*50, t0=performance.now();
+    (function fr(now){ const p=Math.min(1,(now-t0)/dur); place(x0+(x1-x0)*p, GROUND-arc*4*p*(1-p), f); if(p<1) requestAnimationFrame(fr); else { cur=nx; pick(); place(x1,GROUND,(goR===HEAD_RIGHT(ci))?1:-1); setTimeout(hop, 1500+Math.random()*4000); } })(t0); }
+  place(SPOTS[cur],GROUND,-1); setTimeout(hop,2500); })();
+
+/* ── 시계 + 새벽 5시 자동 새로고침(업데이트 반영) ── */
+function tick(){ const d=new Date(); document.getElementById('clock').textContent=d.toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase()+' · '+d.toTimeString().slice(0,5); if(d.getHours()===5&&d.getMinutes()===0&&d.getSeconds()<2) location.reload(); }
+tick(); setInterval(tick,1000);
+</script>
+</body>
+</html>
