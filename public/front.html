@@ -39,19 +39,16 @@
   #welcome{ position:absolute; left:50%; top:86px; width:740px; height:269px; transform:translateX(-50%); background:url(front/title_logo.png) center/contain no-repeat; image-rendering:pixelated; filter:drop-shadow(0 6px 0 rgba(0,0,0,.45)); }
   #hello{ position:absolute; left:0; right:0; top:362px; text-align:center; font-family:'Press Start 2P',monospace; font-size:17px; color:var(--gold); letter-spacing:.06em; text-shadow:2px 2px 0 #000; }
   #hello .ko{ display:block; margin-top:12px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:17px; color:var(--cream2); letter-spacing:.2em; text-shadow:none; }
-  #row{ position:absolute; left:0; right:0; top:410px; height:610px; }
-  /* Pat & Joe 손 흔들기: ChatGPT(GPT-6 Astra)가 그린 4프레임 스트립(front/wave_duo.png, 프레임 620×700). 둘이 겹쳐 서 있어서 한 덩어리로 움직이고, 오늘의 칵테일 카드는 그 앞 가운데에 선다 */
-  #duo{ position:absolute; left:50%; bottom:0; width:620px; height:700px; margin-left:-310px; transform:scale(.87); transform-origin:50% 100%;
-    background:url(front/wave_duo.png) 0 0 no-repeat; background-size:2480px 700px; animation:wave 1.1s steps(4) infinite; filter:drop-shadow(6px 8px 0 rgba(0,0,0,.5)); }
-  @keyframes wave{ from{ background-position-x:0; } to{ background-position-x:-2480px; } }
-  /* 카드는 두 사람 얼굴을 가리지 않게 가슴 높이 아래, 작게 */
-  #card{ position:absolute; left:50%; bottom:4px; margin-left:-120px; width:240px; height:300px; background:#f3e9c8; border:4px solid #000; box-shadow:0 0 0 4px #c89a3c, 8px 10px 0 rgba(0,0,0,.5); display:flex; flex-direction:column; align-items:center; padding:12px 12px 10px; box-sizing:border-box; font-family:'Press Start 2P',monospace; color:var(--ink); text-align:center; }
-  #card .lbl{ font-size:8px; letter-spacing:.12em; color:#7a5a2a; }
-  #card .lbl .ko{ display:block; margin-top:5px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:10px; letter-spacing:.3em; }
-  #card .pic{ width:165px; height:165px; margin:6px 0 4px; background:center/contain no-repeat; image-rendering:pixelated; }
-  #card .nm{ font-size:13px; line-height:1.3; color:#1a120b; text-shadow:none; }
-  #card .tw{ margin-top:6px; display:inline-block; padding:3px 6px; background:#c89a3c; color:#1a130a; font-size:7px; letter-spacing:.03em; max-width:210px; }
-  #card .pr{ margin-top:5px; font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:600; color:#7a5a2a; }
+  /* 오늘의 칵테일 카드 하나를 가운데 크게 (붐 10/7: Pat·Joe 캐릭터는 빼기로) */
+  #row{ position:absolute; left:0; right:0; top:440px; bottom:70px; }
+  #card{ position:absolute; left:50%; top:0; margin-left:-200px; width:400px; height:530px; background:#f3e9c8; border:4px solid #000; box-shadow:0 0 0 4px #c89a3c, 10px 12px 0 rgba(0,0,0,.5); display:flex; flex-direction:column; align-items:center; padding:22px 18px 16px; box-sizing:border-box; font-family:'Press Start 2P',monospace; color:var(--ink); text-align:center; animation:cardbob 3.4s ease-in-out infinite; }
+  @keyframes cardbob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-8px); } }
+  #card .lbl{ font-size:11px; letter-spacing:.14em; color:#7a5a2a; }
+  #card .lbl .ko{ display:block; margin-top:7px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:13px; letter-spacing:.3em; }
+  #card .pic{ width:280px; height:280px; margin:12px 0 10px; background:center/contain no-repeat; image-rendering:pixelated; }
+  #card .nm{ font-size:19px; line-height:1.3; color:#1a120b; text-shadow:none; }
+  #card .tw{ margin-top:10px; display:inline-block; padding:5px 9px; background:#c89a3c; color:#1a130a; font-size:9px; letter-spacing:.03em; max-width:340px; }
+  #card .pr{ margin-top:10px; font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:600; color:#7a5a2a; }
 
   /* 귀뚜라미 이스터에그: 오른쪽 칸 바닥을 뛰어다닌다 */
   #cricket{ position:absolute; left:0; top:0; width:44px; height:auto; image-rendering:auto; filter:drop-shadow(1px 2px 0 rgba(0,0,0,.6)); transform:translate(-50%,-100%); will-change:left,top,transform; }
@@ -78,7 +75,6 @@
     <div id="welcome" role="img" aria-label="Welcome to Pine & Co"></div>
     <div id="hello">WELCOME HOME, GUEST!<span class="ko">파인앤코에 오신 것을 환영합니다</span></div>
     <div id="row">
-      <div id="duo" role="img" aria-label="Pat and Joe waving"></div>
       <div id="card">
         <div class="lbl">TODAY'S COCKTAIL<span class="ko">오늘의 한 잔</span></div>
         <div class="pic" id="ckPic"></div>
