@@ -43,10 +43,10 @@
   #hello{ position:absolute; left:0; right:0; top:438px; text-align:center; font-family:'Press Start 2P',monospace; font-size:17px; color:var(--gold); letter-spacing:.06em; text-shadow:2px 2px 0 #000; }
   #hello .ko{ display:block; margin-top:12px; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:17px; color:var(--cream2); letter-spacing:.2em; text-shadow:none; }
   /* 컨베이어 벨트 (붐 10/7): 오늘의 칵테일 → 파인앤코 QR → 크리켓 QR 카드가 오른쪽에서 왼쪽으로 천천히 지나간다.
-     카드 3장을 두 번 이어 붙이고 트랙을 절반(-50%)만큼 옮기면 끊김 없이 돈다. 한 바퀴 48초. */
+     카드 3장을 두 번 이어 붙이고 트랙을 절반(-50%)만큼 옮기면 끊김 없이 돈다. 한 바퀴 80초(카드 5장, 속도는 3장 때와 같음). */
   #row{ position:absolute; left:0; right:0; top:512px; height:486px; overflow:hidden;
     -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 70px, #000 calc(100% - 70px), transparent 100%); mask-image:linear-gradient(90deg, transparent 0, #000 70px, #000 calc(100% - 70px), transparent 100%); }
-  #track{ position:absolute; left:0; top:4px; display:flex; gap:0; width:max-content; animation:belt 48s linear infinite; will-change:transform; }
+  #track{ position:absolute; left:0; top:4px; display:flex; gap:0; width:max-content; animation:belt 80s linear infinite; will-change:transform; }
   @keyframes belt{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
   .card{ flex:0 0 auto; width:360px; height:462px; margin-right:70px; background:#f3e9c8; border:4px solid #000; box-shadow:0 0 0 4px #c89a3c, 10px 12px 0 rgba(0,0,0,.5); display:flex; flex-direction:column; align-items:center; padding:20px 16px 14px; box-sizing:border-box; font-family:'Press Start 2P',monospace; color:var(--ink); text-align:center; }
   .card .lbl{ font-size:10px; letter-spacing:.14em; color:#7a5a2a; }
@@ -59,6 +59,9 @@
   .card.qr{ justify-content:flex-start; }
   .card .lbl.big{ font-size:15px; letter-spacing:.12em; color:#1a120b; margin-top:8px; }
   .card .mark{ width:110px; height:74px; object-fit:contain; margin:8px 0 0; image-rendering:auto; }
+  .card .mark.ig{ width:54px; height:54px; margin:10px 0 0; }
+  .card .handle{ margin-top:6px; font-family:'Cormorant Garamond',serif; font-size:21px; font-weight:600; color:#5a4020; letter-spacing:.02em; }
+  .card .handle + .qrbig{ margin-top:6px; width:250px; height:250px; }
   .card .qrbig{ width:270px; height:270px; margin:8px 0 0; background:center/contain no-repeat; image-rendering:pixelated; border:5px solid #1a120b; box-sizing:content-box; flex:0 0 auto; }
 
   /* 귀뚜라미 이스터에그: 오른쪽 칸 바닥을 뛰어다닌다 */
@@ -106,6 +109,18 @@
         <div class="lbl big">CRICKET MENU</div>
         <img class="mark" src="front/cricket_mark.png" alt="Cricket Seoul">
         <div class="qrbig" style="background-image:url(front/qr_cricket.png)"></div>
+      </div>
+      <div class="card qr">
+        <div class="lbl big">PINE&amp;CO INSTAGRAM</div>
+        <img class="mark ig" src="front/ig_icon.png" alt="Instagram">
+        <div class="handle">@pineandco_seoul</div>
+        <div class="qrbig" style="background-image:url(front/qr_ig_pine.png)"></div>
+      </div>
+      <div class="card qr">
+        <div class="lbl big">CRICKET INSTAGRAM</div>
+        <img class="mark ig" src="front/ig_icon.png" alt="Instagram">
+        <div class="handle">@cricket.seoul</div>
+        <div class="qrbig" style="background-image:url(front/qr_ig_cricket.png)"></div>
       </div>
     </template>
     <img id="cricket" src="front/cricket_ch0.png" alt="">
