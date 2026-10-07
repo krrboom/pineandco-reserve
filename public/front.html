@@ -145,8 +145,8 @@ const COCKTAILS=[
   { slug:'cacao', name:'CACAO', tw:'Twisted Old Fashioned' },
   { slug:'passionfruit', name:'PASSIONFRUIT', tw:'Twisted Pornstar Martini' },
 ];
-/* 매일 무작위로 한 잔 (붐 10/7). 날짜를 씨앗으로 섞어서 같은 날엔 어느 화면이든 같은 잔, 다음 날엔 다른 잔(전날과 같은 잔은 피함) */
-function bizDay(){ const d=new Date(); d.setHours(d.getHours()-5);   // 새벽 5시까지는 전날 영업일로 친다
+/* 영업일마다 무작위로 한 잔 (붐 10/7). 영업일(19:00~익일 02:00)을 씨앗으로 섞어서 같은 날엔 어느 화면이든 같은 잔, 다음 영업일엔 다른 잔(전날과 같은 잔은 피함) */
+function bizDay(){ const d=new Date(); d.setHours(d.getHours()-19);   // 영업일 = 오후 7시 개점 ~ 새벽 2시 마감. 7시에 새 날, 새벽 2시까지는 같은 날
   return Math.floor((d.getTime()+9*3600e3)/864e5); }
 function seeded(n){ let x=Math.imul(n,2654435761)>>>0; x^=x>>>15; x=Math.imul(x,2246822519)>>>0; x^=x>>>13; x=Math.imul(x,3266489917)>>>0; x^=x>>>16; return x>>>0; }
 function pickFor(day){ return seeded(day)%COCKTAILS.length; }
