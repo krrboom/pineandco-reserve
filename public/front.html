@@ -157,11 +157,24 @@
 const ROT=(location.search.match(/[?&]rot=(1|2)/)||[])[1]|0;   // 1 = 시계방향 90°, 2 = 반시계 90°
 /* 모니터가 가장자리를 잘라먹으면(오버스캔) ?safe=6 처럼 % 를 주면 그만큼 사방에 여백을 두고 줄여 그린다 */
 const SAFE=Math.min(20, parseFloat((location.search.match(/[?&]safe=([0-9.]+)/)||[])[1]||0));
-function fit(){ const st=document.getElementById('stage'); const portrait=ROT||innerHeight>innerWidth; document.body.classList.toggle('portrait',portrait);
+/* 브라우저 창이 모니터보다 커서 일부가 화면 밖으로 밀려 있어도(10/9 매장 사진), 화면에 실제로 보이는 부분 안에만 그린다 */
+function visibleRect(){
+  try{ const chromeW=Math.max(0,outerWidth-innerWidth), chromeH=Math.max(0,outerHeight-innerHeight);
+    const vx=screenX+chromeW/2, vy=screenY+chromeH;              // 뷰포트 왼쪽 위가 모니터에서 어디에 있나 (CSS px 근사)
+    const left=Math.max(0,-vx), top=Math.max(0,-vy);
+    const right=Math.min(innerWidth, screen.width-vx), bottom=Math.min(innerHeight, screen.height-vy);
+    if(right-left>=300 && bottom-top>=300 && (left>0||top>0||right<innerWidth||bottom<innerHeight)) return {l:left,t:top,w:right-left,h:bottom-top};
+  }catch(e){}
+  return {l:0,t:0,w:innerWidth,h:innerHeight};
+}
+function fit(){ const st=document.getElementById('stage'); const v=visibleRect(); const portrait=ROT||v.h>v.w; document.body.classList.toggle('portrait',portrait);
   const W=portrait?1080:1920, H=portrait?1920:1080;
-  const k=1-SAFE/100*2; const s=(ROT?Math.min(innerWidth/H, innerHeight/W):Math.min(innerWidth/W, innerHeight/H))*k;
+  const k=1-SAFE/100*2; const s=(ROT?Math.min(v.w/H, v.h/W):Math.min(v.w/W, v.h/H))*k;
+  st.style.left=(v.l+v.w/2)+'px'; st.style.top=(v.t+v.h/2)+'px';
   st.style.transform='translate(-50%,-50%) '+(ROT===1?'rotate(90deg) ':ROT===2?'rotate(-90deg) ':'')+'scale('+s+')'; st.style.transformOrigin='50% 50%'; }
-addEventListener('resize',fit); fit();
+addEventListener('resize',fit); fit(); setInterval(fit,2000);   // 창이 옮겨져도 2초 안에 다시 맞춘다
+/* 화면을 한 번 누르면(터치/클릭) 전체화면으로 — 키오스크가 아니어도 주소창·창 테두리 없이 꽉 차게 */
+addEventListener('pointerdown',()=>{ try{ if(!document.fullscreenElement&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{}); }catch(e){} });
 
 /* ── 오늘의 칵테일: 날짜로 하나 고른다 (매일 바뀜, 같은 날엔 같은 잔) ── */
 const COCKTAILS=[
