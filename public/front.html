@@ -156,7 +156,7 @@
 /* 가로 화면이면 1920×1080, 세로 화면이면 1080×1920 디자인을 쓴다. ?rot=1 이면 윈도우가 가로인데 모니터만 세로로 세운 경우: 세로 디자인을 90° 돌려 꽉 채운다 */
 const ROT=(location.search.match(/[?&]rot=(1|2)/)||[])[1]|0;   // 1 = 시계방향 90°, 2 = 반시계 90°
 /* 모니터가 가장자리를 잘라먹으면(오버스캔) ?safe=6 처럼 % 를 주면 그만큼 사방에 여백을 두고 줄여 그린다 */
-const SAFE=Math.min(20, parseFloat((location.search.match(/[?&]safe=([d.]+)/)||[])[1]||0));
+const SAFE=Math.min(20, parseFloat((location.search.match(/[?&]safe=([0-9.]+)/)||[])[1]||0));
 function fit(){ const st=document.getElementById('stage'); const portrait=ROT||innerHeight>innerWidth; document.body.classList.toggle('portrait',portrait);
   const W=portrait?1080:1920, H=portrait?1920:1080;
   const k=1-SAFE/100*2; const s=(ROT?Math.min(innerWidth/H, innerHeight/W):Math.min(innerWidth/W, innerHeight/H))*k;
