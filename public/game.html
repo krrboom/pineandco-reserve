@@ -25,28 +25,56 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cre
 .tgt{text-align:center;margin-bottom:8px;}
 .tgt-l{font-size:11px;color:var(--muted);letter-spacing:.18em;font-family:'Cinzel',serif;}
 .tgt-n{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:400;color:var(--gold);margin-top:2px;}
+.step{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.2em;color:var(--muted);margin-bottom:6px;}
+.step b{color:var(--gold);font-weight:400;}
 
+/* Tray (selected ingredients) */
+.tray{display:flex;align-items:center;gap:6px;min-height:34px;padding:6px 14px;border:1px solid rgba(184,147,90,.2);border-radius:30px;background:rgba(184,147,90,.05);margin:0 auto 12px;}
+.tray-d{width:12px;height:12px;border-radius:50%;animation:drop .2s ease-out;}
+.tray-c{font-size:10px;color:var(--muted);font-family:'Cinzel',serif;letter-spacing:.08em;margin-left:4px;}
+
+/* Pixel art assets */
+.px{image-rendering:auto;display:block;}
 /* Shaker */
-.sk-zone{position:relative;width:110px;height:150px;margin:0 auto 10px;}
-.sk{width:72px;height:138px;border:2px solid rgba(184,147,90,.3);border-radius:8px 8px 24px 24px;
-  background:linear-gradient(180deg,rgba(184,147,90,.05),rgba(184,147,90,.01));
-  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:8px;
-  position:absolute;left:50%;transform:translateX(-50%);overflow:hidden;transition:all .12s;}
-.sk.rdy{border-color:var(--ok);box-shadow:0 0 18px rgba(93,202,165,.12);}
-.sk.bad{border-color:var(--fail);box-shadow:0 0 18px rgba(192,112,112,.15);}
+.sk-zone{position:relative;width:140px;height:170px;margin:0 auto 10px;display:flex;align-items:flex-end;justify-content:center;}
+.sk{height:160px;cursor:pointer;transition:filter .12s;filter:drop-shadow(0 0 14px rgba(93,202,165,.18));}
 .sk.shk{animation:shk .07s infinite alternate;}
-.sk-cap{width:40px;height:12px;background:var(--gold);border-radius:4px 4px 0 0;position:absolute;top:-12px;left:50%;transform:translateX(-50%);}
-.sk-cnt{font-size:10px;color:var(--muted);font-family:'Cinzel',serif;letter-spacing:.08em;}
-.sk-items{position:absolute;bottom:22px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center;padding:0 6px;max-width:60px;}
-.sk-item{width:14px;height:14px;border-radius:50%;animation:drop .2s ease-out;}
-@keyframes shk{0%{transform:translateX(-50%) rotate(-4deg) translateY(-2px);}100%{transform:translateX(-50%) rotate(4deg) translateY(2px);}}
+@keyframes shk{0%{transform:rotate(-6deg) translateY(-3px);}100%{transform:rotate(6deg) translateY(3px);}}
 @keyframes drop{0%{transform:translateY(-12px) scale(.5);opacity:0;}100%{transform:translateY(0) scale(1);opacity:1;}}
+
+/* Mixing glass (stir) */
+.stir-zone{position:relative;width:220px;height:220px;margin:0 auto 6px;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center;}
+.mg{height:176px;pointer-events:none;transition:transform .08s linear;transform-origin:50% 85%;}
+.swirl{position:absolute;left:50%;top:50%;width:200px;height:200px;border-radius:50%;border:1px dashed rgba(184,147,90,.25);transform:translate(-50%,-50%);}
+.stir-zone.on .swirl{border-color:rgba(93,202,165,.5);}
+.stir-dot{position:absolute;left:50%;top:50%;width:14px;height:14px;border-radius:50%;background:var(--amber);margin:-7px 0 0 -7px;box-shadow:0 0 10px rgba(201,169,110,.6);pointer-events:none;}
+
+/* Build glass */
+.bd-zone{position:relative;height:180px;margin:0 auto 6px;display:flex;align-items:flex-end;justify-content:center;}
+.bd-wrap{position:relative;display:inline-block;}
+.bd-img{height:100%;position:relative;z-index:1;}
+.bd{position:absolute;display:flex;flex-direction:column-reverse;z-index:2;mix-blend-mode:multiply;overflow:hidden;}
+.bd .ly{width:100%;animation:pourin .5s ease-out;opacity:.85;}
+@keyframes pourin{0%{height:0;}100%{height:var(--h);}}
+.bd-list{display:flex;flex-direction:column;gap:4px;align-items:center;margin-bottom:10px;}
+.bd-it{font-size:12px;color:var(--muted);font-family:'Cinzel',serif;letter-spacing:.06em;}
+.bd-it.done{color:var(--ok);}.bd-it.next{color:var(--gold);}
 
 .hint{text-align:center;margin-bottom:10px;font-size:14px;color:var(--amber);}
 .hint .p{animation:pls 1.2s ease-in-out infinite;}
 @keyframes pls{0%,100%{opacity:.35;}50%{opacity:1;}}
 .sbar{width:180px;height:7px;border-radius:4px;background:rgba(184,147,90,.1);margin:6px auto 0;overflow:hidden;}
 .sfill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold),var(--ok));transition:width .1s;}
+
+/* Method choice */
+.meths{display:flex;gap:10px;justify-content:center;width:100%;margin:6px 0 10px;}
+.mt{flex:1;max-width:140px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 6px 12px;
+  border:1px solid rgba(184,147,90,.2);border-radius:12px;background:rgba(240,235,224,.03);cursor:pointer;transition:all .12s;touch-action:manipulation;}
+.mt:active{transform:scale(.95);border-color:var(--gold);}
+.mt img{height:72px;}
+.mt-n{font-family:'Cinzel',serif;font-size:12px;letter-spacing:.14em;color:var(--gold);}
+.mt-s{font-size:10px;color:var(--muted);text-align:center;line-height:1.3;}
+.meth-note{font-size:11px;color:var(--muted);text-align:center;line-height:1.6;max-width:300px;margin-bottom:6px;}
 
 /* Retry banner */
 .retry-ban{text-align:center;padding:14px;margin-bottom:10px;border:1px solid rgba(192,112,112,.3);border-radius:10px;background:rgba(192,112,112,.06);}
@@ -62,13 +90,13 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cre
   cursor:pointer;transition:all .12s;touch-action:manipulation;width:72px;}
 .ig:active{transform:scale(.93);}
 .ig.sel{border-color:var(--gold);background:rgba(184,147,90,.12);}
-.ig.used{opacity:.15;pointer-events:none;}
-.ig svg{width:36px;height:42px;}
+.ig img{width:44px;height:50px;object-fit:contain;}
 .ig-n{font-size:9px;color:var(--cream);text-align:center;line-height:1.15;min-height:20px;display:flex;align-items:center;}
 
 /* Buttons */
 .btn{padding:14px 32px;border:none;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;font-size:13px;letter-spacing:.1em;font-weight:500;background:linear-gradient(135deg,var(--gold),var(--amber));color:var(--ink);transition:opacity .2s;}
 .btn:hover{opacity:.9;}
+.btn:disabled{opacity:.35;cursor:default;}
 .btn2{background:none;border:1px solid rgba(184,147,90,.2);color:var(--muted);font-size:10px;padding:10px 18px;margin-top:8px;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.08em;}
 
 /* Result */
@@ -76,10 +104,18 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cre
 @keyframes fi{0%{opacity:0;}100%{opacity:1;}}
 .res-name{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--gold);margin-bottom:4px;}
 .res-sub{font-size:14px;color:var(--cream);margin-bottom:6px;}
+.res-meth{display:inline-block;font-family:'Cinzel',serif;font-size:10px;letter-spacing:.2em;padding:5px 12px;border-radius:20px;border:1px solid rgba(184,147,90,.35);color:var(--gold);margin-bottom:8px;}
+.res-meth.bad{border-color:var(--fail);color:var(--fail);}
+.res-why{font-size:12px;color:var(--cream);text-align:center;line-height:1.6;max-width:310px;margin-bottom:8px;}
+.res-why.bad{color:var(--fail);}
 .res-ing{font-size:12px;color:var(--amber);margin-bottom:10px;text-align:center;line-height:2;}
 .res-fact{font-size:12px;color:var(--muted);text-align:center;line-height:1.6;max-width:310px;margin-bottom:16px;padding:12px 16px;border-left:2px solid rgba(184,147,90,.2);font-style:italic;}
 
-/* Glass visuals */
+/* Result picture */
+.res-pic{height:190px;margin-bottom:12px;display:flex;align-items:flex-end;justify-content:center;}
+.res-pic img{height:190px;animation:gd .5s ease-out both;}
+.res-pic.dim img{filter:grayscale(.9) brightness(.45);}
+/* Glass visuals (legacy fallback) */
 .gl-w{position:relative;width:120px;height:160px;margin-bottom:12px;}
 .gl-martini{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);width:76px;height:64px;overflow:hidden;}
 .gl-martini::after{content:'';position:absolute;inset:0;border-left:2px solid rgba(240,235,224,.22);border-right:2px solid rgba(240,235,224,.22);border-bottom:2px solid rgba(240,235,224,.22);clip-path:polygon(0 0,100% 0,62% 100%,38% 100%);}
@@ -88,6 +124,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cre
 .gl-high .lq{position:absolute;bottom:0;width:100%;border-radius:0 0 6px 6px;animation:fu .8s ease-out forwards;}
 .gl-coupe{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);width:72px;height:56px;border:2px solid rgba(240,235,224,.22);border-radius:0 0 50% 50%;overflow:hidden;}
 .gl-coupe .lq{position:absolute;bottom:0;width:100%;border-radius:0 0 50% 50%;animation:fu .8s ease-out forwards;}
+.gl-wine{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);width:68px;height:78px;border:2px solid rgba(240,235,224,.22);border-radius:8px 8px 50% 50%;overflow:hidden;}
+.gl-wine .lq{position:absolute;bottom:0;width:100%;border-radius:0 0 50% 50%;animation:fu .8s ease-out forwards;}
 .gl-rocks{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:58px;height:56px;border:2px solid rgba(240,235,224,.22);border-radius:2px 2px 6px 6px;overflow:hidden;}
 .gl-rocks .lq{position:absolute;bottom:0;width:100%;border-radius:0 0 4px 4px;animation:fu .8s ease-out forwards;}
 .gl-stem{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:3px;height:20px;background:rgba(240,235,224,.13);}
@@ -101,8 +139,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cre
 /* Intro & Final */
 .intro,.final{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;}
 .intro-e{font-size:56px;margin-bottom:12px;}
+.intro-e img{height:150px;}
 .intro-t{font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--gold);margin-bottom:6px;}
-.intro-s{font-size:14px;color:var(--muted);line-height:1.8;max-width:280px;margin-bottom:24px;}
+.intro-s{font-size:14px;color:var(--muted);line-height:1.8;max-width:300px;margin-bottom:24px;}
+.intro-m{display:flex;gap:14px;justify-content:center;margin:4px 0 16px;}
+.intro-m span{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.14em;color:var(--gold);border:1px solid rgba(184,147,90,.3);border-radius:20px;padding:5px 11px;}
 .f-score{font-family:'Cormorant Garamond',serif;font-size:72px;font-weight:300;color:var(--gold);}
 .f-label{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.22em;color:var(--muted);}
 .f-msg{font-size:16px;color:var(--cream);margin-top:14px;line-height:1.7;max-width:300px;}
@@ -159,6 +200,7 @@ const IC={
   'Gin':           ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="2" width="8" height="5" rx="2" fill="#1a4a6a"/><rect x="15" y="6" width="6" height="5" rx="1.5" fill="#2868a0"/><ellipse cx="18" cy="30" rx="11" ry="15" fill="#2868a0"/><ellipse cx="18" cy="30" rx="11" ry="15" fill="url(#gsh)" opacity=".15"/><rect x="16" y="20" width="3" height="12" rx="1.5" fill="rgba(255,255,255,.1)"/><defs><linearGradient id="gsh" x1="7" y1="15" x2="29" y2="45"><stop stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient></defs></svg>`,
   'Tequila':       ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="4" rx="2" fill="#2a5a2a"/><rect x="15" y="4" width="6" height="7" rx="1.5" fill="#3a7a3a"/><path d="M8 16 C8 12 28 12 28 16 L26 44 C26 46 10 46 10 44 Z" fill="#3a7a3a"/><rect x="16" y="18" width="3" height="16" rx="1.5" fill="rgba(255,255,255,.08)"/></svg>`,
   'Bourbon':       ()=>`<svg viewBox="0 0 36 46"><rect x="13" y="1" width="10" height="5" rx="1" fill="#1a1a1a"/><rect x="14" y="5" width="8" height="6" rx="1" fill="#2a2a2a"/><rect x="7" y="10" width="22" height="34" rx="2" fill="#1a1a1a"/><rect x="9" y="14" width="18" height="10" rx="1" fill="#c8a050" opacity=".6"/><rect x="14" y="16" width="3" height="18" rx="1.5" fill="rgba(255,255,255,.06)"/></svg>`,
+  'Rye Whiskey':   ()=>`<svg viewBox="0 0 36 46"><rect x="13" y="1" width="10" height="5" rx="1" fill="#3a2a18"/><rect x="14" y="5" width="8" height="6" rx="1" fill="#5a3a20"/><rect x="8" y="10" width="20" height="34" rx="3" fill="#7a4a24"/><rect x="10" y="15" width="16" height="9" rx="1" fill="#e8dcc0" opacity=".85"/><rect x="12" y="17" width="12" height="2" rx="1" fill="#7a4a24" opacity=".5"/><rect x="14" y="28" width="3" height="12" rx="1.5" fill="rgba(255,255,255,.08)"/></svg>`,
   'Cognac':        ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="4" rx="2" fill="#8b4020"/><rect x="15" y="4" width="6" height="8" rx="2" fill="#6b3018"/><ellipse cx="18" cy="32" rx="12" ry="13" fill="#6b3018"/><ellipse cx="18" cy="32" rx="12" ry="13" fill="url(#csh)" opacity=".12"/><rect x="16" y="22" width="3" height="12" rx="1.5" fill="rgba(255,255,255,.08)"/><defs><linearGradient id="csh" x1="6" y1="19" x2="30" y2="45"><stop stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient></defs></svg>`,
   // Liqueurs — smaller, colored bottles
   'Orange Liqueur':()=>`<svg viewBox="0 0 36 46"><rect x="14" y="3" width="8" height="4" rx="2" fill="#d87020"/><rect x="15" y="6" width="6" height="5" rx="1.5" fill="#e08830"/><rect x="9" y="10" width="18" height="28" rx="6" fill="#e08830"/><rect x="15" y="14" width="2.5" height="14" rx="1" fill="rgba(255,255,255,.1)"/></svg>`,
@@ -168,10 +210,12 @@ const IC={
   'Grenadine':     ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="4" width="8" height="3" rx="1.5" fill="#8b2020"/><rect x="15" y="6" width="6" height="4" rx="1" fill="#b03030"/><rect x="10" y="9" width="16" height="30" rx="4" fill="#c03838"/><rect x="15" y="13" width="2" height="14" rx="1" fill="rgba(255,255,255,.08)"/></svg>`,
   'Maraschino':    ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="4" width="8" height="3" rx="1.5" fill="#808080"/><rect x="15" y="6" width="6" height="4" rx="1" fill="#e0d8d0"/><rect x="10" y="9" width="16" height="30" rx="4" fill="#e8e0d8"/><rect x="15" y="13" width="2" height="14" rx="1" fill="rgba(0,0,0,.04)"/></svg>`,
   'Campari':       ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="2" width="8" height="4" rx="2" fill="#a01010"/><rect x="15" y="5" width="6" height="5" rx="1.5" fill="#c82020"/><rect x="9" y="9" width="18" height="30" rx="3" fill="#c82020"/><rect x="12" y="14" width="12" height="6" rx="1" fill="#fff" opacity=".15"/></svg>`,
+  'Aperol':        ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="2" width="8" height="4" rx="2" fill="#c05010"/><rect x="15" y="5" width="6" height="5" rx="1.5" fill="#f07020"/><rect x="9" y="9" width="18" height="30" rx="3" fill="#f07020"/><rect x="12" y="14" width="12" height="6" rx="1" fill="#fff" opacity=".2"/><rect x="12" y="30" width="12" height="4" rx="1" fill="#1a3a8a" opacity=".6"/></svg>`,
   'Sweet Vermouth':()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="4" rx="2" fill="#4a1818"/><rect x="15" y="4" width="6" height="8" rx="1.5" fill="#6b2020"/><rect x="9" y="11" width="18" height="32" rx="3" fill="#6b2020"/><rect x="15" y="15" width="2.5" height="16" rx="1" fill="rgba(255,255,255,.06)"/></svg>`,
   'Dry Vermouth':  ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="4" rx="2" fill="#6a7a3a"/><rect x="15" y="4" width="6" height="8" rx="1.5" fill="#8a9a4a"/><rect x="9" y="11" width="18" height="32" rx="3" fill="#b8c878"/><rect x="15" y="15" width="2.5" height="16" rx="1" fill="rgba(255,255,255,.08)"/></svg>`,
   'Absinthe':      ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="4" rx="2" fill="#2a5a20"/><rect x="15" y="4" width="6" height="8" rx="1.5" fill="#3a7a28"/><rect x="9" y="11" width="18" height="32" rx="3" fill="#4a8a38"/><rect x="15" y="15" width="2.5" height="16" rx="1" fill="rgba(255,255,255,.06)"/></svg>`,
   'Elderflower Liqueur':()=>`<svg viewBox="0 0 36 46"><rect x="14" y="3" width="8" height="3" rx="1.5" fill="#a0a078"/><rect x="15" y="5" width="6" height="5" rx="1.5" fill="#c8c8a0"/><rect x="10" y="9" width="16" height="30" rx="6" fill="#d8d8b8"/><circle cx="15" cy="22" r="2" fill="#e8e0a0" opacity=".3"/><circle cx="21" cy="26" r="1.5" fill="#e8e0a0" opacity=".2"/></svg>`,
+  'Prosecco':      ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="4" rx="2" fill="#c8b060"/><rect x="15" y="4" width="6" height="10" rx="2" fill="#2a4a2a"/><path d="M12 14 C12 12 24 12 24 14 L25 44 C25 46 11 46 11 44 Z" fill="#2a4a2a"/><rect x="14" y="24" width="8" height="10" rx="1" fill="#f0e8c8" opacity=".85"/><rect x="14" y="18" width="3" height="20" rx="1.5" fill="rgba(255,255,255,.08)"/></svg>`,
   // Juices — fruit shapes
   'Lime Juice':    ()=>`<svg viewBox="0 0 36 46"><ellipse cx="18" cy="24" rx="13" ry="12" fill="#5aaa38"/><path d="M18 14 C18 14 22 20 22 24 C22 28 18 34 18 34" stroke="#fff" stroke-width="1" opacity=".2" fill="none"/><ellipse cx="18" cy="24" rx="8" ry="7" fill="#78c848" opacity=".4"/><path d="M14 20 L18 24 L14 28" stroke="#e8f0d0" stroke-width=".8" opacity=".3" fill="none"/><path d="M22 20 L18 24 L22 28" stroke="#e8f0d0" stroke-width=".8" opacity=".3" fill="none"/></svg>`,
   'Lemon Juice':   ()=>`<svg viewBox="0 0 36 46"><ellipse cx="18" cy="24" rx="12" ry="11" fill="#e8d030"/><path d="M8 24 Q18 18 28 24" stroke="#f0e060" stroke-width="1.5" fill="none" opacity=".4"/><ellipse cx="18" cy="24" rx="7" ry="6" fill="#f0e060" opacity=".4"/><path d="M14 20 L18 24 L14 28" stroke="#fff" stroke-width=".8" opacity=".2" fill="none"/></svg>`,
@@ -191,56 +235,122 @@ const IC={
   // Mixers
   'Soda Water':    ()=>`<svg viewBox="0 0 36 46"><rect x="11" y="4" width="14" height="38" rx="4" fill="#b0d0e8"/><rect x="11" y="4" width="14" height="6" rx="3" fill="#90b8d0"/><circle cx="16" cy="22" r="1.5" fill="#fff" opacity=".3"/><circle cx="20" cy="28" r="1" fill="#fff" opacity=".25"/><circle cx="17" cy="34" r="1.2" fill="#fff" opacity=".2"/><circle cx="22" cy="18" r="1" fill="#fff" opacity=".2"/></svg>`,
   'Tonic Water':   ()=>`<svg viewBox="0 0 36 46"><rect x="11" y="4" width="14" height="38" rx="4" fill="#c8d8c8"/><rect x="11" y="4" width="14" height="6" rx="3" fill="#a8c0a8"/><circle cx="16" cy="22" r="1.5" fill="#fff" opacity=".2"/><circle cx="20" cy="30" r="1" fill="#fff" opacity=".2"/><rect x="14" y="16" width="8" height="4" rx="1" fill="#e8f0e8" opacity=".2"/></svg>`,
+  'Ginger Beer':   ()=>`<svg viewBox="0 0 36 46"><rect x="11" y="4" width="14" height="38" rx="4" fill="#c8a050"/><rect x="11" y="4" width="14" height="6" rx="3" fill="#a07830"/><rect x="13" y="16" width="10" height="12" rx="1" fill="#f0e0b0" opacity=".7"/><circle cx="16" cy="34" r="1.2" fill="#fff" opacity=".25"/><circle cx="21" cy="31" r="1" fill="#fff" opacity=".2"/></svg>`,
   'Coconut Cream': ()=>`<svg viewBox="0 0 36 46"><circle cx="18" cy="26" r="13" fill="#8b6838"/><path d="M8 22 Q18 16 28 22" fill="#6b4818"/><circle cx="18" cy="28" r="8" fill="#f0e8d8"/><circle cx="15" cy="20" r="2" fill="#4a3018" opacity=".4"/><circle cx="22" cy="20" r="1.5" fill="#4a3018" opacity=".3"/></svg>`,
   // Bitters
   'Angostura Bitters':()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="3" rx="1" fill="#c8a050"/><rect x="15" y="3" width="6" height="6" rx="1" fill="#e8c868"/><rect x="12" y="8" width="12" height="30" rx="2" fill="#e8c868"/><rect x="10" y="10" width="16" height="22" rx="1" fill="#f5f0e0"/><rect x="12" y="12" width="12" height="18" rx="1" fill="none" stroke="#c8a050" stroke-width=".5"/></svg>`,
+  "Peychaud's Bitters":()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="3" rx="1" fill="#801020"/><rect x="15" y="3" width="6" height="6" rx="1" fill="#c03040"/><rect x="12" y="8" width="12" height="30" rx="2" fill="#c03040"/><rect x="11" y="12" width="14" height="18" rx="1" fill="#f5e8d8"/><rect x="13" y="14" width="10" height="14" rx="1" fill="none" stroke="#c03040" stroke-width=".6"/></svg>`,
+  'Orange Bitters':()=>`<svg viewBox="0 0 36 46"><rect x="14" y="1" width="8" height="3" rx="1" fill="#a05010"/><rect x="15" y="3" width="6" height="6" rx="1" fill="#e08830"/><rect x="12" y="8" width="12" height="30" rx="2" fill="#e08830"/><rect x="11" y="12" width="14" height="18" rx="1" fill="#f8f0e0"/><circle cx="18" cy="21" r="4" fill="#e08830" opacity=".7"/></svg>`,
   'Peach Liqueur': ()=>`<svg viewBox="0 0 36 46"><rect x="14" y="3" width="8" height="3" rx="1.5" fill="#c88048"/><rect x="15" y="5" width="6" height="5" rx="1.5" fill="#e8a868"/><rect x="10" y="9" width="16" height="30" rx="6" fill="#e8a868"/><rect x="15" y="13" width="2.5" height="14" rx="1" fill="rgba(255,255,255,.1)"/></svg>`,
 };
-// Fallback
-function getIcon(name){return (IC[name]||(()=>`<svg viewBox="0 0 36 46"><rect x="10" y="8" width="16" height="32" rx="4" fill="#888"/></svg>`))();}
+// Pixel art assets (lab/<slug>.webp); SVG above is the fallback if an image fails to load
+function slug(n){return n.toLowerCase().replace(/'/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
+function pic(s,cls){return `<img class="px ${cls||''}" src="lab/${s}.webp" alt="" draggable="false">`;}
+function getIcon(name){return `<img class="px" src="lab/${slug(name)}.webp" alt="" draggable="false" onerror="this.outerHTML=IC[this.dataset.n]?IC[this.dataset.n]():''" data-n="${name.replace(/"/g,'&quot;')}">`;}
+// Liquid colours for the build-in-glass layers
+const LC={'Gin':'#dce6f0','Vodka':'#e6ecf2','Citrus Vodka':'#ecf0d0','Bourbon':'#c8842a','Rye Whiskey':'#c07a30','White Rum':'#f3ead6','Aged Rum':'#a86a30','Tequila':'#eef0d8','Cognac':'#b86a30',
+  'Campari':'#c82020','Aperol':'#f07020','Sweet Vermouth':'#7a2828','Dry Vermouth':'#dde4b8','Absinthe':'#8ac060','Orange Liqueur':'#e8a050','Maraschino':'#ece6dc','Coffee Liqueur':'#3a2818',
+  'Soda Water':'#d8ecf8','Tonic Water':'#e4eee8','Ginger Beer':'#d8b860','Prosecco':'#f0e6b0','Lime Juice':'#9ad060','Lemon Juice':'#e8d848','Cranberry Juice':'#c03050','Sugar Syrup':'#f0e0a0','Fresh Mint':'#58a858',
+  'Angostura Bitters':'#8a3818',"Peychaud's Bitters":'#c03040','Orange Bitters':'#e08830','Egg White':'#f5f0e8','Fresh Espresso':'#3a2010'};
 
-/* ═══ COCKTAIL DATA (Difford's Guide verified) ═══ */
+/* ═══ COCKTAIL DATA — 20 classics, each with its true technique ═══
+   m: 'shake' (shaker)  'stir' (mixing glass)  'build' (straight in the serving glass)
+   alt: a second technique that is also accepted (bars genuinely differ on these) */
 const CK=[
-  {name:'Mojito',ing:['White Rum','Lime Juice','Fresh Mint','Sugar Syrup','Soda Water'],glass:'highball',color:'#a8d8a0',gar:'🍃',ice:true,
-   hint:'This Cuban classic needs something herbal and something fizzy.',
-   fact:'The Mojito traces back to 16th-century Havana, where Sir Francis Drake\'s crew mixed aguardiente with lime, mint and sugarcane. Hemingway later made it legendary at La Bodeguita del Medio.'},
-  {name:'Margarita',ing:['Tequila','Lime Juice','Orange Liqueur'],glass:'coupe',color:'#d4e87a',gar:'🍋',ice:false,
-   hint:'Only 3 ingredients. Think: spirit + citrus + a sweet liqueur.',
-   fact:'Essentially a Tequila Sidecar. Its invention is claimed by over a dozen people. By the 1970s it became America\'s most popular cocktail. The salt rim was a later, now iconic, addition.'},
-  {name:'Whiskey Sour',ing:['Bourbon','Lemon Juice','Sugar Syrup','Egg White','Angostura Bitters'],glass:'rocks',color:'#e8c878',gar:'🍒',ice:true,
-   hint:'What gives this sour its silky foam? And don\'t forget the aromatic drops.',
-   fact:'First printed in Jerry Thomas\' 1862 "Bar-Tender\'s Guide." The egg white — creating the signature silky foam — was a later addition from the Boston Sour variation.'},
-  {name:'Daiquiri',ing:['White Rum','Lime Juice','Sugar Syrup'],glass:'coupe',color:'#f0e8c8',gar:'🍈',ice:false,
-   hint:'Beautifully simple — just 3 ingredients. Spirit + sour + sweet.',
+  // ── SHAKE ──
+  {name:'Daiquiri',m:'shake',ing:['White Rum','Lime Juice','Sugar Syrup'],glass:'coupe',color:'#f0e8c8',gar:'🍈',ice:false,
+   hint:'Beautifully simple. Just 3 ingredients: spirit + sour + sweet.',
+   why:'Fresh lime needs a hard shake with ice. It chills, dilutes and brightens the drink in seconds, then it is strained straight up.',
    fact:'Invented in 1898 by American mining engineer Jennings Cox near Santiago de Cuba. Both JFK and Hemingway were devotees. The frozen version is a completely different drink.'},
-  {name:'Espresso Martini',ing:['Vodka','Fresh Espresso','Coffee Liqueur'],glass:'martini',color:'#3a2518',gar:'☕',ice:false,
-   hint:'Just 3 ingredients. What wakes you up... and what adds depth to coffee?',
-   fact:'Created c.1983 by Dick Bradsell at London\'s Soho Brasserie. A model asked for "something to wake me up, then f*** me up." The 3 coffee bean garnish symbolizes health, wealth & happiness.'},
-  {name:'Cosmopolitan',ing:['Citrus Vodka','Orange Liqueur','Cranberry Juice','Lime Juice'],glass:'martini',color:'#d84060',gar:'🍊',ice:false,
-   hint:'Think pink. What gives it that famous color? And which vodka variant?',
-   fact:'Dale DeGroff popularized the definitive recipe at Manhattan\'s Rainbow Room in the mid-1990s. Sex and the City turned it into a global cultural phenomenon.'},
-  {name:'Piña Colada',ing:['White Rum','Coconut Cream','Pineapple Juice'],glass:'highball',color:'#f5edc8',gar:'🍍',ice:true,
-   hint:'Tropical paradise in a glass — just 3 ingredients. Think beach.',
-   fact:'Created in 1954 by bartender Ramón "Monchito" Marrero at the Caribe Hilton, San Juan. Puerto Rico declared it the island\'s official national drink in 1978.'},
-  {name:'Clover Club',ing:['Gin','Lemon Juice','Raspberry Syrup','Egg White'],glass:'coupe',color:'#d8708a',gar:'🫐',ice:false,
-   hint:'A gin sour with something berry and something for that silky texture.',
-   fact:'Named after a gentlemen\'s club at Philadelphia\'s Bellevue-Stratford Hotel, founded in 1882. H.L. Mencken once called it "the greatest cocktail in the world."'},
-  {name:'Mai Tai',ing:['Aged Rum','Lime Juice','Orange Liqueur','Orgeat Syrup','Sugar Syrup'],glass:'rocks',color:'#d89040',gar:'🍃',ice:true,
-   hint:'A tiki classic. Think aged spirit + citrus + a nutty syrup + something orange.',
-   fact:'Created in 1944 by Trader Vic in Oakland, California. He served it to Tahitian friends who exclaimed "Maita\'i roa ae!" — "Out of this world!" The original used a 17-year-old J. Wray & Nephew rum.'},
-  {name:'Sidecar',ing:['Cognac','Orange Liqueur','Lemon Juice'],glass:'coupe',color:'#d8b860',gar:'🍊',ice:false,
-   hint:'A French classic — just 3 ingredients. Think brandy + citrus + something orange.',
+  {name:'Margarita',m:'shake',ing:['Tequila','Lime Juice','Orange Liqueur'],glass:'coupe',color:'#d4e87a',gar:'🍋',ice:false,
+   hint:'Only 3 ingredients. Think: spirit + citrus + a sweet liqueur.',
+   why:'Citrus and liqueur only come together with a hard shake over ice. Serve up or over fresh ice, salt rim optional.',
+   fact:'Essentially a Tequila Sidecar. Its invention is claimed by over a dozen people. By the 1970s it became America\'s most popular cocktail. The salt rim was a later, now iconic, addition.'},
+  {name:'Whiskey Sour',m:'shake',ing:['Bourbon','Lemon Juice','Sugar Syrup','Egg White','Angostura Bitters'],glass:'rocks',color:'#e8c878',gar:'🍒',ice:true,
+   hint:'What gives this sour its silky foam? And don\'t forget the aromatic drops.',
+   why:'Egg white demands a shake: first a dry shake without ice to build the foam, then a hard shake with ice to chill it.',
+   fact:'First printed in Jerry Thomas\' 1862 "Bar-Tender\'s Guide." The egg white, which creates the signature silky foam, was a later addition from the Boston Sour variation.'},
+  {name:'Sidecar',m:'shake',ing:['Cognac','Orange Liqueur','Lemon Juice'],glass:'coupe',color:'#d8b860',gar:'🍊',ice:false,
+   hint:'A French classic. Just 3 ingredients: brandy + citrus + something orange.',
+   why:'Lemon juice means a shake. A quick, hard shake with ice and a fine strain into a chilled coupe.',
    fact:'Born during WWI, likely at the Ritz Paris or Harry\'s New York Bar, c.1922. Named after the motorcycle sidecar a regular patron arrived in. The sugar rim is a Ritz tradition.'},
+  {name:'Cosmopolitan',m:'shake',ing:['Citrus Vodka','Orange Liqueur','Cranberry Juice','Lime Juice'],glass:'martini',color:'#d84060',gar:'🍊',ice:false,
+   hint:'Think pink. What gives it that famous color? And which vodka variant?',
+   why:'Two juices in the mix, so it is shaken hard with ice and strained up. Dale DeGroff finishes it with a flamed orange peel.',
+   fact:'Dale DeGroff popularized the definitive recipe at Manhattan\'s Rainbow Room in the mid-1990s. Sex and the City turned it into a global cultural phenomenon.'},
+  {name:'Espresso Martini',m:'shake',ing:['Vodka','Fresh Espresso','Coffee Liqueur'],glass:'martini',color:'#3a2518',gar:'☕',ice:false,
+   hint:'Just 3 ingredients. What wakes you up... and what adds depth to coffee?',
+   why:'A hard shake chills the hot espresso instantly and whips its oils into that crema-like foam on top.',
+   fact:'Created c.1983 by Dick Bradsell at London\'s Soho Brasserie. A model asked for "something to wake me up, then f*** me up." The 3 coffee bean garnish symbolizes health, wealth & happiness.'},
+  {name:'Clover Club',m:'shake',ing:['Gin','Lemon Juice','Raspberry Syrup','Egg White'],glass:'coupe',color:'#d8708a',gar:'🫐',ice:false,
+   hint:'A gin sour with something berry and something for that silky texture.',
+   why:'Egg white and lemon: dry shake, then shake with ice. Only a shaker gives it the pink, pillowy head.',
+   fact:'Named after a gentlemen\'s club at Philadelphia\'s Bellevue-Stratford Hotel, founded in 1882. H.L. Mencken once called it "the greatest cocktail in the world."'},
+  // ── STIR ──
+  {name:'Dry Martini',m:'stir',ing:['Gin','Dry Vermouth'],glass:'martini',color:'#eef0e8',gar:'🫒',ice:false,
+   hint:'Just 2 ingredients. The most famous pairing of a spirit and a fortified wine.',
+   why:'Spirit and vermouth only: stir with ice until icy cold, then strain. Shaking clouds it with ice shards and air, whatever Mr. Bond says.',
+   fact:'The Martini grew out of the Martinez in the 1880s and 90s. The bone-dry style with dry vermouth took over in the early 1900s. The tale of Churchill merely glancing at the vermouth bottle is a legend, not a record.'},
+  {name:'Manhattan',m:'stir',ing:['Rye Whiskey','Sweet Vermouth','Angostura Bitters'],glass:'coupe',color:'#b8402a',gar:'🍒',ice:false,
+   hint:'Whiskey, something sweet and fortified, and a dash of aromatics.',
+   why:'Whiskey, vermouth and bitters: all spirit, so it is stirred with ice for a clear, silky, properly diluted drink.',
+   fact:'First appears in print in the early 1880s, most likely born at New York\'s Manhattan Club. The story that Jennie Jerome, Winston Churchill\'s mother, launched it at a banquet is a myth: she was in England, about to give birth, at the time.'},
+  {name:'Negroni',m:'stir',alt:'build',ing:['Gin','Campari','Sweet Vermouth'],glass:'rocks',color:'#c8303a',gar:'🍊',ice:true,
+   hint:'Equal parts. Spirit, something bitter red, something sweet.',
+   why:'Equal parts spirit, bitter and vermouth. Stir over ice, in a mixing glass or straight in the rocks glass, and never shake it.',
+   fact:'Florence, 1919: Count Camillo Negroni asked bartender Fosco Scarselli at Caffè Casoni to strengthen his Americano with gin instead of soda. The orange slice replaced the lemon to mark the difference.'},
+  {name:'Sazerac',m:'stir',ing:['Rye Whiskey','Sugar Syrup',"Peychaud's Bitters",'Absinthe'],glass:'rocks',color:'#c89050',gar:'🍋',ice:false,
+   hint:'New Orleans in a glass: rye, sugar, a red bitters and a rinse of the green fairy.',
+   why:'Spirit, sugar and bitters only: stir with ice, then strain into a chilled, absinthe-rinsed glass with no ice.',
+   fact:'Born in New Orleans in the 1800s and originally made with Sazerac de Forge cognac. Rye took over after phylloxera devastated French vineyards in the 1870s. Antoine Peychaud\'s bitters and the absinthe rinse define it. Louisiana named it the city\'s official cocktail in 2008.'},
+  {name:'Boulevardier',m:'stir',ing:['Bourbon','Campari','Sweet Vermouth'],glass:'coupe',color:'#a83a30',gar:'🍊',ice:false,
+   hint:'A Negroni\'s whiskey cousin.',
+   why:'Whiskey, bitter and vermouth: stirred with ice and strained, like every all-spirit drink.',
+   fact:'Recorded in Harry MacElhone\'s 1927 "Barflies and Cocktails" as the drink of Erskine Gwynne, an American in Paris who published a magazine called The Boulevardier.'},
+  {name:'Martinez',m:'stir',ing:['Gin','Sweet Vermouth','Maraschino','Orange Bitters'],glass:'coupe',color:'#d8a060',gar:'🍋',ice:false,
+   hint:'The Martini\'s ancestor: gin, sweet vermouth, a cherry liqueur and bitters.',
+   why:'Gin, vermouth, liqueur and bitters: all spirit, so it is stirred and strained, never shaken.',
+   fact:'Appears in O.H. Byron\'s 1884 "Modern Bartender\'s Guide" and in Jerry Thomas\'s 1887 edition. The tale of its invention in Martinez, California is unproven. It is widely regarded as the Martini\'s ancestor.'},
+  // ── BUILD ──
+  {name:'Old Fashioned',m:'build',alt:'stir',ing:['Bourbon','Sugar Syrup','Angostura Bitters'],glass:'rocks',color:'#c87830',gar:'🍊',ice:true,
+   hint:'The original definition of "cocktail": spirit, sugar, water and bitters.',
+   why:'Built straight in the rocks glass: sugar and bitters, then whiskey, then ice, stirred right there in the glass.',
+   fact:'In 1806 a newspaper defined a "cocktail" as spirits, sugar, water and bitters. The "old fashioned" name shows up in the 1880s. The Pendennis Club of Louisville claims its invention, but that is a legend with no record behind it.'},
+  {name:'Mojito',m:'build',ing:['White Rum','Lime Juice','Fresh Mint','Sugar Syrup','Soda Water'],glass:'highball',color:'#a8d8a0',gar:'🍃',ice:true,
+   hint:'This Cuban classic needs something herbal and something fizzy.',
+   why:'Mint and lime are gently pressed in the glass, then rum, crushed ice and soda go straight in. Shaking would bruise the mint and flatten the soda.',
+   fact:'The Mojito traces back to 16th-century Havana, where Sir Francis Drake\'s crew mixed aguardiente with lime, mint and sugarcane. Hemingway later made it legendary at La Bodeguita del Medio.'},
+  {name:'Moscow Mule',m:'build',ing:['Vodka','Lime Juice','Ginger Beer'],glass:'highball',color:'#d8c890',gar:'🍋',ice:true,
+   hint:'Vodka, citrus and a spicy fizzy mixer, served in copper.',
+   why:'Built over ice in a copper mug: vodka and lime first, ginger beer last, then a gentle stir so the fizz survives.',
+   fact:'Claimed for 1941 at the Cock \'n\' Bull on Sunset Boulevard, where John Martin of Smirnoff and pub owner Jack Morgan paired unloved vodka with the pub\'s ginger beer. The copper mug made it famous.'},
+  {name:'Gin & Tonic',m:'build',ing:['Gin','Tonic Water'],glass:'highball',color:'#e8f0f0',gar:'🍋',ice:true,
+   hint:'Two ingredients. One of them is bitter from quinine.',
+   why:'Built in an ice-filled glass. Shaking or stirring hard would kill the bubbles.',
+   fact:'In 19th-century British India, quinine tonic was taken against malaria and gin made it palatable. Schweppes launched a commercial tonic water in the 1870s.'},
+  {name:'Americano',m:'build',ing:['Campari','Sweet Vermouth','Soda Water'],glass:'highball',color:'#d05050',gar:'🍊',ice:true,
+   hint:'Bitter, sweet vermouth and fizz. No spirit at all.',
+   why:'Built over ice and topped with soda. It is the low-alcohol parent of the Negroni.',
+   fact:'Served at Gaspare Campari\'s bar in Milan from the 1860s as the Milano-Torino (Campari from Milan, vermouth from Turin). Renamed for the American tourists who loved it. It is the first drink James Bond orders in Casino Royale (1953).'},
+  {name:'Aperol Spritz',m:'build',ing:['Aperol','Prosecco','Soda Water'],glass:'wine',color:'#f08030',gar:'🍊',ice:true,
+   hint:'Orange, bubbly and Italian. 3-2-1.',
+   why:'Built in a wine glass over ice: prosecco, Aperol, a splash of soda. Never shaken.',
+   fact:'Aperol was created in Padua in 1919 by the Barbieri brothers. The spritz habit goes back to Austro-Hungarian soldiers in the Veneto who diluted the local wine with a "spritz" of water. The 3-2-1 formula was marketed worldwide in the 2000s.'},
+  {name:'Tom Collins',m:'build',alt:'shake',ing:['Gin','Lemon Juice','Sugar Syrup','Soda Water'],glass:'highball',color:'#f0f0d0',gar:'🍋',ice:true,
+   hint:'A gin sour lengthened with soda in a tall glass.',
+   why:'Built in a tall glass over ice and topped with soda. Some bars shake the gin, lemon and sugar first, but the soda always goes in last, in the glass.',
+   fact:'Named after John Collins, head waiter at Limmer\'s Hotel in London in the 1860s, and made with Old Tom gin, hence "Tom". The Great Tom Collins Hoax of 1874 sent New Yorkers hunting for a man who was "talking about them" in the next bar. Jerry Thomas printed it in 1876.'},
 ];
 
 const ALL_N=Object.keys(IC);
-let st='intro',ci=0,sc=0,rr=[],sel=[],co=[],shk=0,retryMsg=null,roundIngs=[];
-const TOT=5,SHKNEED=14;
+const MLABEL={shake:'SHAKEN',stir:'STIRRED',build:'BUILT IN THE GLASS'};
+let st='intro',ci=0,sc=0,rr=[],sel=[],co=[],shk=0,retryMsg=null,roundIngs=[],chosen=null,failWhy=null,stirAng=0,lastA=null,poured=0;
+const TOT=5,SHKNEED=14,STIRNEED=6*Math.PI; // 3 full turns of the bar spoon
 
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 function start(){co=shuffle(CK).slice(0,TOT);ci=0;sc=0;rr=[];round();}
 function round(){
-  sel=[];shk=0;retryMsg=null;st='playing';
+  sel=[];shk=0;retryMsg=null;failWhy=null;chosen=null;st='playing';
   // Set ingredients once per cocktail, keep on retry
   const c=cur();
   const decoys=shuffle(ALL_N.filter(n=>!c.ing.includes(n))).slice(0,Math.max(5,10-c.ing.length));
@@ -248,6 +358,8 @@ function round(){
   render();
 }
 function cur(){return co[ci];}
+function methodsOf(c){return c.alt?[c.m,c.alt]:[c.m];}
+function vib(p){if(navigator.vibrate)navigator.vibrate(p);}
 
 function tap(name){
   if(st!=='playing')return;
@@ -256,36 +368,97 @@ function tap(name){
   const c=cur();
   if(sel.length>=c.ing.length)return; // max reached
   sel.push(name);
-  if(navigator.vibrate)navigator.vibrate(20);
-  if(sel.length===c.ing.length){st='shaking';shk=0;}
+  vib(20);
+  if(sel.length===c.ing.length)st='method';
   render();
+}
+function backToIngs(){if(st!=='method')return;st='playing';render();}
+
+/* Technique step: ingredients are judged first (retry with hint), then the technique (strict) */
+function chooseMethod(m){
+  if(st!=='method')return;
+  const c=cur();
+  const correct=sel.length===c.ing.length&&c.ing.every(i=>sel.includes(i));
+  if(!correct){
+    const right=sel.filter(s=>c.ing.includes(s));
+    const wrong=sel.filter(s=>!c.ing.includes(s));
+    retryMsg={right,wrong,hint:c.hint||'Think about what makes this cocktail unique.'};
+    st='playing';sel=[];vib([60,30,60,30,60]);render();return;
+  }
+  if(!methodsOf(c).includes(m)){
+    failWhy=failText(c,m);rr.push('no');st='result';vib([60,30,60,30,60]);render();return;
+  }
+  chosen=m;st='mixing';shk=0;stirAng=0;lastA=null;poured=0;render();
+  if(m==='stir')bindStir();
+}
+function failText(c,m){
+  const n=c.name;
+  if(c.m==='stir')return m==='shake'
+    ?`Shaking clouds an all-spirit drink with ice shards and air. ${n} is stirred with ice in a mixing glass.`
+    :`Left in the serving glass it never chills and dilutes properly. ${n} is stirred with ice in a mixing glass and strained.`;
+  if(c.m==='shake')return m==='stir'
+    ?`Stirring can't blend juice, egg or cream into the spirit. ${n} needs a hard shake with ice.`
+    :`Citrus and syrup won't integrate just sitting in the glass. ${n} needs a hard shake with ice.`;
+  return m==='shake'
+    ?`Shaking soda or sparkling wine knocks out the bubbles. ${n} is built straight in the serving glass.`
+    :`No mixing glass needed. ${n} is built straight in the serving glass over ice.`;
+}
+function finishMix(){
+  if(st!=='mixing')return;
+  sc++;rr.push('ok');st='result';failWhy=null;vib([80,40,80,40,160]);render();
 }
 
+/* SHAKE */
 function doShake(){
-  if(st!=='shaking')return;shk++;
-  if(navigator.vibrate)navigator.vibrate(12);
+  if(st!=='mixing'||chosen!=='shake')return;shk++;
+  vib(12);
   const s=document.querySelector('.sk');
   if(s){s.classList.add('shk');setTimeout(()=>s.classList.remove('shk'),80);}
-  if(shk>=SHKNEED){
-    // Check correctness
-    const c=cur();
-    const correct=sel.every(s=>c.ing.includes(s))&&c.ing.every(i=>sel.includes(i));
-    if(correct){
-      sc++;rr.push('ok');st='result';
-      if(navigator.vibrate)navigator.vibrate([80,40,80,40,160]);
-    }else{
-      // Wrong — show what was right/wrong, give hint, retry
-      const right=sel.filter(s=>c.ing.includes(s));
-      const wrong=sel.filter(s=>!c.ing.includes(s));
-      retryMsg={right,wrong,hint:c.hint||'Think about what makes this cocktail unique.'};
-      st='playing';sel=[];shk=0;
-      if(navigator.vibrate)navigator.vibrate([60,30,60,30,60]);
-    }
-  }
-  render();
+  const f=document.getElementById('mixFill');if(f)f.style.width=Math.min(100,Math.round(shk/SHKNEED*100))+'%';
+  if(shk>=SHKNEED)finishMix();
 }
-function manShake(){if(st==='shaking'){shk+=2;doShake();}}
-function skip(){rr.push('no');st='result';render();}
+function manShake(){if(st==='mixing'&&chosen==='shake'){shk++;doShake();}}
+
+/* STIR: drag in circles around the mixing glass (or tap it) */
+function stirProgress(){const f=document.getElementById('mixFill');if(f)f.style.width=Math.min(100,Math.round(stirAng/STIRNEED*100))+'%';}
+function bindStir(){
+  const z=document.getElementById('stirZone');if(!z)return;
+  const sp=document.getElementById('spoon');
+  const ang=e=>{const r=z.getBoundingClientRect();return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2));};
+  let down=false,moved=0;
+  z.addEventListener('pointerdown',e=>{down=true;moved=0;lastA=ang(e);z.classList.add('on');try{z.setPointerCapture(e.pointerId);}catch{}e.preventDefault();});
+  z.addEventListener('pointermove',e=>{
+    if(!down||st!=='mixing'||chosen!=='stir')return;
+    const a=ang(e);let d=a-lastA;if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;lastA=a;
+    if(Math.abs(d)<0.9){stirAng+=Math.abs(d);moved+=Math.abs(d);}
+    orbit(a);
+    stirProgress();
+    if(moved>Math.PI&&Date.now()-lastVib>400){lastVib=Date.now();vib(8);}
+    if(stirAng>=STIRNEED){down=false;z.classList.remove('on');finishMix();}
+  });
+  const up=()=>{if(!down)return;down=false;z.classList.remove('on');lastA=null;if(moved<0.3)tapStir();};
+  z.addEventListener('pointerup',up);z.addEventListener('pointercancel',up);
+}
+let lastVib=0;
+function orbit(a){
+  const sp=document.getElementById('spoon');if(sp)sp.style.transform=`translate(${(Math.cos(a)*80).toFixed(1)}px,${(Math.sin(a)*80).toFixed(1)}px)`;
+  const mg=document.querySelector('.mg');if(mg)mg.style.transform=`rotate(${(Math.cos(a)*5).toFixed(1)}deg)`;
+}
+function tapStir(){
+  if(st!=='mixing'||chosen!=='stir')return;
+  stirAng+=Math.PI/2;vib(10);stirProgress();orbit(stirAng);
+  if(stirAng>=STIRNEED)finishMix();
+}
+
+/* BUILD: pour each ingredient, in order, straight into the glass */
+function pour(){
+  if(st!=='mixing'||chosen!=='build')return;
+  const c=cur();if(poured>=c.ing.length)return;
+  poured++;vib(15);render();
+  if(poured>=c.ing.length)setTimeout(finishMix,800);
+}
+
+function skip(){rr.push('no');failWhy=null;st='result';render();}
 function next(){ci++;if(ci>=TOT){st='final';render();}else round();}
 
 // Motion
@@ -298,24 +471,36 @@ function progHTML(){
 }
 
 function glassHTML(c,ok){
+  return `<div class="res-pic ${ok?'':'dim'}">${pic(slug(c.name))}</div>`;
+}
+function glassHTMLLegacy(c,ok){
   const h=ok?'78%':'20%';const op=ok?1:.12;
   const lq=`<div class="lq" style="background:${c.color};--h:${h};opacity:${op};"></div>`;
   let g='';
   if(c.glass==='martini')g=`<div class="gl-martini">${lq}</div><div class="gl-stem" style="bottom:6px;height:18px;"></div><div class="gl-base"></div>`;
   else if(c.glass==='highball')g=`<div class="gl-high">${lq}</div>`;
   else if(c.glass==='coupe')g=`<div class="gl-coupe">${lq}</div><div class="gl-stem"></div><div class="gl-base"></div>`;
+  else if(c.glass==='wine')g=`<div class="gl-wine">${lq}</div><div class="gl-stem"></div><div class="gl-base"></div>`;
   else g=`<div class="gl-rocks">${lq}</div>`;
   return `<div class="gl-w">${g}${ok?`<div class="gl-gar">${c.gar}</div>`:''}${ok&&c.ice?`<div class="gl-ice" style="top:28%;left:42%;">🧊</div>`:''}</div>`;
 }
+
+const TOOL={
+  shake:`<svg viewBox="0 0 48 60"><rect x="16" y="4" width="16" height="7" rx="2" fill="#c9a96e"/><rect x="13" y="10" width="22" height="8" rx="3" fill="#b8935a"/><path d="M12 18 H36 L33 54 C33 57 15 57 15 54 Z" fill="none" stroke="#c9a96e" stroke-width="2"/><rect x="18" y="24" width="3" height="22" rx="1.5" fill="rgba(201,169,110,.3)"/></svg>`,
+  stir:`<svg viewBox="0 0 48 60"><path d="M10 10 H38 L35 54 C35 57 13 57 13 54 Z" fill="none" stroke="#c9a96e" stroke-width="2"/><path d="M12 12 H36" stroke="#c9a96e" stroke-width="3"/><line x1="40" y1="2" x2="22" y2="44" stroke="#c9a96e" stroke-width="2.4" stroke-linecap="round"/><circle cx="22" cy="46" r="3.5" fill="#c9a96e"/><rect x="16" y="30" width="7" height="7" rx="1" fill="rgba(240,235,224,.25)"/><rect x="25" y="36" width="7" height="7" rx="1" fill="rgba(240,235,224,.2)"/></svg>`,
+  build:`<svg viewBox="0 0 48 60"><path d="M14 4 H34 L33 54 C33 57 15 57 15 54 Z" fill="none" stroke="#c9a96e" stroke-width="2"/><rect x="17" y="12" width="8" height="8" rx="1" fill="rgba(240,235,224,.25)"/><rect x="24" y="22" width="8" height="8" rx="1" fill="rgba(240,235,224,.2)"/><rect x="18" y="33" width="8" height="8" rx="1" fill="rgba(240,235,224,.22)"/><path d="M16 44 H32" stroke="rgba(201,169,110,.4)" stroke-width="2"/></svg>`,
+};
 
 function render(){
   const app=document.getElementById('app');if(!app)return;
 
   if(st==='intro'){
     app.innerHTML=`<div class="intro">
-      <div class="intro-e">🍸</div>
+      <div class="intro-e">${pic('lab-flask')}</div>
       <div class="intro-t">Cocktail Lab</div>
-      <div class="intro-s">Pick the right ingredients,<br>shake your phone to mix!<br><br>5 cocktails — can you nail<br>all of them?<br><br><span style="color:var(--gold);font-size:13px;">Psst... get a perfect score and<br>our bartenders might have a little<br>something for you. 😉</span></div>
+      <div class="intro-s">5 classics out of 20.<br>Pick the right ingredients,<br>then mix them the right way:</div>
+      <div class="intro-m"><span>SHAKE</span><span>STIR</span><span>BUILD</span></div>
+      <div class="intro-s"><span style="color:var(--gold);font-size:13px;">Psst... get a perfect score and<br>our bartenders might have a little<br>something for you. 😉</span></div>
       <button class="btn" onclick="reqM();start()">START MIXING</button>
     </div>`;return;
   }
@@ -323,7 +508,7 @@ function render(){
   if(st==='final'){
     const perfect=sc===TOT;
     const msgs=[
-      {min:0,t:'Room for improvement!',s:'Don\'t worry — even the best bartenders had to start somewhere. Give it another go!',e:'🥃'},
+      {min:0,t:'Room for improvement!',s:'Don\'t worry, even the best bartenders had to start somewhere. Give it another go!',e:'🥃'},
       {min:2,t:'Not bad at all!',s:'You know your way around a few classics. A couple more tries and you\'ll be unstoppable.',e:'🙌'},
       {min:4,t:'So close to perfection!',s:'One more and you would\'ve had it. That\'s seriously impressive.',e:'🔥'},
       {min:5,t:'',s:'',e:'🏆'},
@@ -347,27 +532,88 @@ function render(){
 
   if(st==='result'){
     const c=cur();const ok=rr[rr.length-1]==='ok';
+    const badM=!!failWhy;
     app.innerHTML=`<div class="res">
       ${glassHTML(c,ok)}
       <div class="res-name">${ok?'✨ '+c.name:'❌ '+c.name}</div>
-      <div class="res-sub">${ok?'Perfectly mixed!':'Better luck next time!'}</div>
-      <div class="res-ing">${c.ing.map(n=>`${n}`).join(' · ')}</div>
+      <div class="res-sub">${ok?'Perfectly mixed!':badM?'Right ingredients, wrong technique.':'Better luck next time!'}</div>
+      <div class="res-meth ${badM?'bad':''}">${MLABEL[c.m]}${c.alt?' · or '+MLABEL[c.alt].split(' ')[0]:''}</div>
+      <div class="res-why ${badM?'bad':''}">${badM?failWhy:c.why}</div>
+      <div class="res-ing">${c.ing.join(' · ')}</div>
       <div class="res-fact">${c.fact}</div>
       ${progHTML()}
       <button class="btn" onclick="next()">${ci<TOT-1?'NEXT COCKTAIL →':'SEE RESULTS'}</button>
     </div>`;return;
   }
 
-  // Playing / Shaking
   const c=cur();
-
-  app.innerHTML=`<div class="gm">
-    ${progHTML()}
+  const head=(step,label)=>`${progHTML()}
+    <div class="step">STEP ${step} / 3 · <b>${label}</b></div>
     <div class="tgt">
-      <div class="tgt-l">SHAKE THIS COCKTAIL</div>
+      <div class="tgt-l">MAKE THIS COCKTAIL</div>
       <div class="tgt-n">${c.name}</div>
-    </div>
+    </div>`;
 
+  // ── Step 3: technique in action ──
+  if(st==='mixing'){
+    let body='';
+    if(chosen==='shake'){
+      body=`<div class="sk-zone" onclick="manShake()">${pic('tool-shake','sk')}</div>
+      <div class="hint"><span class="p">📱 Shake your phone!</span><br>
+        <span style="font-size:11px;color:var(--muted);">or tap the shaker</span>
+        <div class="sbar"><div class="sfill" id="mixFill" style="width:0%"></div></div>
+      </div>`;
+    }else if(chosen==='stir'){
+      body=`<div class="stir-zone" id="stirZone">
+        <div class="swirl"></div>
+        ${pic('tool-stir','mg')}
+        <div class="stir-dot" id="spoon" style="transform:translate(80px,0)"></div>
+      </div>
+      <div class="hint"><span class="p">🥄 Stir in circles</span><br>
+        <span style="font-size:11px;color:var(--muted);">drag around the mixing glass, or tap it</span>
+        <div class="sbar"><div class="sfill" id="mixFill" style="width:0%"></div></div>
+      </div>`;
+    }else{
+      const n=c.ing.length;
+      const lay=c.ing.slice(0,poured).map(i=>`<div class="ly" style="--h:${Math.round(78/n)}%;height:${Math.round(78/n)}%;background:${LC[i]||c.color};"></div>`).join('');
+      // liquid area inside each glass picture (% of the picture box)
+      const GEO={highball:{h:170,css:'left:10%;right:10%;bottom:7%;height:84%;border-radius:0 0 6px 6px;'},
+        rocks:{h:120,css:'left:7%;right:7%;bottom:9%;height:78%;border-radius:0 0 8px 8px;'},
+        coupe:{h:150,css:'left:8%;right:8%;bottom:57%;height:30%;border-radius:0 0 50% 50%;'},
+        martini:{h:150,css:'left:9%;right:9%;bottom:52%;height:40%;clip-path:polygon(0 0,100% 0,53% 100%,47% 100%);'},
+        wine:{h:170,css:'left:12%;right:12%;bottom:44%;height:50%;border-radius:12px 12px 50% 50%;'}}[c.glass]||{h:170,css:'left:10%;right:10%;bottom:7%;height:84%;'};
+      body=`<div class="bd-zone">
+        <div class="bd-wrap" style="height:${GEO.h}px">
+          ${pic('glass-'+(['highball','rocks','coupe','martini','wine'].includes(c.glass)?c.glass:'highball'),'bd-img')}
+          <div class="bd" style="${GEO.css}">${lay}</div>
+        </div>
+      </div>
+      <div class="bd-list">${c.ing.map((i,k)=>`<div class="bd-it ${k<poured?'done':k===poured?'next':''}">${k<poured?'✓ ':''}${i}</div>`).join('')}</div>
+      <div class="hint"><span style="font-size:11px;color:var(--muted);">straight into the ice-filled glass, in order</span></div>
+      <button class="btn" onclick="pour()" ${poured>=n?'disabled':''}>${poured>=n?'SERVED ✓':'POUR '+c.ing[poured].toUpperCase()}</button>`;
+    }
+    app.innerHTML=`<div class="gm">${head(3,{shake:'SHAKE',stir:'STIR',build:'BUILD'}[chosen])}${body}</div>`;
+    return;
+  }
+
+  // ── Step 2: choose the technique ──
+  if(st==='method'){
+    app.innerHTML=`<div class="gm">${head(2,'TECHNIQUE')}
+      <div class="tray">${sel.map(n=>`<div class="tray-d" style="background:${LC[n]||c.color};"></div>`).join('')}<span class="tray-c">${sel.length} / ${c.ing.length}</span></div>
+      <div class="ing-l">HOW DO YOU MIX IT?</div>
+      <div class="meths">
+        <div class="mt" onclick="chooseMethod('shake')">${pic('tool-shake')}<div class="mt-n">SHAKE</div><div class="mt-s">shaker,<br>hard and fast</div></div>
+        <div class="mt" onclick="chooseMethod('stir')">${pic('tool-stir')}<div class="mt-n">STIR</div><div class="mt-s">mixing glass,<br>bar spoon</div></div>
+        <div class="mt" onclick="chooseMethod('build')">${pic('tool-build')}<div class="mt-n">BUILD</div><div class="mt-s">straight in<br>the glass</div></div>
+      </div>
+      <div class="meth-note">Choose carefully: the wrong technique ruins the drink.</div>
+      <button class="btn2" onclick="backToIngs()">← CHANGE INGREDIENTS</button>
+    </div>`;
+    return;
+  }
+
+  // ── Step 1: ingredients ──
+  app.innerHTML=`<div class="gm">${head(1,'INGREDIENTS')}
     ${retryMsg?`<div class="retry-ban">
       <div class="t">Almost! Give it another shot.</div>
       <div class="s">
@@ -376,30 +622,15 @@ function render(){
         <span style="color:var(--amber);font-style:italic;font-size:11px;">Hint: ${retryMsg.hint}</span>
       </div>
     </div>`:''}
-
-    <div class="sk-zone">
-      <div class="sk ${st==='shaking'?'rdy':''}" onclick="${st==='shaking'?'manShake()':''}">
-        <div class="sk-cap"></div>
-        <div class="sk-items">${sel.map(n=>`<div class="sk-item" style="background:${c.color};"></div>`).join('')}</div>
-        <div class="sk-cnt">${sel.length} / ${c.ing.length}</div>
-      </div>
+    <div class="tray">${sel.map(n=>`<div class="tray-d" style="background:${LC[n]||c.color};"></div>`).join('')}<span class="tray-c">${sel.length} / ${c.ing.length}</span></div>
+    <div class="ing-l">SELECT ${c.ing.length} INGREDIENTS</div>
+    <div class="ings">
+      ${roundIngs.map(n=>`<div class="ig ${sel.includes(n)?'sel':''}" data-i="${n}" onclick="tap('${n.replace(/'/g,"\\'")}')">
+        ${getIcon(n)}
+        <span class="ig-n">${n}</span>
+      </div>`).join('')}
     </div>
-
-    ${st==='shaking'?`
-      <div class="hint"><span class="p">📱 Shake your phone!</span><br>
-        <span style="font-size:11px;color:var(--muted);">or tap the shaker</span>
-        <div class="sbar"><div class="sfill" style="width:${Math.min(100,Math.round(shk/SHKNEED*100))}%"></div></div>
-      </div>
-    `:`
-      <div class="ing-l">SELECT ${c.ing.length} INGREDIENTS</div>
-      <div class="ings">
-        ${roundIngs.map(n=>`<div class="ig ${sel.includes(n)?'sel':''}" data-i="${n}" onclick="tap('${n.replace(/'/g,"\\'")}')">
-          ${getIcon(n)}
-          <span class="ig-n">${n}</span>
-        </div>`).join('')}
-      </div>
-      <button class="btn2" onclick="skip()">SKIP →</button>
-    `}
+    <button class="btn2" onclick="skip()">SKIP →</button>
   </div>`;
 }
 
