@@ -181,6 +181,8 @@ body.intro .hdr{visibility:hidden;}
 .intro-s{font-size:14px;color:var(--muted);line-height:1.8;max-width:300px;margin-bottom:24px;}
 .intro-m{display:flex;gap:14px;justify-content:center;margin:4px 0 16px;}
 .intro-m span{font-family:var(--pf);font-size:10px;letter-spacing:.14em;color:var(--gold);border:1px solid rgba(184,147,90,.3);border-radius:20px;padding:5px 11px;}
+.f-ban{width:min(92%,340px);margin:0 auto 4px;filter:drop-shadow(0 6px 0 rgba(0,0,0,.5));animation:tin .6s cubic-bezier(.2,1.4,.4,1) both;}
+@keyframes tin{0%{transform:translateY(-30px) scale(.7);opacity:0;}100%{transform:none;opacity:1;}}
 .f-score{font-family:var(--pf);font-size:40px;margin:8px 0;color:var(--gold);}
 .f-label{font-family:var(--pf);font-size:8px;letter-spacing:.22em;color:var(--muted);}
 .f-msg{font-size:15px;color:var(--cream);margin-top:14px;line-height:1.7;max-width:300px;}
@@ -572,8 +574,9 @@ function render(){
       {min:5,t:'',s:'',e:'🏆'},
     ];
     const m=[...msgs].reverse().find(x=>sc>=x.min);
+    const ban=sc>=5?'perfect':sc>=4?'close':sc>=2?'ok':'low';
     app.innerHTML=`<div class="final">
-      <div style="font-size:48px;margin-bottom:6px;">${m.e}</div>
+      <img class="px f-ban" src="lab/ui_res_${ban}.webp" alt="${ban}" draggable="false">
       <div class="f-score">${sc}/${TOT}</div>
       <div class="f-label">COCKTAILS MIXED</div>
       ${perfect?`
@@ -582,7 +585,7 @@ function render(){
           <div class="bt">🎉 YOU EARNED IT</div>
           <div class="bs">Show this screen to our bartender and tell them:<br><br><strong>"I aced the Cocktail Lab."</strong><br><br>A little surprise is waiting for you. 🍸✨</div>
         </div>
-      `:`<div class="f-msg">${m.t}<br><span style="color:var(--muted);font-size:13px;">${m.s}</span></div>`}
+      `:`<div class="f-msg"><span style="color:var(--muted);font-size:14px;">${m.s}</span></div>`}
       ${progHTML()}
       <button class="btn" onclick="start()" style="margin-top:14px;">PLAY AGAIN</button>
     </div>`;return;
