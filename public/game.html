@@ -24,6 +24,14 @@ body{font-family:var(--df);background:var(--ink);color:var(--cream);min-height:1
 .gm{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 14px 20px;max-width:500px;margin:0 auto;width:100%;}
 .tgt{text-align:center;margin-bottom:8px;}
 .tgt-l{font-size:8px;color:var(--muted);letter-spacing:.18em;font-family:var(--pf);}
+.tgt-n{font-family:var(--pf);font-size:15px;color:var(--gold);margin-top:8px;line-height:1.5;}
+.glasses{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px;}
+.gl{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px 6px;border:1px solid rgba(184,147,90,.14);border-radius:10px;background:rgba(240,235,224,.025);width:98px;cursor:pointer;touch-action:manipulation;transition:all .12s;}
+.gl:active{transform:scale(.93);}
+.gl img{height:64px;}
+.gl.bad{opacity:.3;}
+.anim-zone{height:230px;display:flex;align-items:flex-end;justify-content:center;margin:6px 0 10px;}
+.anim-zone img{height:220px;filter:drop-shadow(0 4px 0 rgba(0,0,0,.5));}
 .tgt-pic{height:118px;display:flex;align-items:flex-end;justify-content:center;margin-top:4px;}
 .tgt-pic img{height:118px;filter:drop-shadow(0 4px 0 rgba(0,0,0,.5));animation:gd .4s ease-out both;}
 .step{font-family:var(--pf);font-size:7px;letter-spacing:.2em;color:var(--muted);margin-bottom:6px;}
@@ -141,7 +149,7 @@ body{font-family:var(--df);background:var(--ink);color:var(--cream);min-height:1
 #bg{position:fixed;inset:0;z-index:-1;background:var(--ink) url(lab/ui_bg.webp) center top/cover no-repeat;image-rendering:auto;transition:opacity .4s;}
 #bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(30,18,8,.1) 0%,rgba(30,18,8,.3) 45%,rgba(30,18,8,.85) 100%);}
 body.play #bg{opacity:.2;}
-body.play .tgt-l,body.play .step,body.play .ing-l{text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 2px #000;}
+body.play .tgt-n,body.play .tgt-l,body.play .step,body.play .ing-l{text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 2px #000;}
 /* Game logo on top during play (like the party mini games) */
 .hdr{padding:12px 16px 4px;}
 #gameLogo{display:block;max-height:76px;width:auto;max-width:80vw;margin:0 auto;filter:drop-shadow(0 4px 0 rgba(0,0,0,.55));}
@@ -214,9 +222,9 @@ body.intro .hdr{visibility:hidden;}
   <div class="ht-panel">
     <div class="ht-name">COCKTAIL LAB</div>
     <div class="ht-desc">
-      <div class="ht-li">- Pick the right ingredients for the cocktail.</div>
+      <div class="ht-li">- Pick the right glass, then the right ingredients.</div>
       <div class="ht-li">- Choose the technique: SHAKE, STIR or BUILD. Wrong one ruins the drink.</div>
-      <div class="ht-li">- Shake your phone, stir in circles, or pour in order.</div>
+      <div class="ht-li">- Watch it mixed and served. Then the next one.</div>
       <div class="ht-taunt">5 classics. Nail them all.</div>
     </div>
     <div class="ht-tap">TAP TO START!</div>
@@ -306,11 +314,11 @@ const CK=[
    hint:'Beautifully simple. Just 3 ingredients: spirit + sour + sweet.',
    why:'Fresh lime needs a hard shake with ice. It chills, dilutes and brightens the drink in seconds, then it is strained straight up.',
    fact:'Invented in 1898 by American mining engineer Jennings Cox near Santiago de Cuba. Both JFK and Hemingway were devotees. The frozen version is a completely different drink.'},
-  {name:'Margarita',m:'shake',ing:['Tequila','Lime Juice','Orange Liqueur'],glass:'coupe',color:'#d4e87a',gar:'🍋',ice:false,
+  {name:'Margarita',m:'shake',ing:['Tequila','Lime Juice','Orange Liqueur'],glass:'coupe',galt:'rocks',color:'#d4e87a',gar:'🍋',ice:false,
    hint:'Only 3 ingredients. Think: spirit + citrus + a sweet liqueur.',
    why:'Citrus and liqueur only come together with a hard shake over ice. Serve up or over fresh ice, salt rim optional.',
    fact:'Essentially a Tequila Sidecar. Its invention is claimed by over a dozen people. By the 1970s it became America\'s most popular cocktail. The salt rim was a later, now iconic, addition.'},
-  {name:'Whiskey Sour',m:'shake',ing:['Bourbon','Lemon Juice','Sugar Syrup','Egg White','Angostura Bitters'],glass:'rocks',color:'#e8c878',gar:'🍒',ice:true,
+  {name:'Whiskey Sour',m:'shake',ing:['Bourbon','Lemon Juice','Sugar Syrup','Egg White','Angostura Bitters'],glass:'rocks',galt:'coupe',color:'#e8c878',gar:'🍒',ice:true,
    hint:'What gives this sour its silky foam? And don\'t forget the aromatic drops.',
    why:'Egg white demands a shake: first a dry shake without ice to build the foam, then a hard shake with ice to chill it.',
    fact:'First printed in Jerry Thomas\' 1862 "Bar-Tender\'s Guide." The egg white, which creates the signature silky foam, was a later addition from the Boston Sour variation.'},
@@ -318,11 +326,11 @@ const CK=[
    hint:'A French classic. Just 3 ingredients: brandy + citrus + something orange.',
    why:'Lemon juice means a shake. A quick, hard shake with ice and a fine strain into a chilled coupe.',
    fact:'Born during WWI, likely at the Ritz Paris or Harry\'s New York Bar, c.1922. Named after the motorcycle sidecar a regular patron arrived in. The sugar rim is a Ritz tradition.'},
-  {name:'Cosmopolitan',m:'shake',ing:['Citrus Vodka','Orange Liqueur','Cranberry Juice','Lime Juice'],glass:'martini',color:'#d84060',gar:'🍊',ice:false,
+  {name:'Cosmopolitan',m:'shake',ing:['Citrus Vodka','Orange Liqueur','Cranberry Juice','Lime Juice'],glass:'martini',galt:'coupe',color:'#d84060',gar:'🍊',ice:false,
    hint:'Think pink. What gives it that famous color? And which vodka variant?',
    why:'Two juices in the mix, so it is shaken hard with ice and strained up. Dale DeGroff finishes it with a flamed orange peel.',
    fact:'Dale DeGroff popularized the definitive recipe at Manhattan\'s Rainbow Room in the mid-1990s. Sex and the City turned it into a global cultural phenomenon.'},
-  {name:'Espresso Martini',m:'shake',ing:['Vodka','Fresh Espresso','Coffee Liqueur'],glass:'martini',color:'#3a2518',gar:'☕',ice:false,
+  {name:'Espresso Martini',m:'shake',ing:['Vodka','Fresh Espresso','Coffee Liqueur'],glass:'martini',galt:'coupe',color:'#3a2518',gar:'☕',ice:false,
    hint:'Just 3 ingredients. What wakes you up... and what adds depth to coffee?',
    why:'A hard shake chills the hot espresso instantly and whips its oils into that crema-like foam on top.',
    fact:'Created c.1983 by Dick Bradsell at London\'s Soho Brasserie. A model asked for "something to wake me up, then f*** me up." The 3 coffee bean garnish symbolizes health, wealth & happiness.'},
@@ -331,15 +339,15 @@ const CK=[
    why:'Egg white and lemon: dry shake, then shake with ice. Only a shaker gives it the pink, pillowy head.',
    fact:'Named after a gentlemen\'s club at Philadelphia\'s Bellevue-Stratford Hotel, founded in 1882. H.L. Mencken once called it "the greatest cocktail in the world."'},
   // ── STIR ──
-  {name:'Dry Martini',m:'stir',ing:['Gin','Dry Vermouth'],glass:'martini',color:'#eef0e8',gar:'🫒',ice:false,
+  {name:'Dry Martini',m:'stir',ing:['Gin','Dry Vermouth'],glass:'martini',galt:'coupe',color:'#eef0e8',gar:'🫒',ice:false,
    hint:'Just 2 ingredients. The most famous pairing of a spirit and a fortified wine.',
    why:'Spirit and vermouth only: stir with ice until icy cold, then strain. Shaking clouds it with ice shards and air, whatever Mr. Bond says.',
    fact:'The Martini grew out of the Martinez in the 1880s and 90s. The bone-dry style with dry vermouth took over in the early 1900s. The tale of Churchill merely glancing at the vermouth bottle is a legend, not a record.'},
-  {name:'Manhattan',m:'stir',ing:['Rye Whiskey','Sweet Vermouth','Angostura Bitters'],glass:'coupe',color:'#b8402a',gar:'🍒',ice:false,
+  {name:'Manhattan',m:'stir',ing:['Rye Whiskey','Sweet Vermouth','Angostura Bitters'],glass:'coupe',galt:'martini',color:'#b8402a',gar:'🍒',ice:false,
    hint:'Whiskey, something sweet and fortified, and a dash of aromatics.',
    why:'Whiskey, vermouth and bitters: all spirit, so it is stirred with ice for a clear, silky, properly diluted drink.',
    fact:'First appears in print in the early 1880s, most likely born at New York\'s Manhattan Club. The story that Jennie Jerome, Winston Churchill\'s mother, launched it at a banquet is a myth: she was in England, about to give birth, at the time.'},
-  {name:'Negroni',m:'stir',alt:'build',ing:['Gin','Campari','Sweet Vermouth'],glass:'rocks',color:'#c8303a',gar:'🍊',ice:true,
+  {name:'Negroni',m:'stir',alt:'build',ing:['Gin','Campari','Sweet Vermouth'],glass:'rocks',galt:'coupe',color:'#c8303a',gar:'🍊',ice:true,
    hint:'Equal parts. Spirit, something bitter red, something sweet.',
    why:'Equal parts spirit, bitter and vermouth. Stir over ice, in a mixing glass or straight in the rocks glass, and never shake it.',
    fact:'Florence, 1919: Count Camillo Negroni asked bartender Fosco Scarselli at Caffè Casoni to strengthen his Americano with gin instead of soda. The orange slice replaced the lemon to mark the difference.'},
@@ -347,7 +355,7 @@ const CK=[
    hint:'New Orleans in a glass: rye, sugar, a red bitters and a rinse of the green fairy.',
    why:'Spirit, sugar and bitters only: stir with ice, then strain into a chilled, absinthe-rinsed glass with no ice.',
    fact:'Born in New Orleans in the 1800s and originally made with Sazerac de Forge cognac. Rye took over after phylloxera devastated French vineyards in the 1870s. Antoine Peychaud\'s bitters and the absinthe rinse define it. Louisiana named it the city\'s official cocktail in 2008.'},
-  {name:'Boulevardier',m:'stir',ing:['Bourbon','Campari','Sweet Vermouth'],glass:'coupe',color:'#a83a30',gar:'🍊',ice:false,
+  {name:'Boulevardier',m:'stir',ing:['Bourbon','Campari','Sweet Vermouth'],glass:'coupe',galt:'rocks',color:'#a83a30',gar:'🍊',ice:false,
    hint:'A Negroni\'s whiskey cousin.',
    why:'Whiskey, bitter and vermouth: stirred with ice and strained, like every all-spirit drink.',
    fact:'Recorded in Harry MacElhone\'s 1927 "Barflies and Cocktails" as the drink of Erskine Gwynne, an American in Paris who published a magazine called The Boulevardier.'},
@@ -364,15 +372,15 @@ const CK=[
    hint:'This Cuban classic needs something herbal and something fizzy.',
    why:'Mint and lime are gently pressed in the glass, then rum, crushed ice and soda go straight in. Shaking would bruise the mint and flatten the soda.',
    fact:'The Mojito traces back to 16th-century Havana, where Sir Francis Drake\'s crew mixed aguardiente with lime, mint and sugarcane. Hemingway later made it legendary at La Bodeguita del Medio.'},
-  {name:'Moscow Mule',m:'build',ing:['Vodka','Lime Juice','Ginger Beer'],glass:'highball',color:'#d8c890',gar:'🍋',ice:true,
+  {name:'Moscow Mule',m:'build',ing:['Vodka','Lime Juice','Ginger Beer'],glass:'mug',galt:'highball',color:'#d8c890',gar:'🍋',ice:true,
    hint:'Vodka, citrus and a spicy fizzy mixer, served in copper.',
    why:'Built over ice in a copper mug: vodka and lime first, ginger beer last, then a gentle stir so the fizz survives.',
    fact:'Claimed for 1941 at the Cock \'n\' Bull on Sunset Boulevard, where John Martin of Smirnoff and pub owner Jack Morgan paired unloved vodka with the pub\'s ginger beer. The copper mug made it famous.'},
-  {name:'Gin & Tonic',m:'build',ing:['Gin','Tonic Water'],glass:'highball',color:'#e8f0f0',gar:'🍋',ice:true,
+  {name:'Gin & Tonic',m:'build',ing:['Gin','Tonic Water'],glass:'highball',galt:'wine',color:'#e8f0f0',gar:'🍋',ice:true,
    hint:'Two ingredients. One of them is bitter from quinine.',
    why:'Built in an ice-filled glass. Shaking or stirring hard would kill the bubbles.',
    fact:'In 19th-century British India, quinine tonic was taken against malaria and gin made it palatable. Schweppes launched a commercial tonic water in the 1870s.'},
-  {name:'Americano',m:'build',ing:['Campari','Sweet Vermouth','Soda Water'],glass:'highball',color:'#d05050',gar:'🍊',ice:true,
+  {name:'Americano',m:'build',ing:['Campari','Sweet Vermouth','Soda Water'],glass:'highball',galt:'rocks',color:'#d05050',gar:'🍊',ice:true,
    hint:'Bitter, sweet vermouth and fizz. No spirit at all.',
    why:'Built over ice and topped with soda. It is the low-alcohol parent of the Negroni.',
    fact:'Served at Gaspare Campari\'s bar in Milan from the 1860s as the Milano-Torino (Campari from Milan, vermouth from Turin). Renamed for the American tourists who loved it. It is the first drink James Bond orders in Casino Royale (1953).'},
@@ -388,13 +396,14 @@ const CK=[
 
 const ALL_N=Object.keys(IC);
 const MLABEL={shake:'SHAKEN',stir:'STIRRED',build:'BUILT IN THE GLASS'};
-let st='intro',ci=0,sc=0,rr=[],sel=[],co=[],shk=0,retryMsg=null,roundIngs=[],chosen=null,failWhy=null,stirAng=0,lastA=null,poured=0;
-const TOT=5,SHKNEED=14,STIRNEED=6*Math.PI; // 3 full turns of the bar spoon
+let st='intro',ci=0,sc=0,rr=[],sel=[],co=[],retryMsg=null,glassMsg=null,roundIngs=[],chosen=null,failWhy=null,animT=null;
+const TOT=5;
+const GLASSES=[{id:'highball',n:'Highball'},{id:'rocks',n:'Rocks'},{id:'coupe',n:'Coupe'},{id:'martini',n:'Martini'},{id:'wine',n:'Wine glass'},{id:'mug',n:'Copper mug'}];
 
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 function start(){co=shuffle(CK).slice(0,TOT);ci=0;sc=0;rr=[];round();}
 function round(){
-  sel=[];shk=0;retryMsg=null;failWhy=null;chosen=null;st='playing';
+  sel=[];retryMsg=null;glassMsg=null;failWhy=null;chosen=null;st='glass';clearInterval(animT);
   // Set ingredients once per cocktail, keep on retry
   const c=cur();
   const decoys=shuffle(ALL_N.filter(n=>!c.ing.includes(n))).slice(0,Math.max(5,10-c.ing.length));
@@ -403,8 +412,18 @@ function round(){
 }
 function cur(){return co[ci];}
 function methodsOf(c){return c.alt?[c.m,c.alt]:[c.m];}
+function glassesOf(c){return c.galt?[c.glass,c.galt]:[c.glass];}
 function vib(p){if(navigator.vibrate)navigator.vibrate(p);}
 
+/* Step 1: glass (forgiving: a wrong glass just gets a nudge and another pick) */
+function pickGlass(g){
+  if(st!=='glass')return;
+  const c=cur();
+  if(glassesOf(c).includes(g)){glassMsg=null;vib(20);st='playing';render();return;}
+  glassMsg=g;vib([60,30,60]);render();
+}
+
+/* Step 2: ingredients */
 function tap(name){
   if(st!=='playing')return;
   if(retryMsg&&sel.length===0)retryMsg=null; // clear hint on first new selection
@@ -413,12 +432,12 @@ function tap(name){
   if(sel.length>=c.ing.length)return; // max reached
   sel.push(name);
   vib(20);
-  if(sel.length===c.ing.length)st='method';
+  if(sel.length===c.ing.length){st='method';['shake','stir','build'].forEach(m=>[1,2,3].forEach(k=>{const im=new Image();im.src='lab/anim-'+m+'-'+k+'.webp';}));}
   render();
 }
 function backToIngs(){if(st!=='method')return;st='playing';render();}
 
-/* Technique step: ingredients are judged first (retry with hint), then the technique (strict) */
+/* Step 3: technique. Ingredients are judged first (retry with hint), then the technique (strict) */
 function chooseMethod(m){
   if(st!=='method')return;
   const c=cur();
@@ -432,8 +451,7 @@ function chooseMethod(m){
   if(!methodsOf(c).includes(m)){
     failWhy=failText(c,m);rr.push('no');st='result';vib([60,30,60,30,60]);render();return;
   }
-  chosen=m;st='mixing';shk=0;stirAng=0;lastA=null;poured=0;render();
-  if(m==='stir')bindStir();
+  chosen=m;st='anim';render();runAnim();
 }
 function failText(c,m){
   const n=c.name;
@@ -447,68 +465,27 @@ function failText(c,m){
     ?`Shaking soda or sparkling wine knocks out the bubbles. ${n} is built straight in the serving glass.`
     :`No mixing glass needed. ${n} is built straight in the serving glass over ice.`;
 }
+
+/* Step 4: the technique plays out as a 3-frame pixel animation, then the drink is served */
+function runAnim(){
+  const frames=[1,2,3,2,1,2,3,2,1,2,3,2,1,2,3];let i=0;
+  clearInterval(animT);
+  animT=setInterval(()=>{
+    const im=document.getElementById('animImg');
+    if(!im||st!=='anim'){clearInterval(animT);return;}
+    i++;
+    if(i>=frames.length){clearInterval(animT);setTimeout(finishMix,250);return;}
+    im.src='lab/anim-'+chosen+'-'+frames[i]+'.webp';
+    if(frames[i]===2)vib(8);
+  },170);
+}
 function finishMix(){
-  if(st!=='mixing')return;
+  if(st!=='anim')return;
   sc++;rr.push('ok');st='result';failWhy=null;vib([80,40,80,40,160]);render();
 }
 
-/* SHAKE */
-function doShake(){
-  if(st!=='mixing'||chosen!=='shake')return;shk++;
-  vib(12);
-  const s=document.querySelector('.sk');
-  if(s){s.classList.add('shk');setTimeout(()=>s.classList.remove('shk'),80);}
-  const f=document.getElementById('mixFill');if(f)f.style.width=Math.min(100,Math.round(shk/SHKNEED*100))+'%';
-  if(shk>=SHKNEED)finishMix();
-}
-function manShake(){if(st==='mixing'&&chosen==='shake'){shk++;doShake();}}
-
-/* STIR: drag in circles around the mixing glass (or tap it) */
-function stirProgress(){const f=document.getElementById('mixFill');if(f)f.style.width=Math.min(100,Math.round(stirAng/STIRNEED*100))+'%';}
-function bindStir(){
-  const z=document.getElementById('stirZone');if(!z)return;
-  const sp=document.getElementById('spoon');
-  const ang=e=>{const r=z.getBoundingClientRect();return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2));};
-  let down=false,moved=0;
-  z.addEventListener('pointerdown',e=>{down=true;moved=0;lastA=ang(e);z.classList.add('on');try{z.setPointerCapture(e.pointerId);}catch{}e.preventDefault();});
-  z.addEventListener('pointermove',e=>{
-    if(!down||st!=='mixing'||chosen!=='stir')return;
-    const a=ang(e);let d=a-lastA;if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;lastA=a;
-    if(Math.abs(d)<0.9){stirAng+=Math.abs(d);moved+=Math.abs(d);}
-    orbit(a);
-    stirProgress();
-    if(moved>Math.PI&&Date.now()-lastVib>400){lastVib=Date.now();vib(8);}
-    if(stirAng>=STIRNEED){down=false;z.classList.remove('on');finishMix();}
-  });
-  const up=()=>{if(!down)return;down=false;z.classList.remove('on');lastA=null;if(moved<0.3)tapStir();};
-  z.addEventListener('pointerup',up);z.addEventListener('pointercancel',up);
-}
-let lastVib=0;
-function orbit(a){
-  const sp=document.getElementById('spoon');if(sp)sp.style.transform=`translate(${(Math.cos(a)*80).toFixed(1)}px,${(Math.sin(a)*80).toFixed(1)}px)`;
-  const mg=document.querySelector('.mg');if(mg)mg.style.transform=`rotate(${(Math.cos(a)*5).toFixed(1)}deg)`;
-}
-function tapStir(){
-  if(st!=='mixing'||chosen!=='stir')return;
-  stirAng+=Math.PI/2;vib(10);stirProgress();orbit(stirAng);
-  if(stirAng>=STIRNEED)finishMix();
-}
-
-/* BUILD: pour each ingredient, in order, straight into the glass */
-function pour(){
-  if(st!=='mixing'||chosen!=='build')return;
-  const c=cur();if(poured>=c.ing.length)return;
-  poured++;vib(15);render();
-  if(poured>=c.ing.length)setTimeout(finishMix,800);
-}
-
-function skip(){rr.push('no');failWhy=null;st='result';render();}
+function skip(){clearInterval(animT);rr.push('no');failWhy=null;st='result';render();}
 function next(){ci++;if(ci>=TOT){st='final';render();}else round();}
-
-// Motion
-let la={x:0,y:0,z:0},lt=0;
-function hm(e){const a=e.accelerationIncludingGravity||e.acceleration;if(!a)return;const d=Math.abs(a.x-la.x)+Math.abs(a.y-la.y)+Math.abs(a.z-la.z);la={x:a.x,y:a.y,z:a.z};if(d>25&&Date.now()-lt>80){lt=Date.now();doShake();}}
-async function reqM(){if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){try{const p=await DeviceMotionEvent.requestPermission();if(p==='granted')window.addEventListener('devicemotion',hm);}catch{}}else if(typeof DeviceMotionEvent!=='undefined')window.addEventListener('devicemotion',hm);}
 
 function progHTML(){
   return `<div class="prog">${rr.map(r=>`<div class="pd ${r}"></div>`).join('')}${st!=='final'?'<div class="pd now"></div>':''}${Array(Math.max(0,TOT-rr.length-(st==='final'?0:1))).fill('<div class="pd"></div>').join('')}</div>`;
@@ -585,57 +562,24 @@ function render(){
 
   const c=cur();
   const head=(step,label)=>`${progHTML()}
-    <div class="step">STEP ${step} / 3 · <b>${label}</b></div>
+    <div class="step">STEP ${step} / 4 · <b>${label}</b></div>
     <div class="tgt">
       <div class="tgt-l">MAKE THIS COCKTAIL</div>
-      <div class="tgt-pic">${pic(slug(c.name))}</div>
+      <div class="tgt-n">${c.name}</div>
     </div>`;
 
-  // ── Step 3: technique in action ──
-  if(st==='mixing'){
-    let body='';
-    if(chosen==='shake'){
-      body=`<div class="sk-zone" onclick="manShake()">${pic('tool-shake','sk')}</div>
-      <div class="hint"><span class="p">📱 Shake your phone!</span><br>
-        <span style="font-size:11px;color:var(--muted);">or tap the shaker</span>
-        <div class="sbar"><div class="sfill" id="mixFill" style="width:0%"></div></div>
-      </div>`;
-    }else if(chosen==='stir'){
-      body=`<div class="stir-zone" id="stirZone">
-        <div class="swirl"></div>
-        ${pic('tool-stir','mg')}
-        <div class="stir-dot" id="spoon" style="transform:translate(80px,0)"></div>
-      </div>
-      <div class="hint"><span class="p">🥄 Stir in circles</span><br>
-        <span style="font-size:11px;color:var(--muted);">drag around the mixing glass, or tap it</span>
-        <div class="sbar"><div class="sfill" id="mixFill" style="width:0%"></div></div>
-      </div>`;
-    }else{
-      const n=c.ing.length;
-      const lay=c.ing.slice(0,poured).map(i=>`<div class="ly" style="--h:${Math.round(78/n)}%;height:${Math.round(78/n)}%;background:${LC[i]||c.color};"></div>`).join('');
-      // liquid area inside each glass picture (% of the picture box)
-      const GEO={highball:{h:170,css:'left:10%;right:10%;bottom:7%;height:84%;border-radius:0 0 6px 6px;'},
-        rocks:{h:120,css:'left:7%;right:7%;bottom:9%;height:78%;border-radius:0 0 8px 8px;'},
-        coupe:{h:150,css:'left:8%;right:8%;bottom:57%;height:30%;border-radius:0 0 50% 50%;'},
-        martini:{h:150,css:'left:9%;right:9%;bottom:52%;height:40%;clip-path:polygon(0 0,100% 0,53% 100%,47% 100%);'},
-        wine:{h:170,css:'left:12%;right:12%;bottom:44%;height:50%;border-radius:12px 12px 50% 50%;'}}[c.glass]||{h:170,css:'left:10%;right:10%;bottom:7%;height:84%;'};
-      body=`<div class="bd-zone">
-        <div class="bd-wrap" style="height:${GEO.h}px">
-          ${pic('glass-'+(['highball','rocks','coupe','martini','wine'].includes(c.glass)?c.glass:'highball'),'bd-img')}
-          <div class="bd" style="${GEO.css}">${lay}</div>
-        </div>
-      </div>
-      <div class="bd-list">${c.ing.map((i,k)=>`<div class="bd-it ${k<poured?'done':k===poured?'next':''}">${k<poured?'✓ ':''}${i}</div>`).join('')}</div>
-      <div class="hint"><span style="font-size:11px;color:var(--muted);">straight into the ice-filled glass, in order</span></div>
-      <button class="btn" onclick="pour()" ${poured>=n?'disabled':''}>${poured>=n?'SERVED ✓':'POUR '+c.ing[poured].toUpperCase()}</button>`;
-    }
-    app.innerHTML=`<div class="gm">${head(3,{shake:'SHAKE',stir:'STIR',build:'BUILD'}[chosen])}${body}</div>`;
+  // ── Step 4: technique animation ──
+  if(st==='anim'){
+    app.innerHTML=`<div class="gm">${head(4,{shake:'SHAKE',stir:'STIR',build:'BUILD'}[chosen])}
+      <div class="anim-zone"><img id="animImg" class="px" src="lab/anim-${chosen}-1.webp" alt="" draggable="false"></div>
+      <div class="hint"><span class="p">${{shake:'SHAKING…',stir:'STIRRING…',build:'BUILDING…'}[chosen]}</span></div>
+    </div>`;
     return;
   }
 
-  // ── Step 2: choose the technique ──
+  // ── Step 3: choose the technique ──
   if(st==='method'){
-    app.innerHTML=`<div class="gm">${head(2,'TECHNIQUE')}
+    app.innerHTML=`<div class="gm">${head(3,'TECHNIQUE')}
       <div class="tray">${sel.map(n=>`<div class="tray-d" style="background:${LC[n]||c.color};"></div>`).join('')}<span class="tray-c">${sel.length} / ${c.ing.length}</span></div>
       <div class="ing-l">HOW DO YOU MIX IT?</div>
       <div class="meths">
@@ -649,14 +593,28 @@ function render(){
     return;
   }
 
-  // ── Step 1: ingredients ──
-  app.innerHTML=`<div class="gm">${head(1,'INGREDIENTS')}
+  // ── Step 1: glass ──
+  if(st==='glass'){
+    const gname=id=>(GLASSES.find(g=>g.id===id)||{}).n||id;
+    app.innerHTML=`<div class="gm">${head(1,'GLASS')}
+      ${glassMsg?`<div class="retry-ban"><div class="t">Not the ${gname(glassMsg)}!</div><div class="s">Think about how it is served: straight up, on the rocks, or long with ice.</div></div>`:''}
+      <div class="ing-l">WHICH GLASS?</div>
+      <div class="glasses">
+        ${GLASSES.map(g=>`<div class="gl ${glassMsg===g.id?'bad':''}" onclick="pickGlass('${g.id}')">${pic('glass-'+g.id)}<span class="ig-n">${g.n}</span></div>`).join('')}
+      </div>
+      <button class="btn2" onclick="skip()">SKIP →</button>
+    </div>`;
+    return;
+  }
+
+  // ── Step 2: ingredients ──
+  app.innerHTML=`<div class="gm">${head(2,'INGREDIENTS')}
     ${retryMsg?`<div class="retry-ban">
       <div class="t">Almost! Give it another shot.</div>
       <div class="s">
         ${retryMsg.right.length?`<span class="retry-right">✓ ${retryMsg.right.join(', ')}</span><br>`:''}
         ${retryMsg.wrong.length?`<span class="retry-wrong">✕ ${retryMsg.wrong.join(', ')}</span><br>`:''}
-        <span style="color:var(--amber);font-style:italic;font-size:11px;">Hint: ${retryMsg.hint}</span>
+        <span style="color:var(--amber);font-size:13px;">Hint: ${retryMsg.hint}</span>
       </div>
     </div>`:''}
     <div class="tray">${sel.map(n=>`<div class="tray-d" style="background:${LC[n]||c.color};"></div>`).join('')}<span class="tray-c">${sel.length} / ${c.ing.length}</span></div>
@@ -725,7 +683,7 @@ function showHowto(){
   ht.classList.remove('hidden');
   words.forEach((id,i)=>{setTimeout(()=>{const el=document.getElementById(id);el.classList.add('land');
     setTimeout(()=>{el.classList.add('hit');if(navigator.vibrate)navigator.vibrate(10);setTimeout(()=>el.classList.remove('hit'),200);},238);},56+i*266);});
-  const go=e=>{if(e)e.preventDefault();ht.classList.add('hidden');ht.removeEventListener('pointerdown',go);reqM();start();};
+  const go=e=>{if(e)e.preventDefault();ht.classList.add('hidden');ht.removeEventListener('pointerdown',go);start();};
   ht.addEventListener('pointerdown',go);
 }
 render();
