@@ -224,7 +224,7 @@ body.intro .hdr{visibility:hidden;}
     <div class="ht-desc">
       <div class="ht-li">- Pick the right glass, then the right ingredients.</div>
       <div class="ht-li">- Choose the technique: SHAKE, STIR or BUILD. Wrong one ruins the drink.</div>
-      <div class="ht-li">- Watch it mixed and served. Then the next one.</div>
+      <div class="ht-li">- Shake your phone, stir in circles, or pour in order.</div>
       <div class="ht-taunt">5 classics. Nail them all.</div>
     </div>
     <div class="ht-tap">TAP TO START!</div>
@@ -396,14 +396,14 @@ const CK=[
 
 const ALL_N=Object.keys(IC);
 const MLABEL={shake:'SHAKEN',stir:'STIRRED',build:'BUILT IN THE GLASS'};
-let st='intro',ci=0,sc=0,rr=[],sel=[],co=[],retryMsg=null,glassMsg=null,roundIngs=[],chosen=null,failWhy=null,animT=null;
-const TOT=5;
+let st='intro',ci=0,sc=0,rr=[],sel=[],co=[],shk=0,retryMsg=null,glassMsg=null,roundIngs=[],chosen=null,failWhy=null,stirAng=0,lastA=null,poured=0;
+const TOT=5,SHKNEED=14,STIRNEED=6*Math.PI; // 3 full turns of the bar spoon
 const GLASSES=[{id:'highball',n:'Highball'},{id:'rocks',n:'Rocks'},{id:'coupe',n:'Coupe'},{id:'martini',n:'Martini'},{id:'wine',n:'Wine glass'},{id:'mug',n:'Copper mug'}];
 
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 function start(){co=shuffle(CK).slice(0,TOT);ci=0;sc=0;rr=[];round();}
 function round(){
-  sel=[];retryMsg=null;glassMsg=null;failWhy=null;chosen=null;st='glass';clearInterval(animT);
+  sel=[];shk=0;retryMsg=null;glassMsg=null;failWhy=null;chosen=null;st='glass';
   // Set ingredients once per cocktail, keep on retry
   const c=cur();
   const decoys=shuffle(ALL_N.filter(n=>!c.ing.includes(n))).slice(0,Math.max(5,10-c.ing.length));
@@ -432,7 +432,7 @@ function tap(name){
   if(sel.length>=c.ing.length)return; // max reached
   sel.push(name);
   vib(20);
-  if(sel.length===c.ing.length){st='method';['shake','stir','build'].forEach(m=>[1,2,3].forEach(k=>{const im=new Image();im.src='lab/anim-'+m+'-'+k+'.webp';}));}
+  if(sel.length===c.ing.length)st='method';
   render();
 }
 function backToIngs(){if(st!=='method')return;st='playing';render();}
@@ -451,7 +451,8 @@ function chooseMethod(m){
   if(!methodsOf(c).includes(m)){
     failWhy=failText(c,m);rr.push('no');st='result';vib([60,30,60,30,60]);render();return;
   }
-  chosen=m;st='anim';render();runAnim();
+  chosen=m;st='mixing';shk=0;stirAng=0;lastA=null;poured=0;render();
+  if(m==='stir')bindStir();
 }
 function failText(c,m){
   const n=c.name;
@@ -466,26 +467,69 @@ function failText(c,m){
     :`No mixing glass needed. ${n} is built straight in the serving glass over ice.`;
 }
 
-/* Step 4: the technique plays out as a 3-frame pixel animation, then the drink is served */
-function runAnim(){
-  const frames=[1,2,3,2,1,2,3,2,1,2,3,2,1,2,3];let i=0;
-  clearInterval(animT);
-  animT=setInterval(()=>{
-    const im=document.getElementById('animImg');
-    if(!im||st!=='anim'){clearInterval(animT);return;}
-    i++;
-    if(i>=frames.length){clearInterval(animT);setTimeout(finishMix,250);return;}
-    im.src='lab/anim-'+chosen+'-'+frames[i]+'.webp';
-    if(frames[i]===2)vib(8);
-  },170);
-}
 function finishMix(){
-  if(st!=='anim')return;
+  if(st!=='mixing')return;
   sc++;rr.push('ok');st='result';failWhy=null;vib([80,40,80,40,160]);render();
 }
 
-function skip(){clearInterval(animT);rr.push('no');failWhy=null;st='result';render();}
+/* SHAKE */
+function doShake(){
+  if(st!=='mixing'||chosen!=='shake')return;shk++;
+  vib(12);
+  const s=document.querySelector('.sk');
+  if(s){s.classList.add('shk');setTimeout(()=>s.classList.remove('shk'),80);}
+  const f=document.getElementById('mixFill');if(f)f.style.width=Math.min(100,Math.round(shk/SHKNEED*100))+'%';
+  if(shk>=SHKNEED)finishMix();
+}
+function manShake(){if(st==='mixing'&&chosen==='shake'){shk++;doShake();}}
+
+/* STIR: drag in circles around the mixing glass (or tap it) */
+function stirProgress(){const f=document.getElementById('mixFill');if(f)f.style.width=Math.min(100,Math.round(stirAng/STIRNEED*100))+'%';}
+function bindStir(){
+  const z=document.getElementById('stirZone');if(!z)return;
+  const sp=document.getElementById('spoon');
+  const ang=e=>{const r=z.getBoundingClientRect();return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2));};
+  let down=false,moved=0;
+  z.addEventListener('pointerdown',e=>{down=true;moved=0;lastA=ang(e);z.classList.add('on');try{z.setPointerCapture(e.pointerId);}catch{}e.preventDefault();});
+  z.addEventListener('pointermove',e=>{
+    if(!down||st!=='mixing'||chosen!=='stir')return;
+    const a=ang(e);let d=a-lastA;if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;lastA=a;
+    if(Math.abs(d)<0.9){stirAng+=Math.abs(d);moved+=Math.abs(d);}
+    orbit(a);
+    stirProgress();
+    if(moved>Math.PI&&Date.now()-lastVib>400){lastVib=Date.now();vib(8);}
+    if(stirAng>=STIRNEED){down=false;z.classList.remove('on');finishMix();}
+  });
+  const up=()=>{if(!down)return;down=false;z.classList.remove('on');lastA=null;if(moved<0.3)tapStir();};
+  z.addEventListener('pointerup',up);z.addEventListener('pointercancel',up);
+}
+let lastVib=0;
+function orbit(a){
+  const sp=document.getElementById('spoon');if(sp)sp.style.transform=`translate(${(Math.cos(a)*80).toFixed(1)}px,${(Math.sin(a)*80).toFixed(1)}px)`;
+  const mg=document.querySelector('.mg');if(mg)mg.style.transform=`rotate(${(Math.cos(a)*5).toFixed(1)}deg)`;
+}
+function tapStir(){
+  if(st!=='mixing'||chosen!=='stir')return;
+  stirAng+=Math.PI/2;vib(10);stirProgress();orbit(stirAng);
+  if(stirAng>=STIRNEED)finishMix();
+}
+
+/* BUILD: pour each ingredient, in order, straight into the glass */
+function pour(){
+  if(st!=='mixing'||chosen!=='build')return;
+  const c=cur();if(poured>=c.ing.length)return;
+  poured++;vib(15);render();
+  if(poured>=c.ing.length)setTimeout(finishMix,800);
+}
+
+function skip(){rr.push('no');failWhy=null;st='result';render();}
 function next(){ci++;if(ci>=TOT){st='final';render();}else round();}
+
+// Motion
+// Motion
+let la={x:0,y:0,z:0},lt=0;
+function hm(e){const a=e.accelerationIncludingGravity||e.acceleration;if(!a)return;const d=Math.abs(a.x-la.x)+Math.abs(a.y-la.y)+Math.abs(a.z-la.z);la={x:a.x,y:a.y,z:a.z};if(d>25&&Date.now()-lt>80){lt=Date.now();doShake();}}
+async function reqM(){if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){try{const p=await DeviceMotionEvent.requestPermission();if(p==='granted')window.addEventListener('devicemotion',hm);}catch{}}else if(typeof DeviceMotionEvent!=='undefined')window.addEventListener('devicemotion',hm);}
 
 function progHTML(){
   return `<div class="prog">${rr.map(r=>`<div class="pd ${r}"></div>`).join('')}${st!=='final'?'<div class="pd now"></div>':''}${Array(Math.max(0,TOT-rr.length-(st==='final'?0:1))).fill('<div class="pd"></div>').join('')}</div>`;
@@ -568,12 +612,45 @@ function render(){
       <div class="tgt-n">${c.name}</div>
     </div>`;
 
-  // ── Step 4: technique animation ──
-  if(st==='anim'){
-    app.innerHTML=`<div class="gm">${head(4,{shake:'SHAKE',stir:'STIR',build:'BUILD'}[chosen])}
-      <div class="anim-zone"><img id="animImg" class="px" src="lab/anim-${chosen}-1.webp" alt="" draggable="false"></div>
-      <div class="hint"><span class="p">${{shake:'SHAKING…',stir:'STIRRING…',build:'BUILDING…'}[chosen]}</span></div>
-    </div>`;
+  // ── Step 4: technique in action (you do it) ──
+  if(st==='mixing'){
+    let body='';
+    if(chosen==='shake'){
+      body=`<div class="sk-zone" onclick="manShake()">${pic('tool-shake','sk')}</div>
+      <div class="hint"><span class="p">📱 Shake your phone!</span><br>
+        <span style="font-size:11px;color:var(--muted);">or tap the shaker</span>
+        <div class="sbar"><div class="sfill" id="mixFill" style="width:0%"></div></div>
+      </div>`;
+    }else if(chosen==='stir'){
+      body=`<div class="stir-zone" id="stirZone">
+        <div class="swirl"></div>
+        ${pic('tool-stir','mg')}
+        <div class="stir-dot" id="spoon" style="transform:translate(80px,0)"></div>
+      </div>
+      <div class="hint"><span class="p">🥄 Stir in circles</span><br>
+        <span style="font-size:11px;color:var(--muted);">drag around the mixing glass, or tap it</span>
+        <div class="sbar"><div class="sfill" id="mixFill" style="width:0%"></div></div>
+      </div>`;
+    }else{
+      const n=c.ing.length;
+      const lay=c.ing.slice(0,poured).map(i=>`<div class="ly" style="--h:${Math.round(78/n)}%;height:${Math.round(78/n)}%;background:${LC[i]||c.color};"></div>`).join('');
+      // liquid area inside each glass picture (% of the picture box)
+      const GEO={highball:{h:170,css:'left:10%;right:10%;bottom:7%;height:84%;border-radius:0 0 6px 6px;'},
+        rocks:{h:120,css:'left:7%;right:7%;bottom:9%;height:78%;border-radius:0 0 8px 8px;'},
+        coupe:{h:150,css:'left:8%;right:8%;bottom:57%;height:30%;border-radius:0 0 50% 50%;'},
+        martini:{h:150,css:'left:9%;right:9%;bottom:52%;height:40%;clip-path:polygon(0 0,100% 0,53% 100%,47% 100%);'},
+        wine:{h:170,css:'left:12%;right:12%;bottom:44%;height:50%;border-radius:12px 12px 50% 50%;'}}[c.glass]||{h:170,css:'left:10%;right:10%;bottom:7%;height:84%;'};
+      body=`<div class="bd-zone">
+        <div class="bd-wrap" style="height:${GEO.h}px">
+          ${pic('glass-'+(['highball','rocks','coupe','martini','wine'].includes(c.glass)?c.glass:'highball'),'bd-img')}
+          <div class="bd" style="${GEO.css}">${lay}</div>
+        </div>
+      </div>
+      <div class="bd-list">${c.ing.map((i,k)=>`<div class="bd-it ${k<poured?'done':k===poured?'next':''}">${k<poured?'✓ ':''}${i}</div>`).join('')}</div>
+      <div class="hint"><span style="font-size:11px;color:var(--muted);">straight into the ice-filled glass, in order</span></div>
+      <button class="btn" onclick="pour()" ${poured>=n?'disabled':''}>${poured>=n?'SERVED ✓':'POUR '+c.ing[poured].toUpperCase()}</button>`;
+    }
+    app.innerHTML=`<div class="gm">${head(4,{shake:'SHAKE',stir:'STIR',build:'BUILD'}[chosen])}${body}</div>`;
     return;
   }
 
@@ -683,7 +760,7 @@ function showHowto(){
   ht.classList.remove('hidden');
   words.forEach((id,i)=>{setTimeout(()=>{const el=document.getElementById(id);el.classList.add('land');
     setTimeout(()=>{el.classList.add('hit');if(navigator.vibrate)navigator.vibrate(10);setTimeout(()=>el.classList.remove('hit'),200);},238);},56+i*266);});
-  const go=e=>{if(e)e.preventDefault();ht.classList.add('hidden');ht.removeEventListener('pointerdown',go);start();};
+  const go=e=>{if(e)e.preventDefault();ht.classList.add('hidden');ht.removeEventListener('pointerdown',go);reqM();start();};
   ht.addEventListener('pointerdown',go);
 }
 render();
