@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
 <title>Pine &amp; Co — Cocktail Lab</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Cinzel:wght@400;500&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Cinzel:wght@400;500&family=Noto+Sans+KR:wght@300;400;500&family=Press+Start+2P&display=swap" rel="stylesheet"/>
 <style>
 :root{--ink:#1e1208;--ink2:#2a1a0e;--cream:#f0ebe0;--gold:#b8935a;--amber:#c9a96e;--muted:#7a6550;--ok:#5DCAA5;--fail:#c07070;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;}
@@ -136,31 +136,38 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--ink);color:var(--cre
 @keyframes ifl{0%{transform:translateY(0);}100%{transform:translateY(-3px);}}
 @keyframes fu{0%{height:0;}100%{height:var(--h,75%);}}
 
-/* Bar background (pixel art) */
+/* Pine & Co bar background (pixel art of the real bar) */
 #bg{position:fixed;inset:0;z-index:-1;background:var(--ink) url(lab/ui_bg.webp) center top/cover no-repeat;image-rendering:auto;transition:opacity .4s;}
-#bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(30,18,8,.15) 0%,rgba(30,18,8,.35) 45%,rgba(30,18,8,.88) 100%);}
-body.play #bg{opacity:.22;}
-body.intro .hdr{display:none;}
+#bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(30,18,8,.1) 0%,rgba(30,18,8,.3) 45%,rgba(30,18,8,.85) 100%);}
+body.play #bg{opacity:.2;}
+body.play .tgt-n,body.play .tgt-l,body.play .step,body.play .ing-l{text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 2px #000;}
+/* Game logo on top during play (like the party mini games) */
+.hdr{padding:12px 16px 4px;}
+#gameLogo{display:block;max-height:76px;width:auto;max-width:80vw;margin:0 auto;filter:drop-shadow(0 4px 0 rgba(0,0,0,.55));}
+body.intro .hdr{visibility:hidden;}
+
+/* HOW TO PLAY overlay (same flow as the Pine & Co party mini games) */
+#howto{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.68);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;text-align:center;cursor:pointer;}
+#howto.hidden{display:none;}
+#htWords{width:min(330px,86vw);}
+.htw{display:block;width:100%;image-rendering:pixelated;opacity:0;transform:translateY(-70vh);filter:drop-shadow(0 4px 0 rgba(0,0,0,.5));}
+.htw#htTo,.htw#htPlay{margin-top:-6.9%;}
+.htw.land{opacity:1;transform:translateY(0);transition:transform .24s cubic-bezier(.34,1.45,.5,1),opacity .08s linear;}
+.htw.hit{animation:htwHit .2s ease-out;}
+@keyframes htwHit{0%{transform:translateY(0) scale(1.12,.88);}55%{transform:translateY(0) scale(.97,1.05);}100%{transform:translateY(0) scale(1,1);}}
+.ht-panel{background:rgba(0,0,0,.74);border:3px solid rgba(255,255,255,.18);border-radius:10px;padding:18px 16px;max-width:340px;font-family:'Press Start 2P',monospace;}
+.ht-name{font-size:12px;color:#e6b450;margin-bottom:12px;letter-spacing:1px;}
+.ht-desc{font-size:10px;color:#fff;line-height:1.9;}
+.ht-li{text-align:left;margin:0 0 7px;line-height:1.65;}
+.ht-taunt{margin-top:15px;font-size:1.4em;color:#ffd977;text-shadow:2px 2px 0 #000;line-height:1.5;}
+.ht-tap{font-size:10px;color:#6fcf8f;margin-top:14px;animation:htblink 1s step-end infinite;}
+@keyframes htblink{50%{opacity:.25;}}
 
 /* Intro & Final */
 .intro,.final{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;}
 .intro{padding-top:18px;justify-content:flex-start;}
 .intro-e{font-size:56px;margin-bottom:12px;}
 .intro-e img{height:150px;}
-.ttl{width:min(86%,340px);margin:14px auto 4px;filter:drop-shadow(0 6px 14px rgba(0,0,0,.6));animation:tin .6s cubic-bezier(.2,1.4,.4,1) both;}
-.sub{width:min(78%,300px);margin:0 auto 18px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.6));animation:tin .6s .15s cubic-bezier(.2,1.4,.4,1) both;}
-@keyframes tin{0%{transform:translateY(-30px) scale(.8);opacity:0;}100%{transform:none;opacity:1;}}
-.htp{width:min(100%,320px);margin:0 auto 16px;padding:14px 16px 12px;border:2px solid var(--gold);border-radius:4px;background:rgba(30,18,8,.82);box-shadow:4px 4px 0 rgba(0,0,0,.5);text-align:left;animation:tin .5s .3s both;}
-.htp-h{font-family:'Cinzel',serif;font-size:13px;letter-spacing:.3em;color:var(--gold);text-align:center;margin-bottom:8px;}
-.htp-h span{display:inline-block;animation:bob 1.6s ease-in-out infinite;}
-.htp-h span:nth-child(2){animation-delay:.2s}.htp-h span:nth-child(3){animation-delay:.4s}
-@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
-.htp-l{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--cream);line-height:1.5;padding:4px 0;}
-.htp-l b{flex:none;width:20px;height:20px;border-radius:4px;background:var(--gold);color:var(--ink);font-family:'Cinzel',serif;font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px;}
-.htp-l em{color:var(--amber);font-style:normal;}
-.intro .teaser{font-size:12px;color:var(--gold);line-height:1.7;margin-bottom:16px;text-shadow:0 2px 4px rgba(0,0,0,.8);}
-.intro .btn{box-shadow:0 6px 0 rgba(0,0,0,.45);animation:pls2 1.6s ease-in-out infinite;}
-@keyframes pls2{0%,100%{transform:scale(1);}50%{transform:scale(1.04);}}
 .intro-t{font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--gold);margin-bottom:6px;}
 .intro-s{font-size:14px;color:var(--muted);line-height:1.8;max-width:300px;margin-bottom:24px;}
 .intro-m{display:flex;gap:14px;justify-content:center;margin:4px 0 16px;}
@@ -195,11 +202,25 @@ body.intro .hdr{display:none;}
 </head>
 <body class="intro">
 <div id="bg"></div>
-<div class="hdr">
-  <div class="hdr-logo">PINE & CO SEOUL</div>
-  <div class="hdr-t">Cocktail Lab 🧪</div>
-</div>
+<div class="hdr"><img id="gameLogo" class="px" src="lab/ui_title.webp" alt="Cocktail Lab" draggable="false"></div>
 <div id="app"></div>
+<div id="howto">
+  <div id="htWords">
+    <img class="htw" id="htHow" src="lab/hp_how.webp" alt="HOW">
+    <img class="htw" id="htTo" src="lab/hp_to.webp" alt="TO">
+    <img class="htw" id="htPlay" src="lab/hp_play.webp" alt="PLAY">
+  </div>
+  <div class="ht-panel">
+    <div class="ht-name">COCKTAIL LAB</div>
+    <div class="ht-desc">
+      <div class="ht-li">- Pick the right ingredients for the cocktail.</div>
+      <div class="ht-li">- Choose the technique: SHAKE, STIR or BUILD. Wrong one ruins the drink.</div>
+      <div class="ht-li">- Shake your phone, stir in circles, or pour in order.</div>
+      <div class="ht-taunt">5 classics. Nail them all.</div>
+    </div>
+    <div class="ht-tap">TAP TO START!</div>
+  </div>
+</div>
 <div id="turn-overlay" style="display:none;"></div>
 <button class="check-btn" id="check-btn" onclick="checkTurn()" style="display:none;">📋 MY TURN</button>
 <script>
@@ -518,20 +539,7 @@ function render(){
 
   document.body.classList.toggle('intro',st==='intro');
   document.body.classList.toggle('play',st!=='intro');
-  if(st==='intro'){
-    app.innerHTML=`<div class="intro">
-      <img class="px ttl" src="lab/ui_title.webp" alt="Cocktail Lab" draggable="false">
-      <img class="px sub" src="lab/ui_subtitle.webp" alt="Shake · Stir · Build" draggable="false">
-      <div class="htp">
-        <div class="htp-h"><span>HOW</span> <span>TO</span> <span>PLAY</span></div>
-        <div class="htp-l"><b>1</b><div>Pick the right <em>ingredients</em> for the cocktail.</div></div>
-        <div class="htp-l"><b>2</b><div>Choose the technique: <em>SHAKE</em>, <em>STIR</em> or <em>BUILD</em>. Wrong one ruins the drink.</div></div>
-        <div class="htp-l"><b>3</b><div>Shake your phone, stir in circles, or pour in order. <em>5 cocktails</em>, nail them all.</div></div>
-      </div>
-      <div class="teaser">Psst... a perfect 5/5 and our bartenders<br>might have a little something for you. 😉</div>
-      <button class="btn" onclick="reqM();start()">START MIXING</button>
-    </div>`;return;
-  }
+  if(st==='intro'){ app.innerHTML=''; return; }   // HOW TO PLAY overlay is showing
 
   if(st==='final'){
     const perfect=sc===TOT;
@@ -708,7 +716,19 @@ async function checkTurn(){
 }
 function closeTurn(){document.getElementById('turn-overlay').style.display='none';turnVisible=false;}
 
+// ═══ HOW TO PLAY → game (same sequence as the party mini games) ═══
+function showHowto(){
+  const ht=document.getElementById('howto');
+  const words=['htHow','htTo','htPlay'];
+  words.forEach(id=>{const el=document.getElementById(id);el.classList.remove('land','hit');void el.offsetWidth;});
+  ht.classList.remove('hidden');
+  words.forEach((id,i)=>{setTimeout(()=>{const el=document.getElementById(id);el.classList.add('land');
+    setTimeout(()=>{el.classList.add('hit');if(navigator.vibrate)navigator.vibrate(10);setTimeout(()=>el.classList.remove('hit'),200);},238);},56+i*266);});
+  const go=e=>{if(e)e.preventDefault();ht.classList.add('hidden');ht.removeEventListener('pointerdown',go);reqM();start();};
+  ht.addEventListener('pointerdown',go);
+}
 render();
+showHowto();
 </script>
 </body>
 </html>
