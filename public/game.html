@@ -759,6 +759,11 @@ function closeTurn(){document.getElementById('turn-overlay').style.display='none
 function showHowto(){
   const ht=document.getElementById('howto');
   const words=['htHow','htTo','htPlay'];
+  if(/[?&]h=1/.test(location.search)){   // came from the pineandco.online hub, which already showed HOW TO PLAY
+    ht.classList.add('hidden');
+    const once=()=>{reqM();removeEventListener('pointerdown',once);};addEventListener('pointerdown',once);   // motion permission still needs a tap on this page
+    start();return;
+  }
   words.forEach(id=>{const el=document.getElementById(id);el.classList.remove('land','hit');void el.offsetWidth;});
   ht.classList.remove('hidden');
   words.forEach((id,i)=>{setTimeout(()=>{const el=document.getElementById(id);el.classList.add('land');
