@@ -57,6 +57,7 @@ window.I18N_JA={"ui": {
 "about.5.t":"Sharing Project","about.5.b":"クリケット・ソウルは地域の酒蔵や職人、アーティストと手を組み、その酒や作品をカクテルとして表現します。地元マッコリ酒蔵との協業のように、地域の素材と職人技、現代のバー文化をつなぐ新しい方法を探し続けています。目指すのはただひとつ、韓国の美しさをより多くの人と分かち合うことです。",
 "footer.q":"Like a sound of cricket, we share Korea with everyone.","footer.loc":"Cricket Seoul · Seoul, Korea",
 "tap":"ノンアルコール可","glass":"グラス","bottle":"ボトル",
+"ck.After Hours":"タンカレー・ジン、カンパリ、スイートベルモット、エスプレッソ、パッションフルーツ",
 "ck.Makgeolli Fizz":"マッコリ、自家製ココナッツソーダ、オレンジ",
 "dv.hint":"左右にスワイプ · どこでもタップで閉じます",
 "ck.Sujeonggwa":"ムンベスル、自家製スジョングァ、柿シャーベット、ソルガムポップ",

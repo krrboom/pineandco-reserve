@@ -57,6 +57,7 @@ window.I18N_ZH={"ui": {
 "about.5.t":"Sharing Project","about.5.b":"Cricket 与本地酒厂、匠人和艺术家携手，将他们的酒与作品化作一杯杯鸡尾酒。就像我们与本地马格利酒厂的合作一样，我们不断寻找将地方食材、匠心与现代酒吧文化相连的新方式。目标只有一个：把韩国之美分享给更多的人。",
 "footer.q":"Like a sound of cricket, we share Korea with everyone.","footer.loc":"Cricket Seoul · Seoul, Korea",
 "tap":"可选无酒精","glass":"杯","bottle":"瓶",
+"ck.After Hours":"添加利金酒、金巴利、甜味美思、浓缩咖啡、百香果",
 "ck.Makgeolli Fizz":"马格利、手工椰子苏打、橙子",
 "dv.hint":"左右滑动浏览 · 点击任意处关闭",
 "ck.Sujeonggwa":"文杯酒、自制水正果、柿子雪葩、高粱爆米花",

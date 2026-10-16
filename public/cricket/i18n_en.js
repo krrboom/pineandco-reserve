@@ -76,6 +76,7 @@ window.I18N_EN={"ui":{
 "tap":"Non-alcoholic available",
 "glass":"Glass","bottle":"Bottle",
 
+"ck.After Hours":"Tanqueray gin, Campari, sweet vermouth, espresso, passion fruit",
 "ck.Makgeolli Fizz":"Makgeolli, house coconut soda, orange",
 "dv.hint":"Swipe to browse · tap anywhere to close",
 "ck.Sujeonggwa":"Moonbaesool, home-made sujeonggwa, persimmon sorbet, sorghum pop",

@@ -301,7 +301,7 @@ body.night{text-shadow:0 1px 2px rgba(0,0,0,.45)}
 .iname .shbar{filter:drop-shadow(0 1px 1px rgba(80,60,20,.35))}
 .iname .shflag{height:.82em;width:auto;vertical-align:-.02em;margin-left:7px;
   border:1px solid rgba(60,40,20,.22);border-radius:1px}
-.iname .shbar{height:1.5em;width:auto;vertical-align:-.42em;margin-left:5px;opacity:.88}
+.iname .shbar{height:2.2em;width:auto;vertical-align:-.75em;margin-left:6px;opacity:.9}
 body.night .iname .shbar{filter:brightness(1.4)}
 .rz-site{display:inline-block;margin-top:9px;font-family:var(--kr);font-size:11.5px;letter-spacing:.02em;
   color:var(--gold);text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:1px}
@@ -776,6 +776,8 @@ function provName(code,kr){return LANG==="ko"?kr:(PROV_ROM[code]||kr);}
 
 /* ===== 메뉴 데이터 ===== */
 const COCKTAILS=[
+ {name:"After Hours",tw:"",desc:"탄커레이 진, 캄파리, 스위트 베르무트, 에스프레소, 패션프루트",link:null,
+  share:{flag:"flag_sg.webp",country:"Singapore",bar:"bar_sidedoor.png",barName:"SideDoor",note:"Sharing Project · SideDoor, Singapore"}},
  {name:"Makgeolli Fizz",tw:"Piña Colada twist",desc:"막걸리, 수제 코코넛 소다, 오렌지",link:"takju"},
  {name:"Andong Mule",tw:"Moscow Mule twist",desc:"안동소주 베이스, 수제 배·생강 비어",link:null,na:true},
  {name:"Nokcha Gin Tonic",tw:"G&T twist",desc:"한국 진, 수제 녹차 토닉워터",link:null,na:true},
@@ -932,7 +934,7 @@ function renderCocktails(){
     : "";
   return `<div ${dishAttr(d.name)}>${dishThumb(d.name)}<div class="ibody">
     <div class="ih"><span class="iname">${esc(d.name)}${sh}${d.tw?` <span class="itw">(${esc(d.tw)})</span>`:""}</span><span class="idot"></span><span class="iprice">25,000</span></div>
-    <div class="idesc">${esc(t('ck.'+d.name))}</div>${d.share?'<div class="shnote">(sharing project)</div>':""}
+    <div class="idesc">${esc(t('ck.'+d.name))}</div>${d.share?`<div class="shnote">${esc(d.share.note||"(sharing project)")}</div>`:""}
     <div class="itags">${tag}${d.na?`<span class="tj na">${esc(t('tap'))}</span>`:""}</div>
   </div></div>`;}).join("");
 }
@@ -944,8 +946,8 @@ function renderFoods(){
 
 /* ===== 메뉴 그림 뷰어 (실제 사진을 동양화로 옮긴 그림) =====
    dish/<id>.webp(큰 그림) · dish/<id>_t.webp(목록 썸네일). 그림이 있는 메뉴만 DISH에 등록. */
-const DISH=new Set(["andong-mule","nokcha-gin-tonic","hyunmi-and-corn","maesil-and-cucumber","boksoonga-crush","gwahaju-on-the-lotus-leaf","yin-and-yang","tomato-and-spicy","mushroom-and-coffee","ube-alexander","makgeolli-fizz","sujeonggwa","yakjutini","namul-jeon","acorn-rabokki","golbengi-somyeon","bekhap-sujebi","kimchi-gambas","mu-jorim","dombegogi","mungtigi","makgeolli-bingsu"]);
-const DISH_BG={"andong-mule":"#f7e7cb","acorn-rabokki":"#f2e0c4","bekhap-sujebi":"#ebd1ab","boksoonga-crush":"#f6e2bf","dombegogi":"#f3ddb9","golbengi-somyeon":"#f6ead4","gwahaju-on-the-lotus-leaf":"#f4e3c9","hyunmi-and-corn":"#eecea4","kimchi-gambas":"#f3deb9","maesil-and-cucumber":"#f1ddc0","makgeolli-bingsu":"#f6e3c5","makgeolli-fizz":"#f1ddbb","mu-jorim":"#f3ddbc","mungtigi":"#f4ddb5","mushroom-and-coffee":"#f2ddbc","namul-jeon":"#eed9b8","nokcha-gin-tonic":"#f3ddba","sujeonggwa":"#f1dfc1","tomato-and-spicy":"#f6e5c8","ube-alexander":"#e8cea8","yakjutini":"#f4ddb8","yin-and-yang":"#f2e1c1"};   // 그림별 한지 바탕색(자동 추출)
+const DISH=new Set(["after-hours","andong-mule","nokcha-gin-tonic","hyunmi-and-corn","maesil-and-cucumber","boksoonga-crush","gwahaju-on-the-lotus-leaf","yin-and-yang","tomato-and-spicy","mushroom-and-coffee","ube-alexander","makgeolli-fizz","sujeonggwa","yakjutini","namul-jeon","acorn-rabokki","golbengi-somyeon","bekhap-sujebi","kimchi-gambas","mu-jorim","dombegogi","mungtigi","makgeolli-bingsu"]);
+const DISH_BG={"andong-mule":"#f7e7cb","acorn-rabokki":"#f2e0c4","after-hours":"#eddabd","bekhap-sujebi":"#ebd1ab","boksoonga-crush":"#f6e2bf","dombegogi":"#f3ddb9","golbengi-somyeon":"#f6ead4","gwahaju-on-the-lotus-leaf":"#f4e3c9","hyunmi-and-corn":"#eecea4","kimchi-gambas":"#f3deb9","maesil-and-cucumber":"#f1ddc0","makgeolli-bingsu":"#f6e3c5","makgeolli-fizz":"#f1ddbb","mu-jorim":"#f3ddbc","mungtigi":"#f4ddb5","mushroom-and-coffee":"#f2ddbc","namul-jeon":"#eed9b8","nokcha-gin-tonic":"#f3ddba","sujeonggwa":"#f1dfc1","tomato-and-spicy":"#f6e5c8","ube-alexander":"#e8cea8","yakjutini":"#f4ddb8","yin-and-yang":"#f2e1c1"};   // 그림별 한지 바탕색(자동 추출)
 function dishId(n){return String(n).toLowerCase().replace(/\s*&\s*/g,"-and-").replace(/\s+/g,"-");}
 function dishAttr(n){const id=dishId(n);return DISH.has(id)?`class="item-c has-dish" onclick="openDish('${id}',event)"`:`class="item-c no-dish"`;}
 function dishThumb(n){const id=dishId(n);
@@ -953,7 +955,7 @@ function dishThumb(n){const id=dishId(n);
 let dvList=[],dvIdx=0,dvSwiped=false;
 function dishItems(){   // 메뉴에 보이는 순서 그대로: 칵테일 → 안주
  const a=[];
- COCKTAILS.forEach(d=>{const id=dishId(d.name);if(DISH.has(id))a.push({id,name:d.name,tw:d.tw||"",desc:t('ck.'+d.name),price:"25,000",kind:t('nav.cocktail')});});
+ COCKTAILS.forEach(d=>{const id=dishId(d.name);if(DISH.has(id))a.push({id,name:d.name,tw:d.tw||(d.share&&d.share.note)||"",desc:t('ck.'+d.name),price:"25,000",kind:t('nav.cocktail')});});
  FOODS.forEach(d=>{const id=dishId(d.name);if(DISH.has(id))a.push({id,name:d.name,tw:"",desc:t('fd.'+d.name),price:d.p,kind:t('nav.food')});});
  return a;
 }
